@@ -3,6 +3,7 @@ version: '3.13'
 services:
   reservation_calender:
     image: reservation_calender:latest
+    restart: unless-stopped
     build: .
     ports:
       - "8000:8000"
@@ -10,7 +11,6 @@ services:
       DATABASE_URL: postgresql+asyncpg://myuser:mypassword@postgres:5432/reservation_db
     depends_on:
       - postgres
-
   
   postgres:
     image: postgres:13

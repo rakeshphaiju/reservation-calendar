@@ -13,7 +13,7 @@ RUN python3 -m pip --version
 RUN poetry --version
 
 COPY ./pyproject.toml ./poetry.lock ./
-RUN poetry install -vvv --no-interaction --no-ansi
+RUN poetry install --no-root -vvv --no-interaction --no-ansi
 
 
 # Set the working directory in the container
@@ -24,4 +24,4 @@ COPY . /app
 
 EXPOSE 8000
 
-CMD ["uvicorn", "service.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

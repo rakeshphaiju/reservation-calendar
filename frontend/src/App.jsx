@@ -1,5 +1,7 @@
 import { Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import Navbar from "./components/header/Navbar";
+import Reserve from "./components/Reserve";
+import Reservationlist from "./components/ReservationList";
 
 export default function App() {
   return (
@@ -10,6 +12,8 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/reserve" element={<Reserve />} />
+          <Route path="/reservelist" element={<Reservationlist />} />
         </Routes>
       </div>
     </div>

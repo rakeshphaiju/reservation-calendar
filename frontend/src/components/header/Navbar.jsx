@@ -13,6 +13,12 @@ export default function Navbar() {
         <li>
           <Link to="/contact" className="hover:text-gray-400">Contact</Link>
         </li>
+        <li>
+          <Link to="/reserve" className="hover:text-gray-400">Reserve</Link>
+        </li>
+        <li>
+          <Link to="/reservelist" className="hover:text-gray-400">Reservation List</Link>
+        </li>
       </ul>
     </nav>
   );
