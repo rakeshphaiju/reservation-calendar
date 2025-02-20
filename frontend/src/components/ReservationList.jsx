@@ -1,6 +1,6 @@
-import React, { Component } from "react";
-import "./reservationlist.css";
-import axios from "axios";
+import React, { Component } from 'react';
+import './reservationlist.css';
+import axios from 'axios';
 
 class Reservationlist extends Component {
   constructor(props) {
@@ -33,23 +33,22 @@ class Reservationlist extends Component {
 
   getUsers = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/users");
-  
+      const response = await fetch('http://localhost:8000/api/users');
+
       const text = await response.text();
-  
+
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-  
+
       if (!text) {
-        throw new Error("Empty response from server.");
+        throw new Error('Empty response from server.');
       }
-  
+
       const data = JSON.parse(text);
       this.setState({ users: data });
-  
     } catch (err) {
-      console.error("Error fetching users:", err);
+      console.error('Error fetching users:', err);
     }
   };
 
@@ -58,9 +57,8 @@ class Reservationlist extends Component {
     try {
       await axios.delete(`http://localhost:8000/api/delete/${id}`);
       this.getUsers(); // Refresh the list after deletionAction
-      
     } catch (err) {
-      console.error("Error deleting user:", err);
+      console.error('Error deleting user:', err);
     }
   };
 
@@ -92,10 +90,7 @@ class Reservationlist extends Component {
                 <td>{user.day}</td>
                 <td>{user.time}</td>
                 <td>
-                  <button
-                    className="del-button"
-                    onClick={() => this.deleteUser(user.id)}
-                  >
+                  <button className="del-button" onClick={() => this.deleteUser(user.id)}>
                     Delete
                   </button>
                 </td>

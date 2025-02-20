@@ -1,7 +1,8 @@
-import { Routes, Route } from "react-router-dom";
-import Navbar from "./components/header/Navbar";
-import Reserve from "./components/Reserve";
-import Reservationlist from "./components/ReservationList";
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/header/Navbar';
+import Reserve from './components/Reserve';
+import Reservationlist from './components/ReservationList';
 
 export default function App() {
   return (

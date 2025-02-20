@@ -1,23 +1,25 @@
-table{
+table {
   border-collapse: collapse;
   margin: 5%;
   width: 90%;
 }
 
-table, td, tr, th  {
+table,
+td,
+tr,
+th {
   border: 1px solid black;
-
 }
-td{
+td {
   height: 100px;
-}  
-th{
+}
+th {
   background-color: lightgray;
   height: 50px;
   text-align: center;
 }
 
-button{
+button {
   height: 100px;
   background: transparent;
   border: none !important;
@@ -25,6 +27,6 @@ button{
   font-size: 1em;
 }
 
-h3{
+h3 {
   text-align: center;
 }

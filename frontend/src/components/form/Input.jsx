@@ -1,5 +1,5 @@
-import React from "react";
-import PropTypes from "prop-types"; // For prop type validation
+import React from 'react';
+import PropTypes from 'prop-types'; // For prop type validation
 
 const Input = (props) => {
   const {
@@ -43,7 +43,7 @@ Input.propTypes = {
 
 // Default props
 Input.defaultProps = {
-  placeholder: "",
+  placeholder: '',
 };
 
 export default Input;
