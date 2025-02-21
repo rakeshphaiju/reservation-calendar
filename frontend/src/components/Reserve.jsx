@@ -155,7 +155,7 @@ export default class Reserve extends React.Component {
   }
 
   getUsers = () => {
-    fetch('http://localhost:8000/api/users')
+    fetch('/api/users')
       .then((res) => res.json())
       .then((json) => {
         this.setState({ users: json });
@@ -172,7 +172,7 @@ export default class Reserve extends React.Component {
     const { user } = this.state;
     const isValid = this.validate();
     if (isValid) {
-      fetch('http://localhost:8000/api/users/add', {
+      fetch('/api/users/add', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

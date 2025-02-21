@@ -18,22 +18,9 @@ class Reservationlist extends Component {
     this.getUsers();
   }
 
-  // Fetch users from the backend
-  // getUsers = async () => {
-  //   try {
-  //     const response = await fetch("http://localhost:8000/users", {
-  //       mode: "no-cors"
-  //     });
-  //     const data = await response.json();
-  //     this.setState({ users: data.data });
-  //   } catch (err) {
-  //     console.error("Error fetching users:", err);
-  //   }
-  // };
-
   getUsers = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/users');
+      const response = await fetch(`/api/users`);
 
       const text = await response.text();
 
@@ -55,7 +42,7 @@ class Reservationlist extends Component {
   // Delete a user by ID
   deleteUser = async (id) => {
     try {
-      await axios.delete(`http://localhost:8000/api/delete/${id}`);
+      await axios.delete(`/api/delete/${id}`);
       this.getUsers(); // Refresh the list after deletionAction
     } catch (err) {
       console.error('Error deleting user:', err);
