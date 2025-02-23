@@ -14,7 +14,7 @@ class UserCreate(BaseModel):
     name: str
     address: str
     phone_number: str
-    ruoka: str
+    food: str
     quantity: str
     day: str
     time: str
@@ -25,7 +25,7 @@ class UserResponse(BaseModel):
     name: str
     address: str
     phone_number: str
-    ruoka: str
+    food: str
     quantity: str
     day: str
     time: str

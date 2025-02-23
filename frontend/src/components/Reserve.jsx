@@ -19,7 +19,7 @@ const Reserve = () => {
     name: '',
     address: '',
     phone_number: '',
-    ruoka: '',
+    food: '',
     quantity: '',
   });
   const [errors, setErrors] = useState({});
@@ -46,7 +46,7 @@ const Reserve = () => {
     if (!user.name) newErrors.name = 'Invalid name!!';
     if (!user.address) newErrors.address = 'Invalid Address!!';
     if (!/^\d{10}$/.test(user.phone_number)) newErrors.phone_number = 'Invalid Phone number!!';
-    if (!user.ruoka) newErrors.ruoka = 'Invalid food option!!';
+    if (!user.food) newErrors.food = 'Invalid food option!!';
     if (user.quantity < 1) newErrors.quantity = 'Invalid quantity!!';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -79,7 +79,7 @@ const Reserve = () => {
           [modalData.day]: [...prev[modalData.day], modalData.time],
         }));
         setShowModal(false);
-        setUser({ name: '', address: '', phone_number: '', ruoka: '', quantity: '' });
+        setUser({ name: '', address: '', phone_number: '', food: '', quantity: '' });
       })
       .catch((err) => console.error('Error:', err));
   };
@@ -119,13 +119,13 @@ const Reserve = () => {
           <form>
             <Input title={'Full Name '} name='name' value={user.name} placeholder='Enter your name' handlechange={handleInput} required />
             <div style={{ color: 'red', fontSize: 12 }}>{errors.name}</div>
-            <Input  title={'Address '} name='address' value={user.address} placeholder='Enter your address' handlechange={handleInput} />
+            <Input title={'Address '} name='address' value={user.address} placeholder='Enter your address' handlechange={handleInput} />
             <div style={{ color: 'red', fontSize: 12 }}>{errors.address}</div>
-            <Input  title={'Phone number '} name='phone_number' value={user.phone_number} placeholder='Enter your phone number' handlechange={handleInput} />
+            <Input title={'Phone number '} name='phone_number' value={user.phone_number} placeholder='Enter your phone number' handlechange={handleInput} />
             <div style={{ color: 'red', fontSize: 12 }}>{errors.phone_number}</div>
-            <Select  title={'Option '} name='ruoka' options={foodOptions} value={user.ruoka} placeholder='Select Option' handlechange={handleInput} />
-            <div style={{ color: 'red', fontSize: 12 }}>{errors.ruoka}</div>
-            <Input  title={'Quantity '} name='quantity' value={user.quantity} placeholder='Enter quantity' handlechange={handleInput} required />
+            <Select title={'Option '} name='food' options={foodOptions} value={user.food} placeholder='Select Option' handlechange={handleInput} />
+            <div style={{ color: 'red', fontSize: 12 }}>{errors.food}</div>
+            <Input title={'Quantity '} name='quantity' value={user.quantity} placeholder='Enter quantity' handlechange={handleInput} required />
             <div style={{ color: 'red', fontSize: 12 }}>{errors.quantity}</div>
             <button onClick={handleConfirmReservation}>Reserve</button>
           </form>
