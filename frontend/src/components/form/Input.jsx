@@ -1,5 +1,5 @@
 import React from 'react';
-import PropTypes from 'prop-types'; // For prop type validation
+import PropTypes from 'prop-types';
 
 const Input = (props) => {
   const {
@@ -9,7 +9,7 @@ const Input = (props) => {
     value,
     handlechange,
     placeholder,
-    ...otherProps // Capture any additional props
+    ...otherProps 
   } = props;
 
   return (

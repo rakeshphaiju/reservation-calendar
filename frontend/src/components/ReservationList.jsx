@@ -61,7 +61,7 @@ class Reservationlist extends Component {
               <th>Phone number</th>
               <th>Food option</th>
               <th>Quantity</th>
-              <th>Day</th>
+              <th>Date</th>
               <th>Time</th>
               <th>Action</th>
             </tr>
