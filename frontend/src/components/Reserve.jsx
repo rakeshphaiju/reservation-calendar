@@ -35,7 +35,7 @@ const Reserve = () => {
   const times = ['17:00-17:30', '17:30-18:00', '18:00-18:30', '18:30-19:00', '19:00-19:30', '19:30-20:00', '20:00-20:30'];
 
   useEffect(() => {
-    fetch('/api/users')
+    fetch('/api/reserve')
       .then((res) => res.json())
       .then((data) => setUsers(data))
       .catch((err) => console.error(err));
@@ -66,7 +66,7 @@ const Reserve = () => {
     e.preventDefault();
     if (!validate()) return;
 
-    fetch('/api/users/add', {
+    fetch('/api/reserve/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...user, ...modalData }),

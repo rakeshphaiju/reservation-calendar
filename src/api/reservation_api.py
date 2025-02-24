@@ -3,68 +3,71 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List
+import uuid
 
 from src.common.db import get_db
-from src.models.user import User
+from src.models.reservation import Reservation
 
 router = APIRouter()
 
 
-class UserCreate(BaseModel):
+class ReservationCreate(BaseModel):
     name: str
     address: str
     phone_number: str
     food: str
-    quantity: str
+    quantity: int
     day: str
     time: str
 
 
-class UserResponse(BaseModel):
-    id: int
+class ReservationResponse(BaseModel):
+    id: uuid.UUID
     name: str
     address: str
     phone_number: str
     food: str
-    quantity: str
+    quantity: int
     day: str
     time: str
 
 
-@router.post("/api/users/add", response_model=UserResponse)
-async def add_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
-    db_user = User(**user.model_dump())
-    db.add(db_user)
+@router.post("/api/reserve/add", response_model=ReservationResponse)
+async def add_reservations(
+    reservation: ReservationCreate, db: AsyncSession = Depends(get_db)
+):
+    db_reservation = Reservation(**reservation.model_dump())
+    db.add(db_reservation)
     await db.commit()
-    await db.refresh(db_user)
-    return db_user
+    await db.refresh(db_reservation)
+    return db_reservation
 
 
-# Get all users
-@router.get("/api/users", response_model=List[UserResponse])
-async def get_users(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User))
-    users = result.scalars().all()
-    return users
+# Get all reservations
+@router.get("/api/reserve", response_model=List[ReservationResponse])
+async def get_all_reservations(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation))
+    reservations = result.scalars().all()
+    return reservations
 
 
-# Get a single user by ID
-@router.get("/api/users/{user_id}", response_model=UserResponse)
-async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalars().first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+# Get a single reservation by ID
+@router.get("/api/reserve/{reserve_id}", response_model=ReservationResponse)
+async def get_reservation(reserve_id, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation).where(Reservation.id == reserve_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    return reservation
 
 
-# Delete a user by ID
-@router.delete("/api/delete/{user_id}")
-async def delete_user(user_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalars().first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    await db.delete(user)
+# Delete a reservation by ID
+@router.delete("/api/delete/{reserve_id}")
+async def delete_reservation(reserve_id, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation).where(Reservation.id == reserve_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    await db.delete(reservation)
     await db.commit()
-    return {"message": "User deleted successfully"}
+    return {"message": "Reservation deleted successfully"}

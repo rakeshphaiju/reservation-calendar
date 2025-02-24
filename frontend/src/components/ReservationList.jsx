@@ -11,7 +11,7 @@ const ReservationList = () => {
 
   const getUsers = async () => {
     try {
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/reserve');
       const text = await response.text();
 
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -26,7 +26,7 @@ const ReservationList = () => {
   const deleteUser = async (id) => {
     try {
       await axios.delete(`/api/delete/${id}`);
-      getUsers(); 
+      getUsers();
     } catch (err) {
       console.error('Error deleting user:', err);
     }
