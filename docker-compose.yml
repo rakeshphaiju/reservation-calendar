@@ -1,27 +1,6 @@
 version: '3.13'
 
 services:
-  reservation_calender_api:
-    image: reservation_calender:latest
-    restart: unless-stopped
-    build: .
-    command: uvicorn --host 0.0.0.0 --port 8000 src.main:app
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-    depends_on:
-      - postgres
-      - frontend
-  
-  frontend:
-    image: node:20
-    restart: unless-stopped
-    working_dir: /app/frontend
-    volumes:
-      - ./frontend:/app/frontend
-    ports:
-      - "5173:5173"
-    command: ["yarn", "dev"]
-  
   postgres:
     image: postgres:13
     container_name: postgres
@@ -33,17 +12,43 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    
-  nginx:
-    image: nginx:alpine
-    restart: always
-    ports:
-      - "80:80"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  reservation_calender_api:
+    image: rakeshphaiju/reservation-calender
+    hostname: reservation-api
+    restart: unless-stopped
+    command: uvicorn --host 0.0.0.0 --port 8000 src.main:app
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf  # Mount the corrected nginx.conf file
+    - ./frontend/dist:/opt/app/frontend/dist 
     depends_on:
-      - frontend
-      - reservation_calender_api
-  
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"  # Expose the backend port directly (optional)
+
+  # Optional: Nginx can be removed if the backend serves the frontend
+# '  nginx:
+#     image: nginx:alpine
+#     restart: unless-stopped
+#     ports:
+#       - "8080:80"
+#     volumes:
+#       - ./nginx.conf:/etc/nginx/nginx.conf
+#       - ./frontend/dist:/opt/app/frontend/dist
+#     depends_on:
+#       - reservation_calender_api
+#     healthcheck:
+#       test: curl -fsS http://localhost/healthz || exit 1
+#       interval: 10s
+#       start_period: 5s
+#       timeout: 5s'
+
 volumes:
   postgres_data:

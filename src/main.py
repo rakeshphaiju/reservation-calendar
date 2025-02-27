@@ -5,10 +5,11 @@ from dotenv import load_dotenv
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import http_exception_handler
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.common.logger import logger
@@ -44,6 +45,16 @@ app.add_middleware(
 
 app.include_router(reservation_api)
 
+this_path = os.path.dirname(os.path.abspath(__file__))
+
+root_dir = os.path.abspath(os.path.join(this_path, ".."))
+frontend_dir=os.path.join(root_dir, "frontend", "dist")
+index_path = os.path.join(frontend_dir, "index.html")
+
+# Serve static assets (JS, CSS, images, etc.)
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, check_dir=False), name="frontend")
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -77,11 +88,24 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
 
     return await http_exception_handler(request, exc)
 
+@app.head("/")
+def read_root_head():
+    return Response()
 
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
 
 
+# Serve the React app (index.html) for all routes
+if os.path.exists(index_path):
+    @app.get("/{catchall:path}")
+    def serve_react_app():
+        return FileResponse(index_path)
+else:
+    logger.warning("React build not found, not serving React app. This should only happen for a backend build.")
+    
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    logger.info("Start web app using uvicorn")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
