@@ -30,7 +30,7 @@ FROM python:3.9-slim as fullstack-image
 ARG VERSION=local-dev
 
 COPY --from=backend-build /opt/venv /opt/venv
-COPY --from=frontend-build /app/frontend/dist ./opt/app/frontend/dist
+COPY --from=frontend-build /app/frontend/dist /opt/app/frontend/dist
 
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE 1
@@ -42,3 +42,7 @@ WORKDIR /opt/app
 COPY ./src/ ./src
 
 ENV PYTHONPATH=/opt/app
+
+# EXPOSE 8000  
+
+# CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

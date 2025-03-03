@@ -53,7 +53,7 @@ index_path = os.path.join(frontend_dir, "index.html")
 
 # Serve static assets (JS, CSS, images, etc.)
 if os.path.exists(frontend_dir):
-    app.mount("/", StaticFiles(directory=frontend_dir, check_dir=False), name="frontend")
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True, check_dir=False), name="frontend")
 
 
 @app.exception_handler(RequestValidationError)
@@ -70,22 +70,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
-    if exc.status_code == hs.INTERNAL_SERVER_ERROR:
-        logger.opt(exception=exc.__cause__).critical(
-            'Internal server error on "{} {}": {}',
-            request.method,
-            request.url.path,
-            exc.detail,
-        )
-    else:
-        logger.error(
-            'Error on "{} {}": {} ({})',
-            request.method,
-            request.url.path,
-            exc.status_code,
-            exc.detail,
-        )
-
+    logger.error(
+        'Error on "%s %s": %s (%s)',
+        request.method,
+        request.url.path,
+        exc.status_code,
+        exc.detail,
+    )
     return await http_exception_handler(request, exc)
 
 @app.head("/")
@@ -96,15 +87,15 @@ def read_root_head():
 async def health_check():
     return {"status": "ok"}
 
-
-# Serve the React app (index.html) for all routes
 if os.path.exists(index_path):
+    # Serve React App
     @app.get("/{catchall:path}")
-    def serve_react_app():
+    def read_index():
+        # otherwise return index files
         return FileResponse(index_path)
+
 else:
-    logger.warning("React build not found, not serving React app. This should only happen for a backend build.")
-    
+    logger.info("React build not found, not serving React app. This should only happen for a backend build.")
 
 if __name__ == "__main__":
     logger.info("Start web app using uvicorn")
