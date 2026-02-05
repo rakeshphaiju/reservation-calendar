@@ -14,3 +14,5 @@ class Reservation(Base):
     quantity = Column(Integer, nullable=False)
     day = Column(String, nullable=False)
     time = Column(String, nullable=False)
+    start_time = Column(String, nullable=True)
+    end_time = Column(String, nullable=True)

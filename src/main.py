@@ -14,6 +14,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.common.logger import logger
 from src.api.reservation_api import router as reservation_api
+
+from src.api.chatbot_api import router as chatbot_api
 from src.common.db import engine, Base
 
 # Load environment variables from .env file
@@ -22,16 +24,24 @@ load_dotenv()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Create all tables on startup
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    
+    # Initialize chatbot service (optional)
+    # You can add chatbot initialization logic here if needed
+    logger.info("Chatbot service initialized")
+    
     yield
+    
     # Cleanup on shutdown (if needed)
     await engine.dispose()
 
 
 app = FastAPI(
-    title="Reservation App",
-    version=os.environ.get("VERSION", "local"),
+    title="Restaurant Reservation System with AI Chatbot",
+    description="A restaurant reservation system with AI-powered chatbot assistant",
+    version=os.environ.get("VERSION", "1.0.0"),
     lifespan=lifespan,
 )
 
@@ -43,12 +53,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include your existing reservation API router
 app.include_router(reservation_api)
+# Include the new chatbot API router
+app.include_router(chatbot_api)
 
 this_path = os.path.dirname(os.path.abspath(__file__))
-
 root_dir = os.path.abspath(os.path.join(this_path, ".."))
-frontend_dir=os.path.join(root_dir, "frontend", "dist")
+frontend_dir = os.path.join(root_dir, "frontend", "dist")
 index_path = os.path.join(frontend_dir, "index.html")
 
 # Serve static assets (JS, CSS, images, etc.)
@@ -79,13 +91,58 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     )
     return await http_exception_handler(request, exc)
 
+
 @app.head("/")
 def read_root_head():
     return Response()
 
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Restaurant Reservation System with AI Chatbot",
+        "version": app.version,
+        "endpoints": {
+            "reservations": "/api/reserve",
+            "chatbot": "/api/chatbot/chat",
+            "availability": "/api/chatbot/availability",
+            "health": "/api/health",
+            "docs": "/docs"
+        }
+    }
+
+
+# Add this endpoint after your existing routes
 @app.get("/api/health")
 async def health_check():
-    return {"status": "ok"}
+    """Health check endpoint"""
+    import asyncio
+    
+    # Check database connection
+    db_status = "healthy"
+    try:
+        async with engine.begin() as conn:
+            await conn.execute("SELECT 1")
+    except Exception as e:
+        db_status = f"unhealthy: {str(e)}"
+    
+    # Check Perplexity API key (if configured)
+    perplexity_status = "not_configured"
+    if os.getenv("PERPLEXITY_API_KEY"):
+        if os.getenv("PERPLEXITY_API_KEY").startswith("pplx-"):
+            perplexity_status = "configured"
+        else:
+            perplexity_status = "invalid_format"
+    
+    return {
+        "status": "ok",
+        "timestamp": asyncio.get_event_loop().time(),
+        "services": {
+            "database": db_status,
+            "perplexity_api": perplexity_status,
+            "chatbot": "active" if perplexity_status == "configured" else "inactive"
+        }
+    }
 
 if os.path.exists(index_path):
     # Serve React App
@@ -93,10 +150,26 @@ if os.path.exists(index_path):
     def read_index():
         # otherwise return index files
         return FileResponse(index_path)
-
 else:
     logger.info("React build not found, not serving React app. This should only happen for a backend build.")
 
+
 if __name__ == "__main__":
-    logger.info("Start web app using uvicorn")
+    logger.info("Starting Restaurant Reservation System with AI Chatbot")
+    logger.info(f"Version: {app.version}")
+    
+    # Check for required environment variables
+    required_env_vars = ["DATABASE_URL"]
+    missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+    
+    if missing_vars:
+        logger.warning(f"Missing environment variables: {', '.join(missing_vars)}")
+        logger.warning("Some features may not work correctly")
+    
+    # Check if Perplexity API key is configured
+    if not os.getenv("PERPLEXITY_API_KEY"):
+        logger.warning("PERPLEXITY_API_KEY not configured. Chatbot features will be limited.")
+    else:
+        logger.info("Perplexity API key configured. Chatbot is active.")
+    
     uvicorn.run(app, host="0.0.0.0", port=8000)

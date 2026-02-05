@@ -7,29 +7,9 @@ import uuid
 
 from src.common.db import get_db
 from src.models.reservation import Reservation
-
+from src.schemas.reservation import ReservationCreate, ReservationResponse
 router = APIRouter()
 
-
-class ReservationCreate(BaseModel):
-    name: str
-    address: str
-    phone_number: str
-    food: str
-    quantity: int
-    day: str
-    time: str
-
-
-class ReservationResponse(BaseModel):
-    id: uuid.UUID
-    name: str
-    address: str
-    phone_number: str
-    food: str
-    quantity: int
-    day: str
-    time: str
 
 
 @router.post("/api/reserve/add", response_model=ReservationResponse)
