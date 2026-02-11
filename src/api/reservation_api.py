@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List
@@ -15,19 +15,17 @@ class ReservationCreate(BaseModel):
     name: str
     address: str
     phone_number: str
-    food: str
-    quantity: int
     day: str
     time: str
 
 
 class ReservationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True) 
+
     id: uuid.UUID
     name: str
     address: str
     phone_number: str
-    food: str
-    quantity: int
     day: str
     time: str
 
@@ -53,7 +51,7 @@ async def get_all_reservations(db: AsyncSession = Depends(get_db)):
 
 # Get a single reservation by ID
 @router.get("/api/reserve/{reserve_id}", response_model=ReservationResponse)
-async def get_reservation(reserve_id, db: AsyncSession = Depends(get_db)):
+async def get_reservation(reserve_id: uuid.UUID , db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id == reserve_id))
     reservation = result.scalars().first()
     if not reservation:
@@ -62,7 +60,7 @@ async def get_reservation(reserve_id, db: AsyncSession = Depends(get_db)):
 
 
 # Delete a reservation by ID
-@router.delete("/api/delete/{reserve_id}")
+@router.delete("/api/reserve/{reserve_id}")
 async def delete_reservation(reserve_id, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id == reserve_id))
     reservation = result.scalars().first()

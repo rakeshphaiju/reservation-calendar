@@ -10,7 +10,5 @@ class Reservation(Base):
     name = Column(String, nullable=False)
     address = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
-    food = Column(String, nullable=False)
-    quantity = Column(Integer, nullable=False)
     day = Column(String, nullable=False)
     time = Column(String, nullable=False)

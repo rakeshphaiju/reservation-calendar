@@ -25,7 +25,7 @@ const ReservationList = () => {
 
   const deleteUser = async (id) => {
     try {
-      await axios.delete(`/api/delete/${id}`);
+      await axios.delete(`/api/reserve/${id}`);
       getUsers();
     } catch (err) {
       console.error('Error deleting user:', err);
@@ -40,8 +40,6 @@ const ReservationList = () => {
             <th>Full name</th>
             <th>Address</th>
             <th>Phone number</th>
-            <th>Food option</th>
-            <th>Quantity</th>
             <th>Date</th>
             <th>Time</th>
             <th>Action</th>
@@ -53,8 +51,6 @@ const ReservationList = () => {
               <td>{user.name}</td>
               <td>{user.address}</td>
               <td>{user.phone_number}</td>
-              <td>{user.food}</td>
-              <td>{user.quantity}</td>
               <td>{user.day}</td>
               <td>{user.time}</td>
               <td>

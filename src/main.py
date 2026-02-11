@@ -20,13 +20,31 @@ from src.common.db import engine, Base
 load_dotenv()
 
 
+AUTO_CREATE_TABLES = os.getenv("AUTO_CREATE_TABLES", "false").lower() == "true"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    """
+    Avoid hard-failing app startup if DB is unavailable unless explicitly enabled.
+    FastAPI lifespan uses an asynccontextmanager + yield pattern. [web:275]
+    """
+    if AUTO_CREATE_TABLES:
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("DB tables ensured (AUTO_CREATE_TABLES=true).")
+        except Exception as e:
+            # Don't crash the whole service on Render if DB isn't ready yet
+            logger.exception("DB init failed during startup: %s", e)
+
     yield
-    # Cleanup on shutdown (if needed)
-    await engine.dispose()
+
+    # Clean shutdown
+    try:
+        await engine.dispose()
+    except Exception:
+        pass
 
 
 app = FastAPI(

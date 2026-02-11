@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import './reserve.css';
+import axios from 'axios';
 import moment from 'moment';
+import './reserve.css';
 import Modal from './Modal';
 import Input from './form/Input';
-import Select from './form/Select';
 
 const Reserve = () => {
   const getUpcomingDates = () => {
@@ -18,12 +18,9 @@ const Reserve = () => {
   const [user, setUser] = useState({
     name: '',
     address: '',
-    phone_number: '',
-    food: '',
-    quantity: '',
+    phone_number: ''
   });
   const [errors, setErrors] = useState({});
-  const [foodOptions] = useState(['Option 1', 'Option 2']);
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({ day: '', time: '' });
   const [reservedTime, setReservedTime] = useState({
@@ -35,10 +32,9 @@ const Reserve = () => {
   const times = ['17:00-17:30', '17:30-18:00', '18:00-18:30', '18:30-19:00', '19:00-19:30', '19:30-20:00', '20:00-20:30'];
 
   useEffect(() => {
-    fetch('/api/reserve')
-      .then((res) => res.json())
-      .then((data) => setUsers(data))
-      .catch((err) => console.error(err));
+    axios.get('/api/reserve')
+      .then((res) => setUsers(res.data))
+      .catch((err) => console.error('Error fetching reservations:', err));
   }, []);
 
   const validate = () => {
@@ -46,8 +42,6 @@ const Reserve = () => {
     if (!user.name) newErrors.name = 'Invalid name!!';
     if (!user.address) newErrors.address = 'Invalid Address!!';
     if (!/^\d{10}$/.test(user.phone_number)) newErrors.phone_number = 'Invalid Phone number!!';
-    if (!user.food) newErrors.food = 'Invalid food option!!';
-    if (user.quantity < 1) newErrors.quantity = 'Invalid quantity!!';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -66,22 +60,23 @@ const Reserve = () => {
     e.preventDefault();
     if (!validate()) return;
 
-    fetch('/api/reserve/add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...user, ...modalData }),
-    })
-      .then((res) => res.json())
-      .then(() => {
+    axios.post('/api/reserve/add', { ...user, ...modalData })
+      .then((res) => {
         setUsers([...users, { ...user, ...modalData }]);
         setReservedTime((prev) => ({
           ...prev,
           [modalData.day]: [...prev[modalData.day], modalData.time],
         }));
         setShowModal(false);
-        setUser({ name: '', address: '', phone_number: '', food: '', quantity: '' });
+        setUser({ name: '', address: '', phone_number: '' });
       })
-      .catch((err) => console.error('Error:', err));
+      .catch((err) => {
+        console.error('Error creating reservation:', err);
+        // Optional: show error to user
+        if (err.response) {
+          console.error('Server error:', err.response.data);
+        }
+      });
   };
 
   return (
@@ -123,10 +118,6 @@ const Reserve = () => {
             <div style={{ color: 'red', fontSize: 12 }}>{errors.address}</div>
             <Input title={'Phone number '} name='phone_number' value={user.phone_number} placeholder='Enter your phone number' handlechange={handleInput} />
             <div style={{ color: 'red', fontSize: 12 }}>{errors.phone_number}</div>
-            <Select title={'Option '} name='food' options={foodOptions} value={user.food} placeholder='Select Option' handlechange={handleInput} />
-            <div style={{ color: 'red', fontSize: 12 }}>{errors.food}</div>
-            <Input title={'Quantity '} name='quantity' value={user.quantity} placeholder='Enter quantity' handlechange={handleInput} required />
-            <div style={{ color: 'red', fontSize: 12 }}>{errors.quantity}</div>
             <button onClick={handleConfirmReservation}>Reserve</button>
           </form>
         </Modal>
