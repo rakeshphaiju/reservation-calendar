@@ -20,4 +20,4 @@ export default function App() {
 }
 
 // Dummy Page Components
-const Home = () => <h1 className="text-2xl">🏠 Home Page</h1>;
+const Home = () => <h1 className="text-2xl">🏠 Home Page</h1>
