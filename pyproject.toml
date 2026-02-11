@@ -1,20 +1,27 @@
 [tool.poetry]
 name = "backend"
 version = "0.1.0"
-description = ""
-authors = []
+description = "Reservation System with AI Chatbot"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.11,<3.15"
 fastapi = "^0.115.8"
-uvicorn = {version = "0.15.0", extras = ["standard"]}
-pytest = "^8.3.4"
-aiohttp = "3.10.11"
+uvicorn = {version = "0.20.0", extras = ["standard"]}
+# Database and ORM
 sqlalchemy = "1.4.31"
-psycopg2-binary = "2.9.3"
 asyncpg = "^0.30.0"
-black = "^22.10.0"
+# AI Chatbot dependencies
+httpx = "^0.28.0"  # For making async HTTP calls to Perplexity API
+pydantic = "^2.10.0"  # For data validation and settings management
+python-dotenv = "^1.0.0"  # For loading environment variables (e.g., API keys)
+# Other utilities
+aiohttp = "3.10.11"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+black = "^22.10.0"
 
 [build-system]
 requires = ["poetry-core"]
