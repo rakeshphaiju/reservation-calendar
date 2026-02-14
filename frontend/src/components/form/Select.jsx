@@ -3,14 +3,19 @@ import PropTypes from 'prop-types';
 
 const Select = (props) => {
   return (
-    <div className="form-group">
-      <label htmlFor={props.name}> {props.title} </label>
+    <div className="space-y-1.5">
+      <label
+        htmlFor={props.name}
+        className="block text-sm font-medium text-slate-700"
+      >
+        {props.title}
+      </label>
       <select
         id={props.name}
         name={props.name}
         value={props.value}
         onChange={props.handlechange}
-        className="form-control"
+        className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
       >
         <option value="" disabled>
           {props.placeholder}
@@ -40,7 +45,7 @@ Select.propTypes = {
         value: PropTypes.string.isRequired,
         label: PropTypes.string.isRequired,
       }),
-    ]),
+    ])
   ).isRequired,
 };
 

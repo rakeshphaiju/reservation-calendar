@@ -9,41 +9,43 @@ const Input = (props) => {
     value,
     handlechange,
     placeholder,
-    ...otherProps 
+    ...otherProps
   } = props;
 
   return (
-    <div className="form-group">
-      <label htmlFor={name} className="form-label">
+    <div className="space-y-1.5">
+      <label
+        htmlFor={name}
+        className="block text-sm font-medium text-slate-700"
+      >
         {title}
       </label>
       <input
-        className="form-control"
+        className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         id={name}
         name={name}
-        type={inputtype}
+        type={inputtype || 'text'}
         value={value}
-        onChange={handlechange} // Use handleChange here
+        onChange={handlechange}
         placeholder={placeholder}
-        {...otherProps} // Spread any additional props
+        {...otherProps}
       />
     </div>
   );
 };
 
-// Define prop types for validation
 Input.propTypes = {
   name: PropTypes.string.isRequired,
   title: PropTypes.string.isRequired,
-  inputtype: PropTypes.string.isRequired,
+  inputtype: PropTypes.string,
   value: PropTypes.string.isRequired,
   handlechange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
 };
 
-// Default props
 Input.defaultProps = {
   placeholder: '',
+  inputtype: 'text',
 };
 
 export default Input;

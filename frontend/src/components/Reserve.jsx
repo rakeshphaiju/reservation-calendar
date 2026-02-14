@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import moment from 'moment';
-import './reserve.css';
 import Modal from './Modal';
 import Input from './form/Input';
 
 const Reserve = () => {
   const getUpcomingDates = () => {
-    return ["Friday", "Saturday", "Sunday"].map((day) =>
-      moment().isoWeekday(day).format("YYYY-MM-DD")
+    return ['Friday', 'Saturday', 'Sunday'].map((day) =>
+      moment().isoWeekday(day).format('YYYY-MM-DD')
     );
   };
 
@@ -18,7 +17,7 @@ const Reserve = () => {
   const [user, setUser] = useState({
     name: '',
     address: '',
-    phone_number: ''
+    phone_number: '',
   });
   const [errors, setErrors] = useState({});
   const [showModal, setShowModal] = useState(false);
@@ -26,13 +25,22 @@ const Reserve = () => {
   const [reservedTime, setReservedTime] = useState({
     [dates[0]]: [],
     [dates[1]]: [],
-    [dates[2]]: []
+    [dates[2]]: [],
   });
 
-  const times = ['17:00-17:30', '17:30-18:00', '18:00-18:30', '18:30-19:00', '19:00-19:30', '19:30-20:00', '20:00-20:30'];
+  const times = [
+    '17:00-17:30',
+    '17:30-18:00',
+    '18:00-18:30',
+    '18:30-19:00',
+    '19:00-19:30',
+    '19:30-20:00',
+    '20:00-20:30',
+  ];
 
   useEffect(() => {
-    axios.get('/api/reserve')
+    axios
+      .get('/api/reserve')
       .then((res) => setUsers(res.data))
       .catch((err) => console.error('Error fetching reservations:', err));
   }, []);
@@ -41,7 +49,8 @@ const Reserve = () => {
     let newErrors = {};
     if (!user.name) newErrors.name = 'Invalid name!!';
     if (!user.address) newErrors.address = 'Invalid Address!!';
-    if (!/^\d{10}$/.test(user.phone_number)) newErrors.phone_number = 'Invalid Phone number!!';
+    if (!/^\d{10}$/.test(user.phone_number))
+      newErrors.phone_number = 'Invalid Phone number!!';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -60,7 +69,8 @@ const Reserve = () => {
     e.preventDefault();
     if (!validate()) return;
 
-    axios.post('/api/reserve/add', { ...user, ...modalData })
+    axios
+      .post('/api/reserve/add', { ...user, ...modalData })
       .then((res) => {
         setUsers([...users, { ...user, ...modalData }]);
         setReservedTime((prev) => ({
@@ -72,7 +82,6 @@ const Reserve = () => {
       })
       .catch((err) => {
         console.error('Error creating reservation:', err);
-        // Optional: show error to user
         if (err.response) {
           console.error('Server error:', err.response.data);
         }
@@ -81,44 +90,122 @@ const Reserve = () => {
 
   return (
     <div>
-      <h3>Would you like to make any reservations on the following dates?</h3>
-      <table>
-        <thead>
-          <tr>
-            <th></th>
-            {times.map((time, i) => <th key={i}>{time}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {dates.map((day, index) => (
-            <tr key={index}>
-              <th>{day}</th>
-              {times.map((time) => {
-                const isReserved = reservedTime[day].includes(time) ||
-                  users.some((data) => data.day === day && data.time === time);
-                return (
-                  <td key={`${day}-${time}`} style={{ backgroundColor: isReserved ? 'red' : '#fff' }}>
-                    <button disabled={isReserved} onClick={() => showForm(day, time)}>
-                      {isReserved ? 'Booked' : 'Book'}
-                    </button>
-                  </td>
-                );
-              })}
+      <h2 className="text-2xl font-bold text-slate-800 text-center mb-8">
+        Would you like to make a reservation on the following dates?
+      </h2>
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                Date
+              </th>
+              {times.map((time, i) => (
+                <th
+                  key={i}
+                  className="px-3 py-3 text-center text-sm font-semibold text-slate-700 whitespace-nowrap"
+                >
+                  {time}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {dates.map((day, index) => (
+              <tr
+                key={index}
+                className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
+              >
+                <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap">
+                  {day}
+                </th>
+                {times.map((time) => {
+                  const isReserved =
+                    reservedTime[day].includes(time) ||
+                    users.some(
+                      (data) => data.day === day && data.time === time
+                    );
+                  return (
+                    <td
+                      key={`${day}-${time}`}
+                      className={`px-2 py-2 align-middle ${
+                        isReserved ? 'bg-red-50' : 'bg-white'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        disabled={isReserved}
+                        onClick={() => showForm(day, time)}
+                        className={`w-full h-20 rounded-lg text-sm font-medium transition-all ${
+                          isReserved
+                            ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                            : 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98]'
+                        }`}
+                      >
+                        {isReserved ? 'Booked' : 'Book'}
+                      </button>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {showModal && (
         <Modal show={showModal} close={() => setShowModal(false)}>
-          <p>Would you like to reserve {modalData.time} on {modalData.day}?</p>
-          <form>
-            <Input title={'Full Name '} name='name' value={user.name} placeholder='Enter your name' handlechange={handleInput} required />
-            <div style={{ color: 'red', fontSize: 12 }}>{errors.name}</div>
-            <Input title={'Address '} name='address' value={user.address} placeholder='Enter your address' handlechange={handleInput} />
-            <div style={{ color: 'red', fontSize: 12 }}>{errors.address}</div>
-            <Input title={'Phone number '} name='phone_number' value={user.phone_number} placeholder='Enter your phone number' handlechange={handleInput} />
-            <div style={{ color: 'red', fontSize: 12 }}>{errors.phone_number}</div>
-            <button onClick={handleConfirmReservation}>Reserve</button>
+          <p className="text-slate-600 mb-6">
+            Reserve <span className="font-semibold text-slate-800">{modalData.time}</span> on{' '}
+            <span className="font-semibold text-slate-800">{modalData.day}</span>?
+          </p>
+          <form className="space-y-4 text-left">
+            <Input
+              title="Full Name"
+              name="name"
+              value={user.name}
+              placeholder="Enter your name"
+              handlechange={handleInput}
+              required
+            />
+            <div className="text-red-500 text-sm min-h-[1.25rem]">
+              {errors.name}
+            </div>
+            <Input
+              title="Address"
+              name="address"
+              value={user.address}
+              placeholder="Enter your address"
+              handlechange={handleInput}
+            />
+            <div className="text-red-500 text-sm min-h-[1.25rem]">
+              {errors.address}
+            </div>
+            <Input
+              title="Phone number"
+              name="phone_number"
+              value={user.phone_number}
+              placeholder="Enter your phone number (10 digits)"
+              handlechange={handleInput}
+            />
+            <div className="text-red-500 text-sm min-h-[1.25rem]">
+              {errors.phone_number}
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReservation}
+                className="flex-1 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors"
+              >
+                Reserve
+              </button>
+            </div>
           </form>
         </Modal>
       )}
