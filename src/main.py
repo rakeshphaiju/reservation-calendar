@@ -88,6 +88,14 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    # SPA fallback: for 404 on GET to non-API paths, serve index.html so client-side routing works
+    if (
+        exc.status_code == 404
+        and request.method == "GET"
+        and not request.url.path.startswith("/api")
+        and os.path.exists(index_path)
+    ):
+        return FileResponse(index_path, media_type="text/html")
     logger.error(
         'Error on "%s %s": %s (%s)',
         request.method,
