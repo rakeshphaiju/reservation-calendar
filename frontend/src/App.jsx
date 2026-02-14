@@ -30,7 +30,7 @@ const Home = () => (
     <div className="mt-10 flex flex-wrap justify-center gap-4">
       <Link
         to="/reserve"
-        className="inline-flex items-center rounded-xl bg-emerald-600 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-emerald-500 transition-colors"
+        className="inline-flex items-center rounded-xl bg-emerald-200 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-emerald-500 transition-colors"
       >
         Make a reservation
       </Link>

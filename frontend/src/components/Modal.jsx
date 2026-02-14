@@ -1,33 +1,39 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import './modal.css';
 
 const Modal = (props) => {
-  let modalData = null;
+  if (!props.show) return null;
 
-  if (props.show) {
-    modalData = (
-      <div className="modal-wrapper">
-        <div className="modal-body">
-          <div className="modal-header">
-            <h3>Enter ur info</h3>
-            <span className="close-modal-btn" onClick={props.close}>
-              ×
-            </span>
-          </div>
-
-          <div>{props.children}</div>
-          <div className="modal-footer">
-            <button className="btn-cancel" onClick={props.close}>
-              CLOSE
-            </button>
-          </div>
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
+      onClick={props.close}
+      onKeyDown={(e) => e.key === 'Escape' && props.close()}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+    >
+      <div
+        className="relative w-full max-w-md rounded-2xl bg-white shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4 rounded-t-2xl">
+          <h3 id="modal-title" className="text-lg font-semibold text-slate-800">
+            Enter your info
+          </h3>
+          <button
+            type="button"
+            onClick={props.close}
+            className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors"
+            aria-label="Close"
+          >
+            <span className="text-2xl leading-none">&times;</span>
+          </button>
         </div>
+        <div className="px-6 py-6">{props.children}</div>
       </div>
-    );
-  }
-
-  return <React.Fragment>{modalData}</React.Fragment>;
+    </div>
+  );
 };
 
 Modal.propTypes = {

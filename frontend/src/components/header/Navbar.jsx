@@ -6,7 +6,7 @@ export default function Navbar() {
 
   const baseLinkClass =
     'px-4 py-2 rounded-lg font-medium transition-colors';
-  const activeClass = 'bg-emerald-600 text-white';
+  const activeClass = 'bg-emerald-200 text-blue';
   const inactiveClass = 'text-slate-200 hover:bg-white/10 hover:text-white';
 
   const isActive = (path) => location.pathname === path;

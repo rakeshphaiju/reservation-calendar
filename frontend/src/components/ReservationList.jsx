@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import './reservationlist.css';
 import axios from 'axios';
 
 const ReservationList = () => {
@@ -33,35 +32,78 @@ const ReservationList = () => {
   };
 
   return (
-    <div className="App">
-      <table>
-        <thead>
-          <tr>
-            <th>Full name</th>
-            <th>Address</th>
-            <th>Phone number</th>
-            <th>Date</th>
-            <th>Time</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.address}</td>
-              <td>{user.phone_number}</td>
-              <td>{user.day}</td>
-              <td>{user.time}</td>
-              <td>
-                <button className="del-button" onClick={() => deleteUser(user.id)}>
-                  Delete
-                </button>
-              </td>
+    <div className="w-full">
+      <h2 className="text-2xl font-bold text-slate-800 mb-6">Reservation List</h2>
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="min-w-full border-collapse">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                Full name
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                Address
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                Phone number
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                Date
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                Time
+              </th>
+              <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">
+                Action
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {users.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-12 text-center text-slate-500"
+                >
+                  No reservations yet.
+                </td>
+              </tr>
+            ) : (
+              users.map((user) => (
+                <tr
+                  key={user.id}
+                  className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
+                >
+                  <td className="px-4 py-3 text-sm text-slate-800">
+                    {user.name}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {user.address}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {user.phone_number}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {user.day}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {user.time}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() => deleteUser(user.id)}
+                      className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
