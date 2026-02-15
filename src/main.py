@@ -1,5 +1,6 @@
 import os
 import uvicorn
+import time
 from http import HTTPStatus as hs
 from dotenv import load_dotenv
 
@@ -15,6 +16,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from src.common.logger import logger
 from src.api.reservation_api import router as reservation_api
 from src.common.db import engine, Base
+from src.scheduler import initialize_scheduler
 
 # Load environment variables from .env file
 load_dotenv()
@@ -37,10 +39,23 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             # Don't crash the whole service on Render if DB isn't ready yet
             logger.exception("DB init failed during startup: %s", e)
+        
+    # Start the scheduler
+    try:
+        await initialize_scheduler()
+        logger.info("✅ Scheduler started successfully")
+    except Exception as e:
+        logger.exception(f"❌ Failed to start scheduler: {e}")
 
     yield
 
     # Clean shutdown
+    try:
+        scheduler.shutdown()
+        logger.info("Scheduler shut down gracefully")
+    except Exception:
+        pass
+
     try:
         await engine.dispose()
     except Exception:
