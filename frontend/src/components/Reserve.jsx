@@ -6,12 +6,31 @@ import Input from './form/Input';
 
 const Reserve = () => {
   const getUpcomingDates = () => {
-    return ['Friday', 'Saturday', 'Sunday'].map((day) =>
-      moment().isoWeekday(day).format('YYYY-MM-DD')
-    );
+    const today = moment().startOf('day');
+    const upcomingDates = [];
+
+    // Look ahead 2 weeks
+    for (let week = 0; week < 2; week++) {
+      ['Friday', 'Saturday', 'Sunday'].forEach((day) => {
+        const date = moment().add(week, 'weeks').isoWeekday(day);
+
+        // Only include future dates (not today if you want to exclude today)
+        // Use .isAfter for strictly future, or .isSameOrAfter to include today
+        if (date.isAfter(today, 'day')) {
+          upcomingDates.push(date.format('YYYY-MM-DD'));
+        }
+      });
+    }
+
+    // Sort chronologically and remove any duplicates
+    return [...new Set(upcomingDates)].sort();
   };
 
   const dates = getUpcomingDates();
+
+  // Log to verify no past dates
+  console.log('Available dates:', dates);
+  console.log('Today is:', moment().format('YYYY-MM-DD'));
 
   const [users, setUsers] = useState([]);
   const [user, setUser] = useState({
@@ -22,11 +41,11 @@ const Reserve = () => {
   const [errors, setErrors] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({ day: '', time: '' });
-  const [reservedTime, setReservedTime] = useState({
-    [dates[0]]: [],
-    [dates[1]]: [],
-    [dates[2]]: [],
-  });
+
+  // Initialize reservedTime with all dates
+  const [reservedTime, setReservedTime] = useState(
+    Object.fromEntries(dates.map(date => [date, []]))
+  );
 
   const times = [
     '17:00-17:30',
@@ -41,9 +60,23 @@ const Reserve = () => {
   useEffect(() => {
     axios
       .get('/api/reserve')
-      .then((res) => setUsers(res.data))
+      .then((res) => {
+        setUsers(res.data);
+
+        // Update reserved times based on fetched data
+        const reserved = {};
+        dates.forEach(date => reserved[date] = []);
+
+        res.data.forEach(reservation => {
+          if (reserved[reservation.day]) {
+            reserved[reservation.day].push(reservation.time);
+          }
+        });
+
+        setReservedTime(reserved);
+      })
       .catch((err) => console.error('Error fetching reservations:', err));
-  }, []);
+  }, []); // Empty dependency array - runs once on mount
 
   const validate = () => {
     let newErrors = {};
@@ -88,6 +121,20 @@ const Reserve = () => {
       });
   };
 
+  // Don't render if no dates available
+  if (dates.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-slate-800 mb-4">
+          No upcoming reservations available
+        </h2>
+        <p className="text-slate-600">
+          Please check back later for available dates.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-slate-800 text-center mb-8">
@@ -117,30 +164,28 @@ const Reserve = () => {
                 className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
               >
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap">
-                  {day}
+                  {moment(day).format('dddd, MMM D')}
                 </th>
                 {times.map((time) => {
                   const isReserved =
-                    reservedTime[day].includes(time) ||
+                    (reservedTime[day] || []).includes(time) ||
                     users.some(
                       (data) => data.day === day && data.time === time
                     );
                   return (
                     <td
                       key={`${day}-${time}`}
-                      className={`px-2 py-2 align-middle ${
-                        isReserved ? 'bg-red-50' : 'bg-white'
-                      }`}
+                      className={`px-2 py-2 align-middle ${isReserved ? 'bg-red-50' : 'bg-white'
+                        }`}
                     >
                       <button
                         type="button"
                         disabled={isReserved}
                         onClick={() => showForm(day, time)}
-                        className={`w-full h-20 rounded-lg text-sm font-medium transition-all ${
-                          isReserved
-                            ? 'cursor-not-allowed bg-slate-100 text-slate-400'
-                            : 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98]'
-                        }`}
+                        className={`w-full h-20 rounded-lg text-sm font-medium transition-all ${isReserved
+                          ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98]'
+                          }`}
                       >
                         {isReserved ? 'Booked' : 'Book'}
                       </button>
@@ -156,7 +201,9 @@ const Reserve = () => {
         <Modal show={showModal} close={() => setShowModal(false)}>
           <p className="text-slate-600 mb-6">
             Reserve <span className="font-semibold text-slate-800">{modalData.time}</span> on{' '}
-            <span className="font-semibold text-slate-800">{modalData.day}</span>?
+            <span className="font-semibold text-slate-800">
+              {moment(modalData.day).format('dddd, MMM D')}
+            </span>?
           </p>
           <form className="space-y-4 text-left">
             <Input
