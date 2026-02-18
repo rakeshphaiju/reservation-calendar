@@ -16,7 +16,7 @@ def _normalize_database_url(url: str) -> str:
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    #DATABASE_URL = "postgresql+asyncpg://myuser:mypassword@localhost:5432/reservation_db"
+    # DATABASE_URL = "postgresql+asyncpg://myuser:mypassword@localhost:5432/reservation_db"
     raise RuntimeError("DATABASE_URL is not set")
 
 DATABASE_URL = _normalize_database_url(DATABASE_URL)
@@ -35,6 +35,7 @@ async def create_tables():
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as db:
         yield db
+
 
 @asynccontextmanager
 async def get_db_context() -> AsyncGenerator[AsyncSession, None]:

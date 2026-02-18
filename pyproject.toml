@@ -23,6 +23,7 @@ apscheduler = "^3.11.2"
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
 black = "^22.10.0"
+ruff = "^0.15.1"
 
 [build-system]
 requires = ["poetry-core"]

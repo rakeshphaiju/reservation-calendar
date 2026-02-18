@@ -1,6 +1,5 @@
 import os
 import uvicorn
-import time
 from http import HTTPStatus as hs
 from dotenv import load_dotenv
 
@@ -39,7 +38,7 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             # Don't crash the whole service on Render if DB isn't ready yet
             logger.exception("DB init failed during startup: %s", e)
-        
+
     # Start the scheduler
     try:
         await initialize_scheduler()
@@ -51,7 +50,7 @@ async def lifespan(app: FastAPI):
 
     # Clean shutdown
     try:
-        scheduler.shutdown()
+        initialize_scheduler.shutdown()
         logger.info("Scheduler shut down gracefully")
     except Exception:
         pass
@@ -81,12 +80,16 @@ app.include_router(reservation_api)
 this_path = os.path.dirname(os.path.abspath(__file__))
 
 root_dir = os.path.abspath(os.path.join(this_path, ".."))
-frontend_dir=os.path.join(root_dir, "frontend", "dist")
+frontend_dir = os.path.join(root_dir, "frontend", "dist")
 index_path = os.path.join(frontend_dir, "index.html")
 
 # Serve static assets (JS, CSS, images, etc.)
 if os.path.exists(frontend_dir):
-    app.mount("/", StaticFiles(directory=frontend_dir, html=True, check_dir=False), name="frontend")
+    app.mount(
+        "/",
+        StaticFiles(directory=frontend_dir, html=True, check_dir=False),
+        name="frontend",
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -120,13 +123,16 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     )
     return await http_exception_handler(request, exc)
 
+
 @app.head("/")
 def read_root_head():
     return Response()
 
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
+
 
 if os.path.exists(index_path):
     # Serve React App
@@ -136,7 +142,9 @@ if os.path.exists(index_path):
         return FileResponse(index_path)
 
 else:
-    logger.info("React build not found, not serving React app. This should only happen for a backend build.")
+    logger.info(
+        "React build not found, not serving React app. This should only happen for a backend build."
+    )
 
 if __name__ == "__main__":
     logger.info("Start web app using uvicorn")

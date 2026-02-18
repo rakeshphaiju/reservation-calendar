@@ -20,7 +20,7 @@ class ReservationCreate(BaseModel):
 
 
 class ReservationResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True) 
+    model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     name: str
@@ -51,7 +51,7 @@ async def get_all_reservations(db: AsyncSession = Depends(get_db)):
 
 # Get a single reservation by ID
 @router.get("/api/reserve/{reserve_id}", response_model=ReservationResponse)
-async def get_reservation(reserve_id: uuid.UUID , db: AsyncSession = Depends(get_db)):
+async def get_reservation(reserve_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id == reserve_id))
     reservation = result.scalars().first()
     if not reservation:
