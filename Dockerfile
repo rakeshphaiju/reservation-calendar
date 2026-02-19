@@ -1,5 +1,5 @@
 # ---- Frontend Stage ----
-FROM node:20 as frontend-build
+FROM node:20 AS frontend-build
 WORKDIR /app/frontend
 
 COPY frontend/package.json frontend/yarn.lock ./
@@ -9,7 +9,7 @@ COPY frontend/ ./
 RUN yarn run build
 
 # ---- Backend Stage ----
-FROM python:3.11-slim as backend-build
+FROM python:3.11-slim AS backend-build
 
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
@@ -27,16 +27,13 @@ COPY ./pyproject.toml ./poetry.lock ./
 RUN poetry install --no-root --no-interaction --no-ansi
 
 # ---- Fullstack Image ----
-FROM python:3.11-slim as fullstack-image
+FROM python:3.11-slim AS fullstack-image
 ARG VERSION=local-dev
 
 COPY --from=backend-build /opt/venv /opt/venv
 COPY --from=frontend-build /app/frontend/dist /opt/app/frontend/dist
 
-ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV VERSION ${VERSION}
+ENV PATH="/opt/venv/bin:$PATH" PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 VERSION=${VERSION}
 RUN echo $VERSION
 
 WORKDIR /opt/app
@@ -46,6 +43,4 @@ ENV PYTHONPATH=/opt/app
 
 EXPOSE 8000  
 
-#CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
-CMD uvicorn src.main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
