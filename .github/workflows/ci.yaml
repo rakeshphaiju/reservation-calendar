@@ -50,4 +50,11 @@ jobs:
         run: |
           source .venv/bin/activate && \
           poetry run black --check .
+  
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build image
+        run: docker build -t reservation-calender .
 
