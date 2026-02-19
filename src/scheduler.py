@@ -11,7 +11,7 @@ async def initialize_scheduler():
 
     scheduler.add_job(
         cleanup_past_reservations,
-        CronTrigger(hour=12, minute=0),
+        CronTrigger(hour=16, minute=25),
         id="cleanup_past_reservations",
         replace_existing=True,
         misfire_grace_time=3600,
