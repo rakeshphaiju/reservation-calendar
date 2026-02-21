@@ -3,7 +3,9 @@ from src.common.logger import logger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-scheduler = AsyncIOScheduler()
+FINLAND_TIMEZONE = "Europe/Helsinki"
+
+scheduler = AsyncIOScheduler(timezone=FINLAND_TIMEZONE)
 
 
 async def initialize_scheduler():
@@ -11,7 +13,7 @@ async def initialize_scheduler():
 
     scheduler.add_job(
         cleanup_past_reservations,
-        CronTrigger(hour=16, minute=25),
+        CronTrigger(hour=15, minute=30, timezone=FINLAND_TIMEZONE),
         id="cleanup_past_reservations",
         replace_existing=True,
         misfire_grace_time=3600,
