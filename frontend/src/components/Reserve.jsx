@@ -6,9 +6,24 @@ import Input from './form/Input';
 
 const Reserve = () => {
   const getUpcomingDates = () => {
-    return ['Friday', 'Saturday', 'Sunday'].map((day) =>
-      moment().isoWeekday(day).format('YYYY-MM-DD')
-    );
+    const today = moment();
+
+    return ['Friday', 'Saturday', 'Sunday'].map((day) => {
+      const targetDay = moment().day(day).day();
+      const currentDay = today.day();
+
+      let daysToAdd = targetDay - currentDay;
+
+      if (daysToAdd < 0) {
+        daysToAdd += 7;
+      }
+
+      if (daysToAdd === 0) {
+        daysToAdd = 7;
+      }
+
+      return today.clone().add(daysToAdd, 'days').format('YYYY-MM-DD');
+    });
   };
 
   const dates = getUpcomingDates();
@@ -66,7 +81,7 @@ const Reserve = () => {
   };
 
   const isTimeReserved = (day, time) =>
-    reservedTime[day].includes(time) ||
+    reservedTime[day]?.includes(time) ||
     users.some((data) => data.day === day && data.time === time);
 
   const handleConfirmReservation = (e) => {
@@ -79,7 +94,7 @@ const Reserve = () => {
         setUsers([...users, { ...user, ...modalData }]);
         setReservedTime((prev) => ({
           ...prev,
-          [modalData.day]: [...prev[modalData.day], modalData.time],
+          [modalData.day]: [...(prev[modalData.day] || []), modalData.time],
         }));
         setShowModal(false);
         setUser({ name: '', address: '', phone_number: '' });
@@ -104,7 +119,7 @@ const Reserve = () => {
             className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
           >
             <h3 className="mb-3 text-base font-semibold text-slate-800">
-              {day}
+              {moment(day).format('dddd, MMMM D')}
             </h3>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {times.map((time) => {
@@ -155,7 +170,7 @@ const Reserve = () => {
                 className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
               >
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap">
-                  {day}
+                  {moment(day).format('dddd, MMMM D')}
                 </th>
                 {times.map((time) => {
                   const isReserved = isTimeReserved(day, time);
@@ -188,7 +203,7 @@ const Reserve = () => {
         <Modal show={showModal} close={() => setShowModal(false)}>
           <p className="text-slate-600 mb-6">
             Reserve <span className="font-semibold text-slate-800">{modalData.time}</span> on{' '}
-            <span className="font-semibold text-slate-800">{modalData.day}</span>?
+            <span className="font-semibold text-slate-800">{moment(modalData.day).format('dddd, MMMM D')}</span>?
           </p>
           <form className="space-y-4 text-left">
             <Input
