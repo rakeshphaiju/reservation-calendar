@@ -77,6 +77,17 @@ app.add_middleware(
 
 app.include_router(reservation_api)
 
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok"}
+
+
+@app.head("/")
+def read_root_head():
+    return Response()
+
+
 this_path = os.path.dirname(os.path.abspath(__file__))
 
 root_dir = os.path.abspath(os.path.join(this_path, ".."))
@@ -122,16 +133,6 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
         exc.detail,
     )
     return await http_exception_handler(request, exc)
-
-
-@app.head("/")
-def read_root_head():
-    return Response()
-
-
-@app.get("/api/health")
-async def health_check():
-    return {"status": "ok"}
 
 
 if os.path.exists(index_path):
