@@ -13,7 +13,7 @@ async def initialize_scheduler():
 
     scheduler.add_job(
         cleanup_past_reservations,
-        CronTrigger(hour=15, minute=30, timezone=FINLAND_TIMEZONE),
+        CronTrigger(hour=20, minute=45, timezone=FINLAND_TIMEZONE),
         id="cleanup_past_reservations",
         replace_existing=True,
         misfire_grace_time=3600,
