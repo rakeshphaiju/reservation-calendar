@@ -15,7 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from src.common.logger import logger
 from src.api.reservation_api import router as reservation_api
 from src.common.db import engine, Base
-from src.scheduler import initialize_scheduler
+from src.tasks.scheduler import initialize_scheduler
 
 # Load environment variables from .env file
 load_dotenv()

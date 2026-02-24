@@ -1,4 +1,3 @@
-# providers.tf
 terraform {
   required_version = ">= 1.5.7"
 
@@ -21,7 +20,7 @@ terraform {
 
 provider "kubernetes" {
   config_path    = "~/.kube/config"
-  config_context = "minikube"  # Use minikube context [web:426]
+  config_context = "minikube" 
 }
 
 provider "helm" {

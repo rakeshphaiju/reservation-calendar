@@ -1,0 +1,39 @@
+image:
+      repository: ${split(":", var.app_image)[0]}
+      tag: ${split(":", var.app_image)[1]}
+      pullPolicy: Always
+    
+    replicas: ${var.api_replicas}
+    
+    config:
+      autoCreateTables: "true"
+      sqlEcho: "false"
+      environment: ${var.environment}
+    
+    database:
+      host: ${var.postgresql_host}
+      port: ${var.postgresql_port}
+      name: ${var.db_name}
+      user: ${var.db_user}
+    
+    ingress:
+      enabled: true
+      host: ${var.ingress_host}
+    
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+    
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+    
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}

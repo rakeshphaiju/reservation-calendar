@@ -1,0 +1,17 @@
+# Patterns to ignore when packaging
+.git
+.gitignore
+*.tgz
+*.md
+.gitattributes
+LICENSE
+test/
+tests/
+.DS_Store
+# Common version control files
+*~
+*.swp
+*.bak
+*.tmp
+*.orig
+*~

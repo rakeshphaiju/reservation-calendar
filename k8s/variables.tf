@@ -1,37 +1,35 @@
-# variables.tf
 variable "namespace" {
-  type    = string
-  default = "reservation-app"
-}
-
-variable "app_image" {
-  type    = string
-  default = "rakeshphaiju/reservation-calender:latest"
+  type        = string
+  default     = "reservation-app"
 }
 
 variable "db_name" {
-  type    = string
-  default = "reservation_db"
+  type        = string
+  default     = "reservation_db"
 }
 
 variable "db_user" {
-  type    = string
-  default = "myuser"
+  type        = string
+  default     = "appuser"
 }
 
 variable "db_password" {
-  type      = string
-  sensitive = true
-  default   = "mypassword"
+  type        = string
+  sensitive   = true
+  default     = "changeme123"
 }
 
-variable "secret_key" {
-  type      = string
-  sensitive = true
-  default   = "local-dev-secret-key"
+variable "storage_size" {
+  type        = string
+  default     = "8Gi"
+}
+
+variable "app_image" {
+  type        = string
+  default     = "rakeshphaiju/reservation-calender:latest"
 }
 
 variable "api_replicas" {
-  type    = number
-  default = 2
+  type        = number
+  default     = 2
 }

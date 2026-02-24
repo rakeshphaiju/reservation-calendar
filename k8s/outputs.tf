@@ -3,10 +3,6 @@ output "namespace" {
   value = kubernetes_namespace.app.metadata[0].name
 }
 
-output "api_service" {
-  value = kubernetes_service.api.metadata[0].name
-}
-
 output "access_url" {
   value = "http://reservation.local (add to /etc/hosts: ${data.external.minikube_ip.result["ip"]} reservation.local)"
 }

@@ -1,4 +1,4 @@
-from src.tasks.cleanup_past_reservations import cleanup_past_reservations
+from src.tasks.scripts.cleanup_past_reservations import cleanup_past_reservations
 from src.common.logger import logger
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
