@@ -77,4 +77,4 @@ terraform apply
 kubectl port-forward -n reservation-app svc/reservation-api 8080:8080
 ```
 
-Then open: http://localhost:8000
+Then open: http://localhost:8080

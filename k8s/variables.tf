@@ -5,18 +5,15 @@ variable "namespace" {
 
 variable "db_name" {
   type        = string
-  default     = "reservation_db"
 }
 
 variable "db_user" {
   type        = string
-  default     = "appuser"
 }
 
 variable "db_password" {
   type        = string
   sensitive   = true
-  default     = "changeme123"
 }
 
 variable "storage_size" {

@@ -1,7 +1,5 @@
-resource "kubernetes_namespace" "app" {
-  metadata {
-    name = var.namespace
-  }
+module "kube-namespace" {
+  source = "./modules/kube-namespace"
 }
 
 module "postgres" {
@@ -16,7 +14,7 @@ module "postgres" {
 module "reservation_api" {
   source = "./modules/reservation-api"
 
-  namespace    = kubernetes_namespace.app.metadata[0].name
+  namespace    = var.namespace
   postgres_depends_on = [module.postgres]
 
   image_repository = "rakeshphaiju/reservation-calender"
