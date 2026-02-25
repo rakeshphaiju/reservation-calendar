@@ -5,37 +5,13 @@ resource "helm_release" "postgres" {
   version    = "18.4.0"
   namespace  = var.namespace
 
-  values = [
-    yamlencode({
-      auth = {
-        username = var.db_user
-        password = var.db_password
-        database = var.db_name
-      }
-
-      primary = {
-        persistence = {
-          enabled      = true
-          size         = var.storage_size
-          storageClass = "standard" 
-        }
-        
-        resources = {
-          requests = {
-            memory = "256Mi"
-            cpu    = "250m"
-          }
-          limits = {
-            memory = "512Mi"
-            cpu    = "500m"
-          }
-        }
-      }
-
-      volumePermissions = {
-        enabled = false
-      }
-    })
+  values = [ 
+    templatefile("${path.module}/postgres-values.yaml", {
+      db_user      = var.db_user
+      db_password  = var.db_password
+      db_name      = var.db_name
+      storage_size = var.storage_size
+  })
   ]
 
   set_sensitive {

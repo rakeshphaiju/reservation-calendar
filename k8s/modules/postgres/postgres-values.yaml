@@ -1,0 +1,21 @@
+auth:
+  username: ${db_user}
+  password: ${db_password}
+  database: ${db_name}
+
+primary:
+  persistence:
+    enabled: true
+    size: ${storage_size}
+    storageClass: "standard"
+
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+volumePermissions:
+  enabled: false
