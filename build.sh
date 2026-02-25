@@ -4,8 +4,9 @@ BASEDIR=$(dirname "$0")
 
 ##
 # Example usage:
-# ./build.sh --push          # Uses version from .env and pushes to registry
-# ./build.sh --tag <tag> --push # Uses a specific tag and pushes
+# ./build.sh --push
+# ./build.sh --tag v1.0.0 --push
+# ./build.sh --ci --push
 ##
 
 # Load environment variables
@@ -43,10 +44,16 @@ fi
 DOCKER_REGISTRY=${DOCKER_REPO%/*}
 DOCKER_REPO_NAME=${DOCKER_REPO##*/}
 
-# Display registry and repo details
+# CI incremental tag + SHA tag
+if [ "$CI" == "true" ]; then
+  BUILD_NUMBER=${GITHUB_RUN_NUMBER:-0}
+  INCREMENTAL_TAG="build-${BUILD_NUMBER}"
+fi
+
 echo "🛠 Registry: $DOCKER_REGISTRY"
 echo "🛠 Repo: $DOCKER_REPO_NAME"
 echo "🛠 Tag: $IMAGETAG"
+[ "$CI" == "true" ] && echo " CI Incremental Tag: $INCREMENTAL_TAG" 
 
 # Build the image if not skipped
 if [ "$SKIP_BUILD" != "true" ]; then
@@ -56,9 +63,13 @@ if [ "$SKIP_BUILD" != "true" ]; then
 fi
 
 # Tagging the image
-echo "🏷 Tagging image..."
+echo " Tagging image..."
 docker tag "${DOCKER_REPO_NAME}:${IMAGETAG}" "$DOCKER_REGISTRY/${DOCKER_REPO_NAME}:latest"
 docker tag "${DOCKER_REPO_NAME}:${IMAGETAG}" "$DOCKER_REGISTRY/${DOCKER_REPO_NAME}:${IMAGETAG}"
+
+if [ "$CI" == "true" ]; then
+  docker tag "${DOCKER_REPO_NAME}:${IMAGETAG}" "$DOCKER_REGISTRY/${DOCKER_REPO_NAME}:${INCREMENTAL_TAG}"
+fi
 
 # Push the image if requested
 if [ "$PUSH_IMAGE" == "true" ]; then
@@ -67,9 +78,14 @@ if [ "$PUSH_IMAGE" == "true" ]; then
     docker login "$DOCKER_REGISTRY"
   fi
 
-  echo "🚀 Pushing image: $DOCKER_REPO_NAME:${IMAGETAG} to $DOCKER_REGISTRY"
+  echo "Pushing: ${DOCKER_REPO_NAME}:${IMAGETAG}"
   docker push "$DOCKER_REGISTRY/${DOCKER_REPO_NAME}:${IMAGETAG}"
   docker push "$DOCKER_REGISTRY/${DOCKER_REPO_NAME}:latest"
+
+  if [ "$CI" == "true" ]; then
+    echo "Pushing incremental tag: $INCREMENTAL_TAG"
+    docker push "$DOCKER_REGISTRY/${DOCKER_REPO_NAME}:${INCREMENTAL_TAG}"
+  fi
 else
-  echo "❗ Image was not pushed. Use --push and --tag <tag> to push to the registry."
+  echo "❗ Image was not pushed. Use --push and optionally --tag <tag>."
 fi

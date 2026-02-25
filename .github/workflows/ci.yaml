@@ -2,14 +2,14 @@ name: Reservation-CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
   Frontend:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,17 +18,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-      
+
       - name: Lint
         run: |
           cd frontend
           npm install -g yarn
           yarn install --frozen-lockfile
           yarn lint
-  
+
   Backend:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -50,14 +50,23 @@ jobs:
         run: |
           source .venv/bin/activate && \
           poetry run black --check .
-  
-  Build:
+
+  Build-and-Push-image:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
-      - name: Build image
-        run: docker build -t reservation-calender .
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push using build.sh
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          chmod +x ./build.sh
+          ./build.sh --push --ci
