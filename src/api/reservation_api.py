@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import List
@@ -14,6 +14,7 @@ router = APIRouter()
 class ReservationCreate(BaseModel):
     name: str
     address: str
+    email: EmailStr
     phone_number: str
     day: str
     time: str
@@ -24,6 +25,7 @@ class ReservationResponse(BaseModel):
 
     id: uuid.UUID
     name: str
+    email: str
     address: str
     phone_number: str
     day: str

@@ -56,6 +56,10 @@ const ReservationList = () => {
                   {user.address}
                 </p>
                 <p className="text-slate-600">
+                  <span className="font-semibold text-slate-700">Email:</span>{' '}
+                  {user.email}
+                </p>
+                <p className="text-slate-600">
                   <span className="font-semibold text-slate-700">Phone:</span>{' '}
                   {user.phone_number}
                 </p>
@@ -88,6 +92,9 @@ const ReservationList = () => {
               </th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                 Address
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
+                Email
               </th>
               <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">
                 Phone number
@@ -124,6 +131,9 @@ const ReservationList = () => {
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-600">
                     {user.address}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {user.email}
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-600">
                     {user.phone_number}

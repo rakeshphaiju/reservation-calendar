@@ -74,7 +74,7 @@ terraform apply
 ## 4. Access the App
 
 ```bash
-kubectl port-forward -n reservation-app svc/reservation-api 8080:8080
+kubectl port-forward -n reservation-app svc/reservation-api 8080:80
 ```
 
 Then open: http://localhost:8080

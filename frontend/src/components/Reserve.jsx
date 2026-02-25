@@ -64,6 +64,7 @@ const Reserve = () => {
     let newErrors = {};
     if (!user.name) newErrors.name = 'Invalid name!!';
     if (!user.address) newErrors.address = 'Invalid Address!!';
+    if (!user.email) newErrors.email = 'Invalid Email!!';
     if (!/^\d{10}$/.test(user.phone_number))
       newErrors.phone_number = 'Invalid Phone number!!';
     setErrors(newErrors);
@@ -97,7 +98,7 @@ const Reserve = () => {
           [modalData.day]: [...(prev[modalData.day] || []), modalData.time],
         }));
         setShowModal(false);
-        setUser({ name: '', address: '', phone_number: '' });
+        setUser({ name: '', address: '', email: '', phone_number: '' });
       })
       .catch((err) => {
         console.error('Error creating reservation:', err);
@@ -226,6 +227,16 @@ const Reserve = () => {
             />
             <div className="text-red-500 text-sm min-h-[1.25rem]">
               {errors.address}
+            </div>
+            <Input
+              title="Email"
+              name="email"
+              value={user.email}
+              placeholder="Enter your email"
+              handlechange={handleInput}
+            />
+            <div className="text-red-500 text-sm min-h-[1.25rem]">
+              {errors.email}
             </div>
             <Input
               title="Phone number"
