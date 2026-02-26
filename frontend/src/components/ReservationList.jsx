@@ -1,41 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import Button from './form/Button';
+import { reservationService } from '../services/api';
 
 const ReservationList = () => {
   const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getUsers();
+    loadReservations();
   }, []);
 
-  const getUsers = async () => {
+  const loadReservations = async () => {
     try {
-      const response = await fetch('/api/reserve');
-      const text = await response.text();
-
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      if (!text) throw new Error('Empty response from server.');
-
-      setUsers(JSON.parse(text));
-    } catch (err) {
-      console.error('Error fetching users:', err);
+      setLoading(true);
+      const data = await reservationService.getAll();
+      setUsers(data);
+    } catch {
+      alert('Failed to load reservations');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const deleteUser = async (id) => {
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this reservation?')) return;
+
     try {
-      await axios.delete(`/api/reserve/${id}`);
-      getUsers();
-    } catch (err) {
-      console.error('Error deleting user:', err);
+      await reservationService.delete(id);
+      setUsers(users.filter(user => user.id !== id));
+    } catch {
+      alert('Failed to delete reservation');
     }
   };
+
+  if (loading) return <div className="p-8 text-center">Loading reservations...</div>;
 
   return (
     <div className="w-full">
       <h2 className="mb-6 text-xl font-bold text-slate-800 sm:text-2xl">
         Reservation List
       </h2>
+
+      {/* Mobile View */}
       <div className="space-y-4 md:hidden">
         {users.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-slate-500 shadow-sm">
@@ -72,17 +78,19 @@ const ReservationList = () => {
                   {user.time}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => deleteUser(user.id)}
-                className="mt-4 w-full rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500"
+              <Button
+                variant="danger"
+                onClick={() => handleDelete(user.id)}
+                className="mt-4 w-full px-3 py-2"
               >
                 Delete
-              </button>
+              </Button>
             </article>
           ))
         )}
       </div>
+
+      {/* Desktop View */}
       <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
         <table className="min-w-full border-collapse">
           <thead>
@@ -114,7 +122,7 @@ const ReservationList = () => {
             {users.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-4 py-12 text-center text-slate-500"
                 >
                   No reservations yet.
@@ -145,13 +153,13 @@ const ReservationList = () => {
                     {user.time}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => deleteUser(user.id)}
-                      className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 transition-colors"
+                    <Button
+                      variant="danger"
+                      onClick={() => handleDelete(user.id)}
+                      className="px-3 py-1.5"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))

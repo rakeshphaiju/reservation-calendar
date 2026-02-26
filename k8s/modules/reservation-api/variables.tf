@@ -29,7 +29,7 @@ variable "image_tag" {
 variable "image_pull_policy" {
   description = "Image pull policy"
   type        = string
-  default     = "IfNotPresent"
+  default     = "Always"
 }
 
 variable "db_host" {
@@ -105,7 +105,6 @@ variable "extra_env_vars" {
   description = "Additional environment variables"
   type = list(object({
     name  = string
-    value = string
   }))
   default = []
 }
