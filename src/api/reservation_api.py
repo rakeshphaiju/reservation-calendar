@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -7,6 +7,7 @@ import uuid
 
 from src.common.db import get_db
 from src.models.reservation import Reservation
+from src.services.email_service import send_confirmation_email, send_admin_notification
 
 router = APIRouter()
 
@@ -34,12 +35,34 @@ class ReservationResponse(BaseModel):
 
 @router.post("/api/reserve/add", response_model=ReservationResponse)
 async def add_reservations(
-    reservation: ReservationCreate, db: AsyncSession = Depends(get_db)
+    reservation: ReservationCreate,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
 ):
     db_reservation = Reservation(**reservation.model_dump())
     db.add(db_reservation)
     await db.commit()
     await db.refresh(db_reservation)
+
+    background_tasks.add_task(
+        send_confirmation_email,
+        recipient_email=reservation.email,
+        recipient_name=reservation.name,
+        day=reservation.day,
+        time=reservation.time,
+    )
+
+    background_tasks.add_task(
+        send_admin_notification,
+        customer_name=reservation.name,
+        customer_email=reservation.email,
+        customer_phone=reservation.phone_number,
+        customer_address=reservation.address,
+        day=reservation.day,
+        time=reservation.time,
+        reservation_id=str(db_reservation.id),
+    )
+
     return db_reservation
 
 

@@ -28,6 +28,7 @@ jobs:
 
   Backend:
     runs-on: ubuntu-latest
+    needs: Frontend
 
     steps:
       - name: Checkout code
@@ -53,6 +54,7 @@ jobs:
 
   Build-and-Push-image:
     runs-on: ubuntu-latest
+    needs: Backend
 
     steps:
       - name: Checkout
