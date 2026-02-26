@@ -36,19 +36,17 @@ async def lifespan(app: FastAPI):
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("DB tables ensured (AUTO_CREATE_TABLES=true).")
         except Exception as e:
-            # Don't crash the whole service on Render if DB isn't ready yet
             logger.exception("DB init failed during startup: %s", e)
 
     # Start the scheduler
     try:
         await initialize_scheduler()
-        logger.info("✅ Scheduler started successfully")
+        logger.info("Scheduler started successfully")
     except Exception as e:
-        logger.exception(f"❌ Failed to start scheduler: {e}")
+        logger.exception(f"Failed to start scheduler: {e}")
 
     yield
 
-    # Clean shutdown
     try:
         initialize_scheduler.shutdown()
         logger.info("Scheduler shut down gracefully")
@@ -69,7 +67,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

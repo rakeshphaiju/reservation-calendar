@@ -10,7 +10,7 @@ python = "^3.11,<3.15"
 fastapi = "^0.115.8"
 uvicorn = {version = "0.20.0", extras = ["standard"]}
 # Database and ORM
-sqlalchemy = "1.4.31"
+sqlalchemy = "^2.0.47"
 asyncpg = "^0.30.0"
 # AI Chatbot dependencies
 httpx = "^0.28.0"  # For making async HTTP calls to Perplexity API
@@ -23,7 +23,7 @@ alembic = "^1.18.4"
 fastapi-mail = "^1.6.2"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.3.4"
+pytest = "^9.0.2"
 black = "^22.10.0"
 ruff = "^0.15.1"
 

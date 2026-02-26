@@ -1,9 +1,9 @@
-from sqlalchemy.ext.declarative import declarative_base
+import os
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator
 from contextlib import asynccontextmanager
-import os
 
 
 def _normalize_database_url(url: str) -> str:
