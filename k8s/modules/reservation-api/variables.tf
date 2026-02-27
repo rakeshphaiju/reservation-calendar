@@ -12,7 +12,7 @@ variable "postgres_depends_on" {
 variable "replicas" {
   description = "Number of replicas"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "image_repository" {

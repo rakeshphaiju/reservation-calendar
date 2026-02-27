@@ -1,24 +1,35 @@
+import uuid
+from typing import List, Literal
+import http as hs
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import List
-import uuid
 
 from src.common.db import get_db
+from src.common.logger import logger
 from src.models.reservation import Reservation
 from src.services.email_service import send_confirmation_email, send_admin_notification
+
 
 router = APIRouter()
 
 
 class ReservationCreate(BaseModel):
-    name: str
-    address: str
+    name: str = Field(..., min_length=2)
+    address: str = Field(..., min_length=1)
     email: EmailStr
-    phone_number: str
-    day: str
-    time: str
+    phone_number: str = Field(..., pattern=r"^\d{10}$")
+    day: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    time: Literal[
+        "17:00-17:30",
+        "17:30-18:00",
+        "18:00-18:30",
+        "18:30-19:00",
+        "19:00-19:30",
+        "19:30-20:00",
+        "20:00-20:30",
+    ]
 
 
 class ReservationResponse(BaseModel):
@@ -39,58 +50,116 @@ async def add_reservations(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
-    db_reservation = Reservation(**reservation.model_dump())
-    db.add(db_reservation)
-    await db.commit()
-    await db.refresh(db_reservation)
+    try:
+        existing = await db.execute(
+            select(Reservation).where(
+                Reservation.day == reservation.day,
+                Reservation.time == reservation.time,
+            )
+        )
+        if existing.scalars().first():
+            raise HTTPException(
+                status_code=hs.HTTPStatus.CONFLICT,
+                detail="This time slot is already reserved",
+            )
 
-    background_tasks.add_task(
-        send_confirmation_email,
-        recipient_email=reservation.email,
-        recipient_name=reservation.name,
-        day=reservation.day,
-        time=reservation.time,
-    )
+        db_reservation = Reservation(**reservation.model_dump())
+        db.add(db_reservation)
+        await db.commit()
+        await db.refresh(db_reservation)
 
-    background_tasks.add_task(
-        send_admin_notification,
-        customer_name=reservation.name,
-        customer_email=reservation.email,
-        customer_phone=reservation.phone_number,
-        customer_address=reservation.address,
-        day=reservation.day,
-        time=reservation.time,
-        reservation_id=str(db_reservation.id),
-    )
+        background_tasks.add_task(
+            send_confirmation_email,
+            recipient_email=reservation.email,
+            recipient_name=reservation.name,
+            day=reservation.day,
+            time=reservation.time,
+        )
 
-    return db_reservation
+        background_tasks.add_task(
+            send_admin_notification,
+            customer_name=reservation.name,
+            customer_email=reservation.email,
+            customer_phone=reservation.phone_number,
+            customer_address=reservation.address,
+            day=reservation.day,
+            time=reservation.time,
+            reservation_id=str(db_reservation.id),
+        )
+
+        return db_reservation
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error while creating reservation: {e}", exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while saving the reservation.",
+        )
 
 
-# Get all reservations
 @router.get("/api/reserve", response_model=List[ReservationResponse])
 async def get_all_reservations(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Reservation))
-    reservations = result.scalars().all()
-    return reservations
+    try:
+        result = await db.execute(select(Reservation))
+        reservations = result.scalars().all()
+        return reservations
+    except Exception as e:
+        logger.error(f"Failed to fetch reservations: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Error fetching reservations from the database.",
+        )
 
 
-# Get a single reservation by ID
 @router.get("/api/reserve/{reserve_id}", response_model=ReservationResponse)
 async def get_reservation(reserve_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Reservation).where(Reservation.id == reserve_id))
-    reservation = result.scalars().first()
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reservation not found")
-    return reservation
+    try:
+        result = await db.execute(
+            select(Reservation).where(Reservation.id == reserve_id)
+        )
+        reservation = result.scalars().first()
+        if not reservation:
+            raise HTTPException(
+                status_code=hs.HTTPStatus.NOT_FOUND,
+                detail="Reservation not found",
+            )
+        return reservation
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving reservation {reserve_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve reservation.",
+        )
 
 
-# Delete a reservation by ID
 @router.delete("/api/reserve/{reserve_id}")
-async def delete_reservation(reserve_id, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Reservation).where(Reservation.id == reserve_id))
-    reservation = result.scalars().first()
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reservation not found")
-    await db.delete(reservation)
-    await db.commit()
-    return {"message": "Reservation deleted successfully"}
+async def delete_reservation(reserve_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    try:
+        result = await db.execute(
+            select(Reservation).where(Reservation.id == reserve_id)
+        )
+        reservation = result.scalars().first()
+        if not reservation:
+            raise HTTPException(
+                status_code=hs.HTTPStatus.NOT_FOUND,
+                detail="Reservation not found",
+            )
+
+        await db.delete(reservation)
+        await db.commit()
+        return {"message": "Reservation deleted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting reservation {reserve_id}: {e}", exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to delete reservation.",
+        )
