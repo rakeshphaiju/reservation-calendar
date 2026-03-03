@@ -42,7 +42,7 @@ const Reserve = () => {
   // Fetch reservations
   useEffect(() => {
     reservationService
-      .getAll()
+      .getSlots()
       .then(setUsers)
       .catch(() => console.log('Failed to load existing reservations'));
   }, []);

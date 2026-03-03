@@ -624,6 +624,26 @@ all = ["email-validator (>=2.0.0)", "fastapi-cli[standard] (>=0.0.5)", "httpx (>
 standard = ["email-validator (>=2.0.0)", "fastapi-cli[standard] (>=0.0.5)", "httpx (>=0.23.0)", "jinja2 (>=3.1.5)", "python-multipart (>=0.0.18)", "uvicorn[standard] (>=0.12.0)"]
 
 [[package]]
+name = "fastapi-login"
+version = "1.10.3"
+description = "Flask-Login like package for FastAPI"
+category = "main"
+optional = false
+python-versions = "<4.0,>=3.8"
+files = [
+    {file = "fastapi_login-1.10.3-py3-none-any.whl", hash = "sha256:4a88a5e82f35084075d22191173fa9ddc195c96647f984114a066dd93c067067"},
+    {file = "fastapi_login-1.10.3.tar.gz", hash = "sha256:f0db92f59bc7dfa301dfe8fa5914062ff1582efc2f56b51ca5e23dde4edf8c27"},
+]
+
+[package.dependencies]
+fastapi = "*"
+pyjwt = ">=2.4"
+typing-extensions = ">=4.1.1,<5.0.0"
+
+[package.extras]
+asymmetric = ["cryptography (>=39.0.1,<45.0.0)"]
+
+[[package]]
 name = "fastapi-mail"
 version = "1.6.2"
 description = "Simple lightweight mail library for FastApi"
@@ -1706,6 +1726,24 @@ files = [
 windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
+name = "pyjwt"
+version = "2.11.0"
+description = "JSON Web Token implementation in Python"
+category = "main"
+optional = false
+python-versions = ">=3.9"
+files = [
+    {file = "pyjwt-2.11.0-py3-none-any.whl", hash = "sha256:94a6bde30eb5c8e04fee991062b534071fd1439ef58d2adc9ccb823e7bcd0469"},
+    {file = "pyjwt-2.11.0.tar.gz", hash = "sha256:35f95c1f0fbe5d5ba6e43f00271c275f7a1a4db1dab27bf708073b75318ea623"},
+]
+
+[package.extras]
+crypto = ["cryptography (>=3.4.0)"]
+dev = ["coverage[toml] (==7.10.7)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=8.4.2,<9.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
+docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
+tests = ["coverage[toml] (==7.10.7)", "pytest (>=8.4.2,<9.0.0)"]
+
+[[package]]
 name = "pytest"
 version = "9.0.2"
 description = "pytest: simple powerful testing with Python"
@@ -1741,6 +1779,18 @@ files = [
 
 [package.extras]
 cli = ["click (>=5.0)"]
+
+[[package]]
+name = "python-multipart"
+version = "0.0.20"
+description = "A streaming multipart parser for Python"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "python_multipart-0.0.20-py3-none-any.whl", hash = "sha256:8a62d3a8335e06589fe01f2a3e178cdcc632f3fbe0d492ad9ee0ec35aab1f104"},
+    {file = "python_multipart-0.0.20.tar.gz", hash = "sha256:8dd0cab45b8e23064ae09147625994d090fa46f5b0d1e13af944c331a7fa9d13"},
+]
 
 [[package]]
 name = "pyyaml"
@@ -2586,4 +2636,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11,<3.15"
-content-hash = "17182a47c3e5d77872212ceb8613a05b7261079713cbbe976fc8c2e114d3d5b4"
+content-hash = "dc09c52292e29a1611fef3c65d2b162faaedeebf1d70e7c0169f498b818a86bc"

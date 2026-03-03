@@ -21,6 +21,8 @@ aiohttp = "3.10.11"
 apscheduler = "^3.11.2"
 alembic = "^1.18.4"
 fastapi-mail = "^1.6.2"
+fastapi-login = "^1.10.0"
+python-multipart = "^0.0.20"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

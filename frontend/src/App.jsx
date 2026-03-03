@@ -1,8 +1,26 @@
 import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { PropTypes } from 'prop-types';
+import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/header/Navbar';
 import Reserve from './pages/Reserve';
 import Reservationlist from './pages/ReservationList';
+import Login from './pages/Login';
+import { authService } from './services/auth';
+
+function RequireAuth({ children }) {
+  const location = useLocation();
+  const isAuthed = authService.isAuthenticated();
+
+  if (!isAuthed) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
+
+RequireAuth.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 export default function App() {
   return (
@@ -12,7 +30,15 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/reserve" element={<Reserve />} />
-          <Route path="/reservelist" element={<Reservationlist />} />
+          <Route
+            path="/reservelist"
+            element={
+              <RequireAuth>
+                <Reservationlist />
+              </RequireAuth>
+            }
+          />
+          <Route path="/login" element={<Login />} />
         </Routes>
       </main>
     </div>
