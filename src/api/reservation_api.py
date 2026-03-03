@@ -10,6 +10,7 @@ from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
 from src.services.email_service import send_confirmation_email, send_admin_notification
+from src.auth.auth import manager
 
 
 router = APIRouter()
@@ -40,6 +41,11 @@ class ReservationResponse(BaseModel):
     email: str
     address: str
     phone_number: str
+    day: str
+    time: str
+
+
+class ReservationSlot(BaseModel):
     day: str
     time: str
 
@@ -101,7 +107,10 @@ async def add_reservations(
 
 
 @router.get("/api/reserve", response_model=List[ReservationResponse])
-async def get_all_reservations(db: AsyncSession = Depends(get_db)):
+async def get_all_reservations(
+    db: AsyncSession = Depends(get_db),
+    _user=Depends(manager),
+):
     try:
         result = await db.execute(select(Reservation))
         reservations = result.scalars().all()
@@ -114,8 +123,26 @@ async def get_all_reservations(db: AsyncSession = Depends(get_db)):
         )
 
 
+@router.get("/api/reserve/slots", response_model=List[ReservationSlot])
+async def get_reserved_slots(db: AsyncSession = Depends(get_db)):
+    try:
+        result = await db.execute(select(Reservation.day, Reservation.time))
+        rows = result.all()
+        return [ReservationSlot(day=day, time=time) for day, time in rows]
+    except Exception as e:
+        logger.error(f"Failed to fetch reserved slots: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Error fetching reserved slots from the database.",
+        )
+
+
 @router.get("/api/reserve/{reserve_id}", response_model=ReservationResponse)
-async def get_reservation(reserve_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_reservation(
+    reserve_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _user=Depends(manager),
+):
     try:
         result = await db.execute(
             select(Reservation).where(Reservation.id == reserve_id)
@@ -138,7 +165,11 @@ async def get_reservation(reserve_id: uuid.UUID, db: AsyncSession = Depends(get_
 
 
 @router.delete("/api/reserve/{reserve_id}")
-async def delete_reservation(reserve_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def delete_reservation(
+    reserve_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _user=Depends(manager),
+):
     try:
         result = await db.execute(
             select(Reservation).where(Reservation.id == reserve_id)

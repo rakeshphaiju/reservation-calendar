@@ -14,6 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.common.logger import logger
 from src.api.reservation_api import router as reservation_api
+from src.api.auth_api import router as auth_api
 from src.common.db import engine, Base
 from src.tasks.scheduler import initialize_scheduler
 
@@ -73,6 +74,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_api)
 app.include_router(reservation_api)
 
 
