@@ -24,7 +24,17 @@ export default function Login() {
       await authService.login(username, password);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Invalid username or password');
+      const status = err?.response?.status;
+
+      if (status === 401) {
+        setError('Invalid username or password.');
+      } else if (status === 422) {
+        setError('Please enter both username and password.');
+      } else if (status >= 500) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError(err?.response?.data?.detail || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

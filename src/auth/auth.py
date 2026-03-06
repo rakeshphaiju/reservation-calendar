@@ -16,7 +16,7 @@ if not SECRET_KEY:
 
 TOKEN_URL = "/api/auth/login"
 
-manager = LoginManager(SECRET_KEY, token_url=TOKEN_URL)
+manager = LoginManager(SECRET_KEY, token_url=TOKEN_URL, use_cookie=True)
 
 
 class User(BaseModel):

@@ -9,9 +9,30 @@ import { authService } from './services/auth';
 
 function RequireAuth({ children }) {
   const location = useLocation();
-  const isAuthed = authService.isAuthenticated();
+  const [status, setStatus] = React.useState('checking'); // 'checking' | 'authed' | 'unauth'
 
-  if (!isAuthed) {
+  React.useEffect(() => {
+    let isMounted = true;
+    authService
+      .init()
+      .then((user) => {
+        if (!isMounted) return;
+        setStatus(user ? 'authed' : 'unauth');
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setStatus('unauth');
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  if (status === 'checking') {
+    return null;
+  }
+
+  if (status === 'unauth') {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -51,7 +72,7 @@ const Home = () => (
       Welcome to Reservation Calendar
     </h1>
     <p className="mt-4 text-lg text-slate-600 max-w-xl mx-auto">
-      Book your table for Friday, Saturday, or Sunday. Choose a time slot and we&apos;ll take care of the rest.
+      Book your time for reservation
     </p>
     <div className="mt-10 flex flex-wrap justify-center gap-4">
       <Link

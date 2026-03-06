@@ -16,3 +16,4 @@ redis-data/
 /logs
 .git/
 .gitignore
+.ruff_cache

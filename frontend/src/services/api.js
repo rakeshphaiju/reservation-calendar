@@ -1,21 +1,29 @@
 import axios from 'axios';
-import { authService } from './auth';
+// import { authService } from './auth';
 
 const apiClient = axios.create({
   baseURL: '/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  withCredentials: true,
 });
 
-apiClient.interceptors.request.use((config) => {
-  const token = authService.getToken();
-  if (token) {
-    config.headers = config.headers || {};
-    config.headers.Authorization = `Bearer ${token}`;
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const { response, config } = error || {};
+    const status = response?.status;
+    const url = config?.url || '';
+
+    // 401s from /api/auth/me are expected when not logged in; don't redirect.
+    const isAuthMe = url.includes('/auth/me');
+    const onLoginPage = window.location.pathname === '/login';
+
+    if (status === 401 && !isAuthMe && !onLoginPage) {
+      window.location.href = '/login';
+    }
+
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 const handleResponse = (response) => response.data;
 const handleError = (error) => {

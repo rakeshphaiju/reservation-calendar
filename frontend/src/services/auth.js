@@ -1,32 +1,58 @@
 import apiClient from './api';
 
-const TOKEN_KEY = 'auth_token';
-const USERNAME_KEY = 'auth_username';
+let currentUser = null;
+const listeners = new Set();
+
+const notify = () => {
+  listeners.forEach((listener) => listener(currentUser));
+};
 
 export const authService = {
+  init: async () => {
+    try {
+      const { data } = await apiClient.get('/auth/me');
+      currentUser = { username: data.username };
+    } catch {
+      currentUser = null;
+    }
+    notify();
+    return currentUser;
+  },
+
   login: async (username, password) => {
     const params = new URLSearchParams();
     params.append('username', username);
     params.append('password', password);
 
-    const response = await apiClient.post('/auth/login', params, {
+    const { data } = await apiClient.post('/auth/login', params, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
-    const { access_token, username: returnedUsername } = response.data;
-    localStorage.setItem(TOKEN_KEY, access_token);
-    localStorage.setItem(USERNAME_KEY, returnedUsername || username);
+    const resolvedUsername = data.username || username;
+    currentUser = { username: resolvedUsername };
+    notify();
 
-    return { token: access_token, username: returnedUsername || username };
+    return currentUser;
   },
 
-  logout: () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USERNAME_KEY);
+  logout: async () => {
+    try {
+      await apiClient.post('/logout');
+    } catch (e) {
+      console.warn('Logout request failed:', e);
+    } finally {
+      currentUser = null;
+      notify();
+    }
   },
 
-  getToken: () => localStorage.getItem(TOKEN_KEY),
-  getUsername: () => localStorage.getItem(USERNAME_KEY),
-  isAuthenticated: () => !!localStorage.getItem(TOKEN_KEY),
+  getUser: () => currentUser,
+  isAuthenticated: () => !!currentUser,
+
+  subscribe: (callback) => {
+    listeners.add(callback);
+    callback(currentUser);
+    return () => listeners.delete(callback);
+  },
 };
 

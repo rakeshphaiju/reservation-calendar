@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { authService } from '../../services/auth';
 
 export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [user, setUser] = useState(authService.getUser());
 
   const baseLinkClass =
     'px-3 py-1.5 rounded-lg font-medium text-sm transition-colors sm:px-4 sm:py-2 sm:text-base';
@@ -13,11 +14,18 @@ export default function Navbar() {
 
   const isActive = (path) => location.pathname === path;
 
-  const isAuthed = authService.isAuthenticated();
-  const username = authService.getUsername();
+  useEffect(() => {
+    const unsubscribe = authService.subscribe((nextUser) => {
+      setUser(nextUser);
+    });
+    authService.init();
+    return unsubscribe;
+  }, []);
 
-  const handleLogout = () => {
-    authService.logout();
+  const username = user?.username;
+
+  const handleLogout = async () => {
+    await authService.logout();
     navigate('/login');
   };
 
@@ -60,7 +68,7 @@ export default function Navbar() {
             </ul>
 
             <div className="flex items-center gap-2">
-              {isAuthed ? (
+              {username ? (
                 <>
                   <span className="hidden text-sm text-slate-200 sm:inline">
                     Signed in as <span className="font-semibold">{username}</span>
