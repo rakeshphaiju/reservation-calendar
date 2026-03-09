@@ -23,6 +23,7 @@ alembic = "^1.18.4"
 fastapi-mail = "^1.6.2"
 fastapi-login = "^1.10.0"
 python-multipart = "^0.0.20"
+greenlet = "^3.3.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

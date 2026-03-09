@@ -107,7 +107,7 @@ if os.path.exists(frontend_dir):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     error_log_info = {"errors": exc.errors(), "body": exc.body}
     logger.error(
-        'RequestValidationError on "{} {}": {}',
+        f'RequestValidationError on "%s %s": %s',
         request.method,
         request.url.path,
         error_log_info,

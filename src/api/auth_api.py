@@ -1,6 +1,6 @@
 from datetime import timedelta
 from http import HTTPStatus as hs
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, HTTPException
 from fastapi_login.exceptions import InvalidCredentialsException
 
 from src.auth.auth import TOKEN_URL, authenticate_user, manager, User
