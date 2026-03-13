@@ -18,10 +18,6 @@ async def initialize_scheduler():
         replace_existing=True,
         misfire_grace_time=3600,
     )
-
-    logger.info("⏰ Scheduler initialized: Daily reservation cleanup at 12:00 PM")
-
     scheduler.start()
-    logger.info("✅ Scheduler started")
 
     return scheduler

@@ -103,8 +103,8 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
     async def test_get_reservations_slots(self):
         mock_result = MagicMock()
         mock_result.all.return_value = [
-            ("Monday", "16:00-16:30"),
-            ("Tuesday", "11:00-11:00"),
+            ("Monday", "16:00-16:30", 5),
+            ("Tuesday", "11:00-11:30", 3),
         ]
 
         mock_db = AsyncMock()
@@ -117,8 +117,8 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(2, len(resp.json()))
         self.assertEqual(
             [
-                {"day": "Monday", "time": "16:00-16:30"},
-                {"day": "Tuesday", "time": "11:00-11:00"},
+                {"day": "Monday", "time": "16:00-16:30", "count": 5},
+                {"day": "Tuesday", "time": "11:00-11:30", "count": 3},
             ],
             resp.json(),
         )
@@ -182,15 +182,15 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_db.rollback.assert_awaited_once()
 
     async def test_add_reservation_success(self):
-        mock_existing = MagicMock()
-        mock_existing.scalars.return_value.first.return_value = None
+        mock_existing_email = MagicMock()
+        mock_existing_email.scalars.return_value.first.return_value = None
 
-        created = Reservation(
-            id="3fe6fd7c-1c87-11f1-941d-325096b39f47", **RESERVATION_PAYLOAD
-        )
+        mock_slot_reservations = MagicMock()
+        mock_slot_reservations.scalars.return_value.all.return_value = []
 
         mock_db = AsyncMock()
-        mock_db.execute.return_value = mock_existing
+        mock_db.execute.side_effect = [mock_existing_email, mock_slot_reservations]
+        mock_db.add = MagicMock()
         mock_db.refresh.side_effect = lambda obj: setattr(
             obj, "id", "3fe6fd7c-1c87-11f1-941d-325096b39f47"
         )
@@ -212,17 +212,54 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_db.refresh.assert_awaited_once()
 
     async def test_add_reservation_conflict(self):
-        mock_existing = MagicMock()
-        mock_existing.scalars.return_value.first.return_value = mock_reservations[0]
+        mock_existing_email = MagicMock()
+        mock_existing_email.scalars.return_value.first.return_value = None
+
+        mock_slot_reservations = MagicMock()
+
+        mock_slot_reservations.scalars.return_value.all.return_value = [
+            Reservation(
+                id=f"slot-full-{i}",
+                name="Mock User",
+                email=f"mockuser{i}@example.com",
+                address="Addr",
+                phone_number="1234567890",
+                day=RESERVATION_PAYLOAD["day"],
+                time=RESERVATION_PAYLOAD["time"],
+            )
+            for i in range(5)
+        ]
 
         mock_db = AsyncMock()
-        mock_db.execute.return_value = mock_existing
+        mock_db.execute.side_effect = [mock_existing_email, mock_slot_reservations]
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
         resp = await self.client.post("/api/reserve/add", json=RESERVATION_PAYLOAD)
         self.assertEqual(hs.CONFLICT, resp.status_code)
-        self.assertEqual("This time slot is already reserved", resp.json()["detail"])
+        self.assertEqual("This time slot is fully booked", resp.json()["detail"])
+
+        mock_db.add.assert_not_called()
+        mock_db.commit.assert_not_awaited()
+
+    async def test_add_reservation_email_conflict(self):
+        mock_existing_email = MagicMock()
+        mock_existing_email.scalars.return_value.first.return_value = Reservation(
+            id="existing-email-conflict",
+            **RESERVATION_PAYLOAD,
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_existing_email
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.post("/api/reserve/add", json=RESERVATION_PAYLOAD)
+        self.assertEqual(hs.CONFLICT, resp.status_code)
+        self.assertEqual(
+            "This user already has a reservation for this time slot",
+            resp.json()["detail"],
+        )
 
         mock_db.add.assert_not_called()
         mock_db.commit.assert_not_awaited()
@@ -232,6 +269,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_existing.scalars.return_value.first.return_value = None
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = mock_existing
         mock_db.commit.side_effect = Exception("DB failure")
 

@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from src.common.logger import logger
 
 
-SECRET_KEY = os.getenv("SECRET_KEY", "secret")
+SECRET_KEY = os.getenv("SECRET_KEY", "this-is-a-32-byte-test-secret-key!!")
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY environment variable is not set")
 

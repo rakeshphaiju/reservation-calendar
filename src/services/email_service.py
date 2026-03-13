@@ -62,11 +62,11 @@ async def send_confirmation_email(
         fm = FastMail(conf)
         await fm.send_message(message)
 
-        logger.info(f"✅ Successfully sent confirmation email to {recipient_email}")
+        logger.info(f"Successfully sent confirmation email to {recipient_email}")
 
     except Exception as e:
         logger.error(
-            f"❌ Failed to send confirmation email to {recipient_email}. Error: {str(e)}"
+            f"Failed to send confirmation email to {recipient_email}. Error: {str(e)}"
         )
 
 

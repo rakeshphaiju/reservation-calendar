@@ -8,12 +8,10 @@ from src.common.logger import logger
 async def cleanup_past_reservations():
     """
     Async cron job to delete reservations that are in the past.
-    Combines day and time fields to compare with current datetime.
-    Runs daily at 2:00 AM.
     """
     async with AsyncSessionLocal() as session:
         try:
-            logger.info("🧹 Starting async cleanup of past reservations...")
+            logger.info("Starting async cleanup of past reservations...")
 
             now = datetime.now()
 
@@ -42,14 +40,14 @@ async def cleanup_past_reservations():
                 )
                 result = await session.execute(delete_stmt)
                 await session.commit()
-                logger.info(f"✅ Deleted {result.rowcount} past reservations")
+                logger.info(f"Deleted {result.rowcount} past reservations")
             else:
-                logger.info("✅ No past reservations to delete")
+                logger.info("No past reservations to delete")
 
             await session.close()
 
         except Exception as e:
-            logger.exception(f"❌ Error during reservation cleanup: {e}")
+            logger.exception(f"Error during reservation cleanup: {e}")
             await session.rollback()
         finally:
             await session.close()

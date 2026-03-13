@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import moment from 'moment';
 import Button from '../components/form/Button';
 import ReservationModal from '../components/ReservationModal';
 import { reservationService } from '../services/api';
+
+const SLOT_CAPACITY = 5;
 
 const Reserve = () => {
   const getUpcomingDates = () => {
@@ -18,33 +21,39 @@ const Reserve = () => {
   };
 
   const dates = getUpcomingDates();
-  const [users, setUsers] = useState([]);
+  const times = [
+    '17:00-17:30', '17:30-18:00', '18:00-18:30',
+    '18:30-19:00', '19:00-19:30', '19:30-20:00', '20:00-20:30',
+  ];
+
+  // slotCounts: { "2026-03-17": { "17:00-17:30": 3, ... } }
+  const [slotCounts, setSlotCounts] = useState({});
+  // fullyBooked: slots returned by backend (count >= SLOT_CAPACITY)
+  const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
   const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
   const [errors, setErrors] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({ day: '', time: '' });
-  const [reservedTime, setReservedTime] = useState({
-    [dates[0]]: [],
-    [dates[1]]: [],
-    [dates[2]]: [],
-  });
 
-  const times = [
-    '17:00-17:30',
-    '17:30-18:00',
-    '18:00-18:30',
-    '18:30-19:00',
-    '19:00-19:30',
-    '19:30-20:00',
-    '20:00-20:30',
-  ];
-
-  // Fetch reservations
   useEffect(() => {
     reservationService
       .getSlots()
-      .then(setUsers)
-      .catch(() => console.log('Failed to load existing reservations'));
+      .then((slots) => {
+        const counts = {};
+        const fullyBooked = [];
+
+        slots.forEach(({ day, time, count }) => {
+          if (!counts[day]) counts[day] = {};
+          counts[day][time] = count;
+          if (count >= SLOT_CAPACITY) {
+            fullyBooked.push({ day, time });
+          }
+        });
+
+        setSlotCounts(counts);
+        setFullyBookedSlots(fullyBooked);
+      })
+      .catch(() => console.log('Failed to load reserved slots'));
   }, []);
 
   const handleInput = (e) => {
@@ -60,29 +69,89 @@ const Reserve = () => {
     setModalData({ day, time });
   };
 
-  const isTimeReserved = (day, time) =>
-    reservedTime[day]?.includes(time) ||
-    users.some((data) => data.day === day && data.time === time);
+  // A slot is fully booked if backend returned it in the slots list
+  const isFullyBooked = (day, time) =>
+    fullyBookedSlots.some((s) => s.day === day && s.time === time);
+
+  // Get count of bookings for a slot from local optimistic state
+  const getSlotCount = (day, time) => slotCounts?.[day]?.[time] ?? 0;
+
+  const getSpotsLeft = (day, time) => {
+    if (isFullyBooked(day, time)) return 0;
+    return SLOT_CAPACITY - getSlotCount(day, time);
+  };
 
   const handleConfirmReservation = async (e) => {
     e.preventDefault();
-
     try {
       const newReservation = { ...user, ...modalData };
       await reservationService.create(newReservation);
 
-      setUsers([...users, newReservation]);
-      setReservedTime((prev) => ({
-        ...prev,
-        [modalData.day]: [...(prev[modalData.day] || []), modalData.time],
-      }));
+      // Optimistically increment local slot count
+      setSlotCounts((prev) => {
+        const daySlots = prev[modalData.day] || {};
+        const current = daySlots[modalData.time] ?? 0;
+        const newCount = current + 1;
+        // If now fully booked, add to fullyBooked list
+        if (newCount >= SLOT_CAPACITY) {
+          setFullyBookedSlots((fb) => [...fb, { day: modalData.day, time: modalData.time }]);
+        }
+        return {
+          ...prev,
+          [modalData.day]: { ...daySlots, [modalData.time]: newCount },
+        };
+      });
+
       setShowModal(false);
       setUser({ name: '', address: '', email: '', phone_number: '' });
     } catch (err) {
-      if (err.response && err.response.status === 422)
+      if (err.response?.status === 409)
+        setErrors({ general: err.response.data?.detail || 'This slot is already reserved.' });
+      else if (err.response?.status === 400)
         setErrors({ general: 'Please check your input fields.' });
-      else setErrors({ general: 'Server error. Please try again later.' });
+      else
+        setErrors({ general: 'Server error. Please try again later.' });
     }
+  };
+
+  const SlotButton = ({ day, time, mobile = false }) => {
+    const booked = isFullyBooked(day, time);
+    const spotsLeft = getSpotsLeft(day, time);
+
+    return (
+      <Button
+        disabled={booked}
+        onClick={() => showForm(day, time)}
+        className={mobile
+          ? `px-3 py-2 text-left border ${booked ? 'border-slate-200' : 'border-emerald-600'}`
+          : `h-20 w-full`
+        }
+      >
+        {mobile ? (
+          <>
+            <span className="block font-medium">{time}</span>
+            <span className="block text-xs opacity-90">
+              {booked ? 'Fully booked' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
+            </span>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-1">
+            <span>{booked ? 'Full' : 'Book'}</span>
+            {!booked && (
+              <span className="text-xs opacity-80">
+                {spotsLeft}/{SLOT_CAPACITY} left
+              </span>
+            )}
+          </div>
+        )}
+      </Button>
+    );
+  };
+
+  SlotButton.propTypes = {
+    day: PropTypes.string.isRequired,
+    time: PropTypes.string.isRequired,
+    mobile: PropTypes.bool,
   };
 
   return (
@@ -91,7 +160,7 @@ const Reserve = () => {
         Would you like to make a reservation on the following dates?
       </h2>
 
-      {/* Mobile section */}
+      {/* Mobile */}
       <div className="space-y-5 md:hidden">
         {dates.map((day) => (
           <section key={day} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -99,39 +168,22 @@ const Reserve = () => {
               {moment(day).format('dddd, MMMM D')}
             </h3>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {times.map((time) => {
-                const isReserved = isTimeReserved(day, time);
-                return (
-                  <Button
-                    key={`${day}-${time}`}
-                    disabled={isReserved}
-                    onClick={() => showForm(day, time)}
-                    className={`px-3 py-2 text-left border ${isReserved ? 'border-slate-200' : 'border-emerald-600'
-                      }`}
-                  >
-                    <span className="block font-medium">{time}</span>
-                    <span className="block text-xs opacity-90">
-                      {isReserved ? 'Booked' : 'Tap to book'}
-                    </span>
-                  </Button>
-                );
-              })}
+              {times.map((time) => (
+                <SlotButton key={`${day}-${time}`} day={day} time={time} mobile />
+              ))}
             </div>
           </section>
         ))}
       </div>
 
-      {/* Desktop Table */}
+      {/* Desktop */}
       <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
         <table className="min-w-full border-collapse">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50">
               <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
               {times.map((time, i) => (
-                <th
-                  key={i}
-                  className="px-3 py-3 text-center text-sm font-semibold text-slate-700 whitespace-nowrap"
-                >
+                <th key={i} className="px-3 py-3 text-center text-sm font-semibold text-slate-700 whitespace-nowrap">
                   {time}
                 </th>
               ))}
@@ -139,34 +191,24 @@ const Reserve = () => {
           </thead>
           <tbody>
             {dates.map((day, index) => (
-              <tr
-                key={index}
-                className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors"
-              >
+              <tr key={index} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap">
                   {moment(day).format('dddd, MMMM D')}
                 </th>
-                {times.map((time) => {
-                  const isReserved = isTimeReserved(day, time);
-                  return (
-                    <td key={`${day}-${time}`} className={`px-2 py-2 ${isReserved ? 'bg-red-50' : ''}`}>
-                      <Button
-                        disabled={isReserved}
-                        onClick={() => showForm(day, time)}
-                        className="h-20 w-full"
-                      >
-                        {isReserved ? 'Booked' : 'Book'}
-                      </Button>
-                    </td>
-                  );
-                })}
+                {times.map((time) => (
+                  <td
+                    key={`${day}-${time}`}
+                    className={`px-2 py-2 ${isFullyBooked(day, time) ? 'bg-red-50' : ''}`}
+                  >
+                    <SlotButton day={day} time={time} />
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Modal extracted */}
       <ReservationModal
         show={showModal}
         close={() => setShowModal(false)}

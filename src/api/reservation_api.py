@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Query
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 
 from src.common.db import get_db
 from src.common.logger import logger
@@ -14,6 +15,8 @@ from src.auth.auth import manager
 
 
 router = APIRouter()
+
+SLOT_CAPACITY = 5
 
 
 class ReservationCreate(BaseModel):
@@ -48,6 +51,7 @@ class ReservationResponse(BaseModel):
 class ReservationSlot(BaseModel):
     day: str
     time: str
+    count: int
 
 
 @router.post("/api/reserve/add", response_model=ReservationResponse)
@@ -57,16 +61,32 @@ async def add_reservations(
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        existing = await db.execute(
+        # Check if this email already has a reservation for the same slot
+        existing_email_result = await db.execute(
+            select(Reservation).where(
+                Reservation.day == reservation.day,
+                Reservation.time == reservation.time,
+                Reservation.email == reservation.email,
+            )
+        )
+        if existing_email_result.scalars().first():
+            raise HTTPException(
+                status_code=hs.HTTPStatus.CONFLICT,
+                detail="This user already has a reservation for this time slot",
+            )
+
+        # Check overall capacity for this slot
+        slot_reservations_result = await db.execute(
             select(Reservation).where(
                 Reservation.day == reservation.day,
                 Reservation.time == reservation.time,
             )
         )
-        if existing.scalars().first():
+        slot_reservations = slot_reservations_result.scalars().all()
+        if len(slot_reservations) >= SLOT_CAPACITY:
             raise HTTPException(
                 status_code=hs.HTTPStatus.CONFLICT,
-                detail="This time slot is already reserved",
+                detail="This time slot is fully booked",
             )
 
         db_reservation = Reservation(**reservation.model_dump())
@@ -128,9 +148,18 @@ async def get_all_reservations(
 @router.get("/api/reserve/slots", response_model=List[ReservationSlot])
 async def get_reserved_slots(db: AsyncSession = Depends(get_db)):
     try:
-        result = await db.execute(select(Reservation.day, Reservation.time))
+        result = await db.execute(
+            select(
+                Reservation.day,
+                Reservation.time,
+                func.count().label("count"),
+            ).group_by(Reservation.day, Reservation.time)
+        )
         rows = result.all()
-        return [ReservationSlot(day=day, time=time) for day, time in rows]
+        return [
+            ReservationSlot(day=day, time=time, count=count)
+            for day, time, count in rows
+        ]
     except Exception as e:
         logger.error(f"Failed to fetch reserved slots: {e}", exc_info=True)
         raise HTTPException(

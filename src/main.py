@@ -42,7 +42,6 @@ async def lifespan(app: FastAPI):
     # Start the scheduler
     try:
         await initialize_scheduler()
-        logger.info("Scheduler started successfully")
     except Exception as e:
         logger.exception(f"Failed to start scheduler: {e}")
 
