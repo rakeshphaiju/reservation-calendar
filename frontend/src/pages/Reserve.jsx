@@ -8,7 +8,7 @@ import { reservationService } from '../services/api';
 const SLOT_CAPACITY = 5;
 
 const Reserve = () => {
-  const getUpcomingDates = () => {
+  /* const getUpcomingDates = () => {
     const today = moment();
     return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
       const targetDay = moment().day(day).day();
@@ -18,6 +18,26 @@ const Reserve = () => {
       if (daysToAdd === 0) daysToAdd = 7;
       return today.clone().add(daysToAdd, 'days').format('YYYY-MM-DD');
     });
+  }; */
+
+  const [startDate, setStartDate] = useState(moment().add(1, 'day'));
+
+  const getUpcomingDates = () => {
+    return Array.from({ length: 5 }, (_, i) =>
+      startDate.clone().add(i, 'days').format('YYYY-MM-DD')
+    );
+  };
+
+  const handlePreviousWeek = () => {
+    const tomorrow = moment().add(1, 'day');
+    // Only allow going back if we're not already at the earliest week
+    if (startDate.isAfter(tomorrow)) {
+      setStartDate(startDate.clone().subtract(1, 'week'));
+    }
+  };
+
+  const handleNextWeek = () => {
+    setStartDate(startDate.clone().add(1, 'week'));
   };
 
   const dates = getUpcomingDates();
@@ -159,6 +179,27 @@ const Reserve = () => {
       <h2 className="mb-8 text-center text-xl font-bold text-slate-800 sm:text-2xl">
         Would you like to make a reservation on the following dates?
       </h2>
+
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">
+          Your reservation calendar
+        </h2>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handlePreviousWeek}
+            disabled={startDate.isSameOrBefore(moment().add(1, 'day'))}
+            className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+          >
+            Previous Week
+          </button>
+          <button
+            onClick={handleNextWeek}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Next Week
+          </button>
+        </div>
+      </div>
 
       {/* Mobile */}
       <div className="space-y-5 md:hidden">
