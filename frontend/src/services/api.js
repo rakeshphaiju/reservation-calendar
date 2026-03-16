@@ -32,15 +32,15 @@ const handleError = (error) => {
 };
 
 export const reservationService = {
-  getAll: () => apiClient.get('/reserve').then(handleResponse).catch(handleError),
+  getAll: () => apiClient.get('/reservations').then(handleResponse).catch(handleError),
 
-  getSlots: () => apiClient.get('/reserve/slots').then(handleResponse).catch(handleError),
+  getSlots: () => apiClient.get('/reservations/slots').then(handleResponse).catch(handleError),
 
-  create: (data) => apiClient.post('/reserve/add', data).then(handleResponse).catch(handleError),
+  create: (data) => apiClient.post('/reservations/add', data).then(handleResponse).catch(handleError),
 
-  getById: (id) => apiClient.get(`/reserve/${id}`).then(handleResponse).catch(handleError),
+  getById: (id) => apiClient.get(`/reservations/${id}`).then(handleResponse).catch(handleError),
 
-  delete: (id) => apiClient.delete(`/reserve/${id}`).then(handleResponse).catch(handleError),
+  delete: (id) => apiClient.delete(`/reservations/${id}`).then(handleResponse).catch(handleError),
 };
 
 export default apiClient;

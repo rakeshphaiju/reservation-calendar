@@ -13,8 +13,8 @@ const ReservationList = () => {
   const loadReservations = async () => {
     try {
       setLoading(true);
-      const data = await reservationService.getAll();
-      setUsers(data);
+      const response = await reservationService.getAll();
+      setUsers(response.data);
     } catch {
       alert('Failed to load reservations');
     } finally {
