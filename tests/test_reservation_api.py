@@ -37,7 +37,7 @@ RESERVATION_PAYLOAD = {
     "address": "123 Main St",
     "phone_number": "1234467892",
     "day": "2026-03-20",
-    "time": "17:00-17:30",
+    "time": "17:00-18:00",
 }
 
 
@@ -66,7 +66,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        resp = await self.client.get("/api/reserve?skip=0&limit=10")
+        resp = await self.client.get("/api/reserve?skip=0&limit=1")
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual(2, len(resp.json()))
         self.assertEqual(

@@ -20,7 +20,8 @@ const Reserve = () => {
     });
   }; */
 
-  const [startDate, setStartDate] = useState(moment().add(1, 'day'));
+  //const [startDate, setStartDate] = useState(moment().add(1, 'day'));
+  const [startDate, setStartDate] = useState(moment());
 
   const getUpcomingDates = () => {
     return Array.from({ length: 5 }, (_, i) =>
@@ -37,13 +38,16 @@ const Reserve = () => {
   };
 
   const handleNextWeek = () => {
-    setStartDate(startDate.clone().add(1, 'week'));
+    const maxDate = moment().add(4, 'weeks');
+    const newStart = startDate.clone().add(1, 'week');
+    if (newStart.isSameOrBefore(maxDate, 'day')) {
+      setStartDate(newStart);
+    }
   };
 
   const dates = getUpcomingDates();
   const times = [
-    '17:00-17:30', '17:30-18:00', '18:00-18:30',
-    '18:30-19:00', '19:00-19:30', '19:30-20:00', '20:00-20:30',
+    '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '15:00-16:00', '16:00-17:00', '17:00-18:00'
   ];
 
   // slotCounts: { "2026-03-17": { "17:00-17:30": 3, ... } }
@@ -134,30 +138,38 @@ const Reserve = () => {
     }
   };
 
+  const isPastOrToday = (day, time) => {
+    const startTime = time.split('-')[0];
+    const slotEnd = moment(`${day} ${startTime}`, 'YYYY-MM-DD HH:mm');
+    return slotEnd.isSameOrBefore(moment());
+  };
+
   const SlotButton = ({ day, time, mobile = false }) => {
-    const booked = isFullyBooked(day, time);
+    const past = isPastOrToday(day, time);
+    const fullyBooked = isFullyBooked(day, time);
+    const disabled = past || fullyBooked;
     const spotsLeft = getSpotsLeft(day, time);
+
+    const statusLabel = past ? '-' : fullyBooked ? 'Fully booked' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`;
 
     return (
       <Button
-        disabled={booked}
-        onClick={() => showForm(day, time)}
+        disabled={disabled}
+        onClick={() => !disabled && showForm(day, time)}
         className={mobile
-          ? `px-3 py-2 text-left border ${booked ? 'border-slate-200' : 'border-emerald-600'}`
+          ? `px-3 py-2 text-left border ${disabled ? 'border-slate-200' : 'border-emerald-600'}`
           : `h-20 w-full`
         }
       >
         {mobile ? (
           <>
             <span className="block font-medium">{time}</span>
-            <span className="block text-xs opacity-90">
-              {booked ? 'Fully booked' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`}
-            </span>
+            <span className="block text-xs opacity-90">{statusLabel}</span>
           </>
         ) : (
           <div className="flex flex-col items-center gap-1">
-            <span>{booked ? 'Full' : 'Book'}</span>
-            {!booked && (
+            <span>{past ? '-' : fullyBooked ? 'Full' : 'Book'}</span>
+            {!disabled && (
               <span className="text-xs opacity-80">
                 {spotsLeft}/{SLOT_CAPACITY} left
               </span>
