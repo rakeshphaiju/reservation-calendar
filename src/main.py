@@ -32,6 +32,14 @@ async def ensure_slot_capacity_column():
             text(
                 """
                 ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS email VARCHAR
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS slot_capacity INTEGER NOT NULL DEFAULT 5
                 """
             )

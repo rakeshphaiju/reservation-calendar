@@ -13,6 +13,7 @@ export const authService = {
       const { data } = await apiClient.get('/auth/me');
       currentUser = {
         username: data.username,
+        email: data.email,
         calendar_slug: data.calendar_slug,
         calendar_url: data.calendar_url,
         slot_capacity: data.slot_capacity,
@@ -36,6 +37,7 @@ export const authService = {
 
     currentUser = {
       username: data.username || username,
+      email: data.email,
       calendar_slug: data.calendar_slug,
       calendar_url: data.calendar_url,
       slot_capacity: data.slot_capacity,
@@ -46,8 +48,8 @@ export const authService = {
     return currentUser;
   },
 
-  register: async (username, password) => {
-    const { data } = await apiClient.post('/auth/register', { username, password });
+  register: async (username, email, password) => {
+    const { data } = await apiClient.post('/auth/register', { username, email, password });
     currentUser = null;
     notify();
 

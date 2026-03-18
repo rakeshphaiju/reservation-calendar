@@ -1,4 +1,3 @@
-# src/services/email_service.py
 import os
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from pydantic import EmailStr
@@ -15,8 +14,6 @@ conf = ConnectionConfig(
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True,
 )
-
-ADMIN_EMAIL = os.getenv("MAIL_USERNAME")
 
 
 async def send_confirmation_email(
@@ -71,6 +68,7 @@ async def send_confirmation_email(
 
 
 async def send_admin_notification(
+    owner_email: EmailStr | None,
     customer_name: str,
     customer_email: str,
     customer_phone: str,
@@ -79,6 +77,13 @@ async def send_admin_notification(
     time: str,
     reservation_id: str,
 ):
+    if not owner_email:
+        logger.warning(
+            "Skipping admin notification for reservation %s because no owner email is configured",
+            reservation_id,
+        )
+        return
+
     try:
         html_body = f"""
         <html>
@@ -127,21 +132,21 @@ async def send_admin_notification(
 
         message = MessageSchema(
             subject=f"New Booking: {customer_name} on {day}",
-            recipients=[ADMIN_EMAIL],
+            recipients=[owner_email],
             body=html_body,
             subtype=MessageType.html,
         )
 
         logger.info(
-            f"Attempting to send admin notification email to: {ADMIN_EMAIL} for reservation {reservation_id}"
+            f"Attempting to send admin notification email to: {owner_email} for reservation {reservation_id}"
         )
 
         fm = FastMail(conf)
         await fm.send_message(message)
 
-        logger.info(f"Successfully sent admin notification to {ADMIN_EMAIL}")
+        logger.info(f"Successfully sent admin notification to {owner_email}")
 
     except Exception as e:
         logger.error(
-            f"Failed to send admin notification email to {ADMIN_EMAIL}. Error: {str(e)}"
+            f"Failed to send admin notification email to {owner_email}. Error: {str(e)}"
         )

@@ -42,18 +42,28 @@ async def register_user(
     payload: UserRegistrationRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    existing_user_result = await db.execute(
+    existing_username_result = await db.execute(
         select(AppUser).where(AppUser.username == payload.username)
     )
-    if existing_user_result.scalars().first():
+    if existing_username_result.scalars().first():
         raise HTTPException(
             status_code=hs.CONFLICT,
             detail="Username already exists",
         )
 
+    existing_email_result = await db.execute(
+        select(AppUser).where(AppUser.email == payload.email)
+    )
+    if existing_email_result.scalars().first():
+        raise HTTPException(
+            status_code=hs.CONFLICT,
+            detail="Email already exists",
+        )
+
     calendar_slug = await generate_unique_calendar_slug(payload.username, db)
     user = AppUser(
         username=payload.username,
+        email=payload.email,
         password_hash=hash_password(payload.password),
         calendar_slug=calendar_slug,
         time_slots=json.dumps(get_time_slots(None)),
@@ -67,6 +77,7 @@ async def register_user(
 
     return {
         "username": user.username,
+        "email": user.email,
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
         "time_slots": get_time_slots(user),
@@ -90,6 +101,7 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "access_token": access_token,
         "token_type": "bearer",
         "username": user.username,
+        "email": user.email,
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
         "time_slots": get_time_slots(user),
@@ -102,6 +114,7 @@ async def get_me(user=Depends(manager)):
     try:
         return {
             "username": user.username,
+            "email": user.email,
             "calendar_slug": user.calendar_slug,
             "slot_capacity": get_slot_capacity(user),
             "time_slots": get_time_slots(user),

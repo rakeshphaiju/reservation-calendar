@@ -1,6 +1,7 @@
 import uuid
 import http as hs
 import json
+import os
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -27,6 +28,7 @@ from src.services.email_service import send_admin_notification, send_confirmatio
 
 router = APIRouter()
 DEFAULT_SLOT_CAPACITY = 5
+DEFAULT_OWNER_NOTIFICATION_EMAIL = os.getenv("MAIL_USERNAME")
 
 
 async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
@@ -122,6 +124,7 @@ async def add_reservations(
 
         background_tasks.add_task(
             send_admin_notification,
+            owner_email=owner.email or DEFAULT_OWNER_NOTIFICATION_EMAIL,
             customer_name=reservation.name,
             customer_email=reservation.email,
             customer_phone=reservation.phone_number,

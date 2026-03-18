@@ -118,6 +118,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
+            email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
             time_slots=json.dumps(["16:00-16:30", "11:00-11:30"]),
@@ -156,6 +157,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
+            email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
             slot_capacity=8,
@@ -197,6 +199,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
+            email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
         )
@@ -221,8 +224,18 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
     async def test_get_calendar_owners(self):
         mock_users_result = MagicMock()
         mock_users_result.scalars.return_value.all.return_value = [
-            AppUser(username="alice", password_hash="hash", calendar_slug="alice"),
-            AppUser(username="bob", password_hash="hash", calendar_slug="bob"),
+            AppUser(
+                username="alice",
+                email="alice@example.com",
+                password_hash="hash",
+                calendar_slug="alice",
+            ),
+            AppUser(
+                username="bob",
+                email="bob@example.com",
+                password_hash="hash",
+                calendar_slug="bob",
+            ),
         ]
 
         mock_db = AsyncMock()
@@ -243,8 +256,18 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
     async def test_get_calendar_owners(self):
         mock_users_result = MagicMock()
         mock_users_result.scalars.return_value.all.return_value = [
-            AppUser(username="alice", password_hash="hash", calendar_slug="alice"),
-            AppUser(username="bob", password_hash="hash", calendar_slug="bob"),
+            AppUser(
+                username="alice",
+                email="alice@example.com",
+                password_hash="hash",
+                calendar_slug="alice",
+            ),
+            AppUser(
+                username="bob",
+                email="bob@example.com",
+                password_hash="hash",
+                calendar_slug="bob",
+            ),
         ]
 
         mock_db = AsyncMock()
@@ -324,6 +347,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
+            email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
             time_slots=json.dumps(["17:00-18:00"]),
@@ -364,11 +388,18 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_db.add.assert_called_once()
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once()
+        mock_confirm.assert_called_once()
+        mock_admin.assert_called_once()
+        self.assertEqual(
+            "owner@example.com",
+            mock_admin.call_args.kwargs["owner_email"],
+        )
 
     async def test_add_reservation_conflict(self):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
+            email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
             time_slots=json.dumps(["17:00-18:00"]),
@@ -415,6 +446,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
+            email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
             time_slots=json.dumps(["17:00-18:00"]),
@@ -448,6 +480,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
+            email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
             time_slots=json.dumps(["17:00-18:00"]),
@@ -490,6 +523,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
+            email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
             time_slots=json.dumps(["09:00-10:00"]),

@@ -7,6 +7,7 @@ import { authService } from '../services/auth';
 export default function Login() {
   const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +26,7 @@ export default function Login() {
 
     try {
       if (mode === 'register') {
-        const data = await authService.register(username, password);
+        const data = await authService.register(username, email, password);
         setSuccess(`Account created. Your booking link is /calendar/${data.calendar_slug}`);
         setMode('login');
       } else {
@@ -38,7 +39,7 @@ export default function Login() {
       if (status === 401) {
         setError('Invalid username or password.');
       } else if (status === 409) {
-        setError('That username is already taken.');
+        setError(err?.response?.data?.detail || 'That username or email is already taken.');
       } else if (status === 422) {
         setError('Please check your input and try again.');
       } else if (status >= 500) {
@@ -65,6 +66,7 @@ export default function Login() {
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
           <Input
+            name="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
@@ -75,6 +77,7 @@ export default function Login() {
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
           <Input
+            name="password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -82,6 +85,19 @@ export default function Login() {
             placeholder="••••••••"
           />
         </div>
+        {mode === 'register' && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            <Input
+              name="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="owner@example.com"
+            />
+          </div>
+        )}
         {error && (
           <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
             {error}

@@ -9,7 +9,7 @@ from http import HTTPStatus as hs
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_login import LoginManager
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,6 +41,7 @@ DEFAULT_TIME_SLOTS = [
 
 class User(BaseModel):
     username: str
+    email: EmailStr | None = None
     calendar_slug: str
     slot_capacity: int = 5
     time_slots: list[str] = DEFAULT_TIME_SLOTS.copy()
@@ -127,6 +128,7 @@ async def load_user(username: str) -> User | None:
             return None
         return User(
             username=user.username,
+            email=user.email,
             calendar_slug=user.calendar_slug,
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
             time_slots=get_user_time_slots(user),
@@ -151,6 +153,7 @@ async def authenticate_user(
 
     return User(
         username=user_record.username,
+        email=user_record.email,
         calendar_slug=user_record.calendar_slug,
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,
         time_slots=get_user_time_slots(user_record),
