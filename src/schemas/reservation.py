@@ -1,6 +1,7 @@
 import uuid
-from typing import Literal, List
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+import re
+from typing import List
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class ReservationCreate(BaseModel):
@@ -9,15 +10,14 @@ class ReservationCreate(BaseModel):
     email: EmailStr
     phone_number: str = Field(..., pattern=r"^\d{10}$")
     day: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
-    time: Literal[
-        "10:00-11:00",
-        "11:00-12:00",
-        "12:00-13:00",
-        "13:00-14:00",
-        "15:00-16:00",
-        "16:00-17:00",
-        "17:00-18:00",
-    ]
+    time: str
+
+    @field_validator("time")
+    @classmethod
+    def validate_time(cls, value: str) -> str:
+        if not re.fullmatch(r"^\d{2}:\d{2}-\d{2}:\d{2}$", value):
+            raise ValueError("Time must be in HH:MM-HH:MM format")
+        return value
 
 
 class ReservationResponse(BaseModel):
@@ -48,6 +48,7 @@ class CalendarSlotSummary(BaseModel):
 class CalendarAvailabilityResponse(BaseModel):
     owner_slug: str
     slot_capacity: int
+    time_slots: List[str]
     slots: List[CalendarSlotSummary]
 
 
@@ -65,3 +66,30 @@ class CalendarOwnerSummary(BaseModel):
 
 class SlotCapacityUpdate(BaseModel):
     slot_capacity: int = Field(..., ge=1, le=100)
+
+
+class TimeSlotsUpdate(BaseModel):
+    time_slots: List[str] = Field(..., min_length=1, max_length=50)
+
+    @field_validator("time_slots")
+    @classmethod
+    def validate_time_slots(cls, value: List[str]) -> List[str]:
+        normalized: List[str] = []
+        seen = set()
+
+        for slot in value:
+            trimmed = slot.strip()
+            if not re.fullmatch(r"^\d{2}:\d{2}-\d{2}:\d{2}$", trimmed):
+                raise ValueError("Each time slot must be in HH:MM-HH:MM format")
+            start, end = trimmed.split("-")
+            if start >= end:
+                raise ValueError("Each time slot must end after it starts")
+            if trimmed in seen:
+                continue
+            seen.add(trimmed)
+            normalized.append(trimmed)
+
+        if not normalized:
+            raise ValueError("At least one time slot is required")
+
+        return normalized

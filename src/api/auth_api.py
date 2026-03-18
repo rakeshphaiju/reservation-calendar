@@ -1,9 +1,10 @@
 from datetime import timedelta
 from http import HTTPStatus as hs
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi_login.exceptions import InvalidCredentialsException
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.auth import (
@@ -11,11 +12,13 @@ from src.auth.auth import (
     User,
     authenticate_user,
     generate_unique_calendar_slug,
+    get_user_time_slots,
     hash_password,
     manager,
 )
 from src.common.db import get_db
 from src.common.logger import logger
+from src.models.reservation import Reservation
 from src.models.user import AppUser
 from src.schemas.user import UserRegistrationRequest
 
@@ -28,6 +31,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 def get_slot_capacity(user) -> int:
     return getattr(user, "slot_capacity", 5) or 5
+
+
+def get_time_slots(user) -> list[str]:
+    return get_user_time_slots(user)
 
 
 @router.post("/api/auth/register")
@@ -49,6 +56,7 @@ async def register_user(
         username=payload.username,
         password_hash=hash_password(payload.password),
         calendar_slug=calendar_slug,
+        time_slots=json.dumps(get_time_slots(None)),
     )
     db.add(user)
     await db.commit()
@@ -61,6 +69,7 @@ async def register_user(
         "username": user.username,
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
+        "time_slots": get_time_slots(user),
         "calendar_url": f"/calendar/{user.calendar_slug}",
     }
 
@@ -83,6 +92,7 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "username": user.username,
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
+        "time_slots": get_time_slots(user),
         "calendar_url": f"/calendar/{user.calendar_slug}",
     }
 
@@ -94,6 +104,7 @@ async def get_me(user=Depends(manager)):
             "username": user.username,
             "calendar_slug": user.calendar_slug,
             "slot_capacity": get_slot_capacity(user),
+            "time_slots": get_time_slots(user),
             "calendar_url": f"/calendar/{user.calendar_slug}",
             "authenticated": True,
         }
@@ -128,4 +139,51 @@ async def logout(response: Response):
         raise HTTPException(
             status_code=hs.INTERNAL_SERVER_ERROR,
             detail="Logout failed. Please try again.",
+        )
+
+
+@router.delete("/api/auth/account")
+async def delete_account(
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        result = await db.execute(
+            select(AppUser).where(AppUser.username == user.username)
+        )
+        db_user = result.scalars().first()
+        if not db_user:
+            raise HTTPException(
+                status_code=hs.NOT_FOUND,
+                detail="User not found",
+            )
+
+        await db.execute(
+            delete(Reservation).where(Reservation.owner_slug == db_user.calendar_slug)
+        )
+        await db.delete(db_user)
+        await db.commit()
+
+        response.delete_cookie(
+            key="access-token",
+            httponly=True,
+            samesite="lax",
+            secure=False,
+            path="/",
+        )
+        logger.info(
+            "Deleted user '%s' and reservations for calendar '%s'",
+            db_user.username,
+            db_user.calendar_slug,
+        )
+        return {"message": "Account deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to delete account: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.INTERNAL_SERVER_ERROR,
+            detail="Failed to delete account.",
         )

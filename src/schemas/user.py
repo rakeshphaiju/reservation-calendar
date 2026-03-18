@@ -12,4 +12,5 @@ class UserResponse(BaseModel):
     username: str
     calendar_slug: str
     slot_capacity: int
+    time_slots: list[str]
     authenticated: bool = True

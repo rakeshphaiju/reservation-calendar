@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 
 from src.common.db import Base
@@ -14,3 +14,4 @@ class AppUser(Base):
     password_hash = Column(String, nullable=False)
     calendar_slug = Column(String, nullable=False, unique=True, index=True)
     slot_capacity = Column(Integer, nullable=False, default=5, server_default="5")
+    time_slots = Column(Text, nullable=False, default="[]", server_default="[]")

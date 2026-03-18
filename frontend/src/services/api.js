@@ -46,8 +46,18 @@ export const reservationService = {
     .then(handleResponse)
     .catch(handleError),
 
+  getTimeSlots: () => apiClient
+    .get('/dashboard/time-slots')
+    .then(handleResponse)
+    .catch(handleError),
+
   updateSlotCapacity: (slot_capacity) => apiClient
     .put('/dashboard/slot-capacity', { slot_capacity })
+    .then(handleResponse)
+    .catch(handleError),
+
+  updateTimeSlots: (time_slots) => apiClient
+    .put('/dashboard/time-slots', { time_slots })
     .then(handleResponse)
     .catch(handleError),
 

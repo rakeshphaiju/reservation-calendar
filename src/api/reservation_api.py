@@ -1,12 +1,13 @@
 import uuid
 import http as hs
+import json
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.auth import manager
+from src.auth.auth import DEFAULT_TIME_SLOTS, get_user_time_slots, manager
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
@@ -19,6 +20,7 @@ from src.schemas.reservation import (
     ReservationCreate,
     ReservationResponse,
     SlotCapacityUpdate,
+    TimeSlotsUpdate,
 )
 from src.services.email_service import send_admin_notification, send_confirmation_email
 
@@ -54,6 +56,10 @@ def get_owner_slot_capacity(owner: AppUser) -> int:
     return getattr(owner, "slot_capacity", None) or DEFAULT_SLOT_CAPACITY
 
 
+def get_owner_time_slots(owner: AppUser) -> list[str]:
+    return get_user_time_slots(owner)
+
+
 @router.post(
     "/api/calendars/{owner_slug}/reservations/add", response_model=ReservationResponse
 )
@@ -65,6 +71,13 @@ async def add_reservations(
 ):
     try:
         owner = await get_calendar_owner(owner_slug, db)
+        allowed_time_slots = set(get_owner_time_slots(owner))
+
+        if reservation.time not in allowed_time_slots:
+            raise HTTPException(
+                status_code=hs.HTTPStatus.BAD_REQUEST,
+                detail="This time slot is not available for this calendar",
+            )
 
         existing_email_result = await db.execute(
             select(Reservation).where(
@@ -192,9 +205,11 @@ async def get_reserved_slots(owner_slug: str, db: AsyncSession = Depends(get_db)
         )
         rows = result.all()
         slot_capacity = get_owner_slot_capacity(owner)
+        time_slots = get_owner_time_slots(owner)
         return CalendarAvailabilityResponse(
             owner_slug=owner_slug,
             slot_capacity=slot_capacity,
+            time_slots=time_slots,
             slots=[
                 CalendarSlotSummary(
                     day=day,
@@ -249,6 +264,43 @@ async def update_slot_capacity(
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to update slot capacity.",
+        )
+
+
+@router.get("/api/dashboard/time-slots")
+async def get_time_slots(user=Depends(manager)):
+    return {"time_slots": get_owner_time_slots(user)}
+
+
+@router.put("/api/dashboard/time-slots")
+async def update_time_slots(
+    payload: TimeSlotsUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        result = await db.execute(
+            select(AppUser).where(AppUser.username == user.username)
+        )
+        db_user = result.scalars().first()
+        if not db_user:
+            raise HTTPException(
+                status_code=hs.HTTPStatus.NOT_FOUND,
+                detail="User not found",
+            )
+
+        db_user.time_slots = json.dumps(payload.time_slots or DEFAULT_TIME_SLOTS)
+        await db.commit()
+        await db.refresh(db_user)
+        return {"time_slots": get_owner_time_slots(db_user)}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update time slots: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update time slots.",
         )
 
 

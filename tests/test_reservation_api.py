@@ -1,4 +1,5 @@
 import unittest
+import json
 from http import HTTPStatus as hs
 from httpx import AsyncClient, ASGITransport
 from unittest.mock import AsyncMock, patch, MagicMock
@@ -119,6 +120,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             username="mock-user",
             password_hash="hash",
             calendar_slug="mock-user",
+            time_slots=json.dumps(["16:00-16:30", "11:00-11:30"]),
         )
 
         mock_result = MagicMock()
@@ -136,6 +138,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("mock-user", resp.json()["owner_slug"])
         self.assertEqual(5, resp.json()["slot_capacity"])
+        self.assertEqual(["16:00-16:30", "11:00-11:30"], resp.json()["time_slots"])
         self.assertEqual(
             [
                 {"day": "Monday", "time": "16:00-16:30", "count": 5, "capacity": 5},
@@ -169,6 +172,49 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual({"slot_capacity": 8}, resp.json())
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once()
+
+    async def test_get_time_slots(self):
+        resp = await self.client.get("/api/dashboard/time-slots")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            {
+                "time_slots": [
+                    "10:00-11:00",
+                    "11:00-12:00",
+                    "12:00-13:00",
+                    "13:00-14:00",
+                    "15:00-16:00",
+                    "16:00-17:00",
+                    "17:00-18:00",
+                ]
+            },
+            resp.json(),
+        )
+
+    async def test_update_time_slots(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            password_hash="hash",
+            calendar_slug="mock-user",
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.put(
+            "/api/dashboard/time-slots",
+            json={"time_slots": ["09:00-10:00", "10:00-11:00"]},
+        )
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            {"time_slots": ["09:00-10:00", "10:00-11:00"]},
+            resp.json(),
+        )
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once()
 
@@ -280,6 +326,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             username="mock-user",
             password_hash="hash",
             calendar_slug="mock-user",
+            time_slots=json.dumps(["17:00-18:00"]),
         )
 
         mock_existing_email = MagicMock()
@@ -324,6 +371,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             username="mock-user",
             password_hash="hash",
             calendar_slug="mock-user",
+            time_slots=json.dumps(["17:00-18:00"]),
         )
 
         mock_existing_email = MagicMock()
@@ -369,6 +417,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             username="mock-user",
             password_hash="hash",
             calendar_slug="mock-user",
+            time_slots=json.dumps(["17:00-18:00"]),
         )
 
         mock_existing_email = MagicMock()
@@ -401,6 +450,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             username="mock-user",
             password_hash="hash",
             calendar_slug="mock-user",
+            time_slots=json.dumps(["17:00-18:00"]),
         )
 
         mock_existing = MagicMock()
@@ -435,3 +485,26 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             "/api/calendars/mock-user/reservations/add", json={"name": "John"}
         )
         self.assertEqual(hs.BAD_REQUEST, resp.status_code)
+
+    async def test_add_reservation_rejects_unconfigured_time_slot(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            password_hash="hash",
+            calendar_slug="mock-user",
+            time_slots=json.dumps(["09:00-10:00"]),
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.side_effect = [mock_user_result]
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=RESERVATION_PAYLOAD
+        )
+        self.assertEqual(hs.BAD_REQUEST, resp.status_code)
+        self.assertEqual(
+            "This time slot is not available for this calendar",
+            resp.json()["detail"],
+        )

@@ -16,6 +16,7 @@ export const authService = {
         calendar_slug: data.calendar_slug,
         calendar_url: data.calendar_url,
         slot_capacity: data.slot_capacity,
+        time_slots: data.time_slots,
       };
     } catch {
       currentUser = null;
@@ -38,6 +39,7 @@ export const authService = {
       calendar_slug: data.calendar_slug,
       calendar_url: data.calendar_url,
       slot_capacity: data.slot_capacity,
+      time_slots: data.time_slots,
     };
     notify();
 
@@ -61,6 +63,12 @@ export const authService = {
       currentUser = null;
       notify();
     }
+  },
+
+  deleteAccount: async () => {
+    await apiClient.delete('/auth/account');
+    currentUser = null;
+    notify();
   },
 
   setUser: (user) => {

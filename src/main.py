@@ -19,7 +19,7 @@ from src.api.auth_api import router as auth_api
 from src.common.db import engine, Base
 from src.tasks.scheduler import initialize_scheduler
 
-# Load environment variables from .env file
+
 load_dotenv()
 
 
@@ -33,6 +33,14 @@ async def ensure_slot_capacity_column():
                 """
                 ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS slot_capacity INTEGER NOT NULL DEFAULT 5
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS time_slots TEXT NOT NULL DEFAULT '[]'
                 """
             )
         )
@@ -55,7 +63,7 @@ async def lifespan(app: FastAPI):
     try:
         await ensure_slot_capacity_column()
     except Exception as e:
-        logger.exception("Failed to ensure slot_capacity column: %s", e)
+        logger.exception("Failed to ensure user settings columns: %s", e)
 
     # Start the scheduler
     try:

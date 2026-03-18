@@ -7,12 +7,23 @@ import SlotButton from '../components/SlotButton';
 import ReservationModal from '../components/ReservationModal';
 import { reservationService } from '../services/api';
 
+const DEFAULT_TIME_SLOTS = [
+  '10:00-11:00',
+  '11:00-12:00',
+  '12:00-13:00',
+  '13:00-14:00',
+  '15:00-16:00',
+  '16:00-17:00',
+  '17:00-18:00',
+];
+
 const Reserve = () => {
   const { ownerSlug } = useParams();
   const [startDate, setStartDate] = useState(moment());
   const [slotCounts, setSlotCounts] = useState({});
   const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
   const [slotCapacity, setSlotCapacity] = useState(5);
+  const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
   const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
   const [errors, setErrors] = useState({});
   const [showModal, setShowModal] = useState(false);
@@ -34,12 +45,14 @@ const Reserve = () => {
         const counts = {};
         const fullyBooked = [];
         const nextCapacity = availability.slot_capacity ?? 5;
+        const nextTimeSlots = availability.time_slots?.length ? availability.time_slots : DEFAULT_TIME_SLOTS;
         availability.slots.forEach(({ day, time, count }) => {
           if (!counts[day]) counts[day] = {};
           counts[day][time] = count;
           if (count >= nextCapacity) fullyBooked.push({ day, time });
         });
         setSlotCapacity(nextCapacity);
+        setTimeSlots(nextTimeSlots);
         setSlotCounts(counts);
         setFullyBookedSlots(fullyBooked);
         setCalendarExists(true);
@@ -48,6 +61,7 @@ const Reserve = () => {
         if (err?.response?.status === 404) {
           setCalendarExists(false);
           setSlotCapacity(5);
+          setTimeSlots(DEFAULT_TIME_SLOTS);
           setSlotCounts({});
           setFullyBookedSlots([]);
           return;
@@ -73,10 +87,7 @@ const Reserve = () => {
   };
 
   const dates = getUpcomingDates();
-  const times = [
-    '10:00-11:00', '11:00-12:00', '12:00-13:00',
-    '13:00-14:00', '15:00-16:00', '16:00-17:00', '17:00-18:00',
-  ];
+  const times = timeSlots;
 
   const handleInput = (e) => {
     const { name, value } = e.target;

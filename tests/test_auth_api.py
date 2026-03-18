@@ -29,6 +29,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertIn("access-token", resp.cookies)
         self.assertEqual("testuser", resp.json()["calendar_slug"])
+        self.assertIn("time_slots", resp.json())
 
     async def test_register_user(self):
         existing_user_result = MagicMock()
@@ -51,6 +52,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("new-user", resp.json()["username"])
         self.assertEqual("new-user", resp.json()["calendar_slug"])
         self.assertEqual("/calendar/new-user", resp.json()["calendar_url"])
+        self.assertIn("time_slots", resp.json())
         mock_db.add.assert_called_once()
         mock_db.commit.assert_awaited_once()
 
@@ -60,6 +62,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("mock-user", resp.json()["username"])
         self.assertEqual("mock-user", resp.json()["calendar_slug"])
+        self.assertIn("time_slots", resp.json())
 
     async def test_logout_success(self):
         mock_logged_in_user(app)
@@ -67,6 +70,39 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertNotIn("access-token", resp.cookies)
         self.assertEqual("Logged out successfully", resp.json()["message"])
+
+    async def test_delete_account_success(self):
+        mock_user_result = MagicMock()
+        mock_user = MagicMock()
+        mock_user.username = "mock-user"
+        mock_user.calendar_slug = "mock-user"
+        mock_user_result.scalars.return_value.first.return_value = mock_user
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+        mock_logged_in_user(app)
+
+        resp = await self.client.delete("/api/auth/account")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual("Account deleted successfully", resp.json()["message"])
+        mock_db.delete.assert_awaited_once_with(mock_user)
+        mock_db.commit.assert_awaited_once()
+
+    async def test_delete_account_not_found(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = None
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+        mock_logged_in_user(app)
+
+        resp = await self.client.delete("/api/auth/account")
+        self.assertEqual(hs.NOT_FOUND, resp.status_code)
+        self.assertEqual("User not found", resp.json()["detail"])
 
     async def test_get_me_unauthenticated(self):
         self.client.cookies.delete("access-token")

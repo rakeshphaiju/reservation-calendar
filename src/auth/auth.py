@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import json
 import os
 import re
 import secrets
@@ -27,10 +28,36 @@ TOKEN_URL = "/api/auth/login"
 manager = LoginManager(SECRET_KEY, token_url=TOKEN_URL, use_cookie=True)
 
 
+DEFAULT_TIME_SLOTS = [
+    "10:00-11:00",
+    "11:00-12:00",
+    "12:00-13:00",
+    "13:00-14:00",
+    "15:00-16:00",
+    "16:00-17:00",
+    "17:00-18:00",
+]
+
+
 class User(BaseModel):
     username: str
     calendar_slug: str
     slot_capacity: int = 5
+    time_slots: list[str] = DEFAULT_TIME_SLOTS.copy()
+
+
+def get_user_time_slots(user) -> list[str]:
+    raw_slots = getattr(user, "time_slots", None)
+    if isinstance(raw_slots, list) and raw_slots:
+        return raw_slots
+    if isinstance(raw_slots, str):
+        try:
+            parsed = json.loads(raw_slots)
+            if isinstance(parsed, list) and parsed:
+                return [str(slot) for slot in parsed]
+        except json.JSONDecodeError:
+            pass
+    return DEFAULT_TIME_SLOTS.copy()
 
 
 def hash_password(password: str) -> str:
@@ -102,6 +129,7 @@ async def load_user(username: str) -> User | None:
             username=user.username,
             calendar_slug=user.calendar_slug,
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
+            time_slots=get_user_time_slots(user),
         )
 
 
@@ -125,4 +153,5 @@ async def authenticate_user(
         username=user_record.username,
         calendar_slug=user_record.calendar_slug,
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,
+        time_slots=get_user_time_slots(user_record),
     )
