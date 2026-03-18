@@ -5,10 +5,12 @@ import Input from '../components/form/Input';
 import { authService } from '../services/auth';
 
 export default function Login() {
+  const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -18,18 +20,27 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      await authService.login(username, password);
-      navigate(from, { replace: true });
+      if (mode === 'register') {
+        const data = await authService.register(username, password);
+        setSuccess(`Account created. Your booking link is /calendar/${data.calendar_slug}`);
+        setMode('login');
+      } else {
+        await authService.login(username, password);
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       const status = err?.response?.status;
 
       if (status === 401) {
         setError('Invalid username or password.');
+      } else if (status === 409) {
+        setError('That username is already taken.');
       } else if (status === 422) {
-        setError('Please enter both username and password.');
+        setError('Please check your input and try again.');
       } else if (status >= 500) {
         setError('Server error. Please try again later.');
       } else {
@@ -42,9 +53,13 @@ export default function Login() {
 
   return (
     <div className="max-w-md mx-auto mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-4 text-xl font-semibold text-slate-800 sm:text-2xl">Admin Login</h2>
+      <h2 className="mb-4 text-xl font-semibold text-slate-800 sm:text-2xl">
+        {mode === 'login' ? 'Sign in' : 'Create account'}
+      </h2>
       <p className="mb-6 text-sm text-slate-600">
-        Sign in to view and manage reservations.
+        {mode === 'login'
+          ? 'Sign in to manage your own reservation calendar.'
+          : 'Create a user account and we will generate a unique calendar link for you.'}
       </p>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -72,11 +87,28 @@ export default function Login() {
             {error}
           </div>
         )}
+        {success && (
+          <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            {success}
+          </div>
+        )}
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Signing in...' : 'Sign in'}
+          {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
         </Button>
       </form>
+      <button
+        type="button"
+        onClick={() => {
+          setMode(mode === 'login' ? 'register' : 'login');
+          setError('');
+          setSuccess('');
+        }}
+        className="mt-4 w-full text-sm font-medium text-emerald-600 hover:text-emerald-700"
+      >
+        {mode === 'login'
+          ? 'Need a new calendar? Create an account'
+          : 'Already have an account? Sign in'}
+      </button>
     </div>
   );
 }
-

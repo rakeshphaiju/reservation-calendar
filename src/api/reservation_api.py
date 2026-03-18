@@ -1,38 +1,68 @@
 import uuid
 import http as hs
 from typing import List
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from sqlalchemy import func
 
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.auth.auth import manager
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
+from src.models.user import AppUser
 from src.schemas.reservation import (
+    CalendarOwnerSummary,
+    PaginatedReservations,
     ReservationCreate,
     ReservationResponse,
     ReservationSlot,
-    PaginatedReservations,
 )
-from src.services.email_service import send_confirmation_email, send_admin_notification
-from src.auth.auth import manager
+from src.services.email_service import send_admin_notification, send_confirmation_email
 
 
 router = APIRouter()
 SLOT_CAPACITY = 5
 
 
-@router.post("/api/reservations/add", response_model=ReservationResponse)
+async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
+    result = await db.execute(
+        select(AppUser).where(AppUser.calendar_slug == owner_slug)
+    )
+    owner = result.scalars().first()
+    if not owner:
+        raise HTTPException(
+            status_code=hs.HTTPStatus.NOT_FOUND,
+            detail="Calendar not found",
+        )
+    return owner
+
+
+@router.get("/api/calendars", response_model=List[CalendarOwnerSummary])
+async def get_calendar_owners(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(AppUser).order_by(AppUser.username.asc()))
+    users = result.scalars().all()
+    return [
+        CalendarOwnerSummary(username=user.username, calendar_slug=user.calendar_slug)
+        for user in users
+    ]
+
+
+@router.post(
+    "/api/calendars/{owner_slug}/reservations/add", response_model=ReservationResponse
+)
 async def add_reservations(
+    owner_slug: str,
     reservation: ReservationCreate,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        # Check if this email already has a reservation for the same slot
+        owner = await get_calendar_owner(owner_slug, db)
+
         existing_email_result = await db.execute(
             select(Reservation).where(
+                Reservation.owner_slug == owner_slug,
                 Reservation.day == reservation.day,
                 Reservation.time == reservation.time,
                 Reservation.email == reservation.email,
@@ -44,9 +74,9 @@ async def add_reservations(
                 detail="This user already has a reservation for this time slot",
             )
 
-        # Check overall capacity for this slot
         slot_reservations_result = await db.execute(
             select(Reservation).where(
+                Reservation.owner_slug == owner_slug,
                 Reservation.day == reservation.day,
                 Reservation.time == reservation.time,
             )
@@ -58,7 +88,7 @@ async def add_reservations(
                 detail="This time slot is fully booked",
             )
 
-        db_reservation = Reservation(**reservation.model_dump())
+        db_reservation = Reservation(owner_slug=owner_slug, **reservation.model_dump())
         db.add(db_reservation)
         await db.commit()
         await db.refresh(db_reservation)
@@ -82,12 +112,19 @@ async def add_reservations(
             reservation_id=str(db_reservation.id),
         )
 
+        logger.info(
+            "Created reservation %s for calendar '%s' owned by '%s'",
+            db_reservation.id,
+            owner_slug,
+            owner.username,
+        )
+
         return db_reservation
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error while creating reservation: {e}", exc_info=True)
+    except Exception as exc:
+        logger.error("Error while creating reservation: %s", exc, exc_info=True)
         await db.rollback()
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -98,15 +135,24 @@ async def add_reservations(
 @router.get("/api/reservations", response_model=PaginatedReservations)
 async def get_all_reservations(
     db: AsyncSession = Depends(get_db),
-    _user=Depends(manager),
+    user=Depends(manager),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(10, ge=1, le=100, description="Maximum records to return"),
 ):
     try:
-        total = await db.execute(select(func.count()).select_from(Reservation))
+        total = await db.execute(
+            select(func.count())
+            .select_from(Reservation)
+            .where(Reservation.owner_slug == user.calendar_slug)
+        )
         total_count = total.scalar_one()
 
-        result = await db.execute(select(Reservation).offset(skip).limit(limit))
+        result = await db.execute(
+            select(Reservation)
+            .where(Reservation.owner_slug == user.calendar_slug)
+            .offset(skip)
+            .limit(limit)
+        )
         reservations = result.scalars().all()
         return {
             "total_count": total_count,
@@ -114,32 +160,39 @@ async def get_all_reservations(
             "limit": limit,
             "data": reservations,
         }
-        # return reservations
-    except Exception as e:
-        logger.error(f"Failed to fetch reservations: {e}", exc_info=True)
+    except Exception as exc:
+        logger.error("Failed to fetch reservations: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Error fetching reservations from the database.",
         )
 
 
-@router.get("/api/reservations/slots", response_model=List[ReservationSlot])
-async def get_reserved_slots(db: AsyncSession = Depends(get_db)):
+@router.get(
+    "/api/calendars/{owner_slug}/reservations/slots",
+    response_model=List[ReservationSlot],
+)
+async def get_reserved_slots(owner_slug: str, db: AsyncSession = Depends(get_db)):
     try:
+        await get_calendar_owner(owner_slug, db)
         result = await db.execute(
             select(
                 Reservation.day,
                 Reservation.time,
                 func.count().label("count"),
-            ).group_by(Reservation.day, Reservation.time)
+            )
+            .where(Reservation.owner_slug == owner_slug)
+            .group_by(Reservation.day, Reservation.time)
         )
         rows = result.all()
         return [
             ReservationSlot(day=day, time=time, count=count)
             for day, time, count in rows
         ]
-    except Exception as e:
-        logger.error(f"Failed to fetch reserved slots: {e}", exc_info=True)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to fetch reserved slots: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Error fetching reserved slots from the database.",
@@ -150,11 +203,14 @@ async def get_reserved_slots(db: AsyncSession = Depends(get_db)):
 async def get_reservation(
     reserve_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _user=Depends(manager),
+    user=Depends(manager),
 ):
     try:
         result = await db.execute(
-            select(Reservation).where(Reservation.id == reserve_id)
+            select(Reservation).where(
+                Reservation.id == reserve_id,
+                Reservation.owner_slug == user.calendar_slug,
+            )
         )
         reservation = result.scalars().first()
         if not reservation:
@@ -165,8 +221,10 @@ async def get_reservation(
         return reservation
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error retrieving reservation {reserve_id}: {e}", exc_info=True)
+    except Exception as exc:
+        logger.error(
+            "Error retrieving reservation %s: %s", reserve_id, exc, exc_info=True
+        )
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve reservation.",
@@ -177,11 +235,14 @@ async def get_reservation(
 async def delete_reservation(
     reserve_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _user=Depends(manager),
+    user=Depends(manager),
 ):
     try:
         result = await db.execute(
-            select(Reservation).where(Reservation.id == reserve_id)
+            select(Reservation).where(
+                Reservation.id == reserve_id,
+                Reservation.owner_slug == user.calendar_slug,
+            )
         )
         reservation = result.scalars().first()
         if not reservation:
@@ -196,8 +257,10 @@ async def delete_reservation(
 
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error deleting reservation {reserve_id}: {e}", exc_info=True)
+    except Exception as exc:
+        logger.error(
+            "Error deleting reservation %s: %s", reserve_id, exc, exc_info=True
+        )
         await db.rollback()
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,

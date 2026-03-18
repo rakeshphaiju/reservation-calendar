@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch, MagicMock
 
 from src.main import app
 from src.models.reservation import Reservation
+from src.models.user import AppUser
 from src.common.db import get_db
 from tests.utils.db_mock import mock_get_db
 from tests.utils.auth_mock import mock_logged_in_user
@@ -13,6 +14,7 @@ from tests.utils.auth_mock import mock_logged_in_user
 mock_reservations = [
     Reservation(
         id="3fe6fd7c-1c87-11f1-941d-325096b39f47",
+        owner_slug="mock-user",
         name="John Doe",
         email="john@example.com",
         address="123 Main St",
@@ -22,6 +24,7 @@ mock_reservations = [
     ),
     Reservation(
         id="f6eb947c-a5b5-43b0-8baa-0731a75fa6e5",
+        owner_slug="mock-user",
         name="Jane Doe",
         email="jane@example.com",
         address="456 Side St",
@@ -80,6 +83,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
                 "data": [
                     {
                         "id": "3fe6fd7c-1c87-11f1-941d-325096b39f47",
+                        "owner_slug": "mock-user",
                         "name": "John Doe",
                         "email": "john@example.com",
                         "address": "123 Main St",
@@ -89,6 +93,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
                     },
                     {
                         "id": "f6eb947c-a5b5-43b0-8baa-0731a75fa6e5",
+                        "owner_slug": "mock-user",
                         "name": "Jane Doe",
                         "email": "jane@example.com",
                         "address": "456 Side St",
@@ -109,6 +114,13 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.UNAUTHORIZED, resp.status_code)
 
     async def test_get_reservations_slots(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            password_hash="hash",
+            calendar_slug="mock-user",
+        )
+
         mock_result = MagicMock()
         mock_result.all.return_value = [
             ("Monday", "16:00-16:30", 5),
@@ -116,17 +128,39 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         ]
 
         mock_db = AsyncMock()
-        mock_db.execute.return_value = mock_result
+        mock_db.execute.side_effect = [mock_user_result, mock_result]
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        resp = await self.client.get("/api/reservations/slots")
+        resp = await self.client.get("/api/calendars/mock-user/reservations/slots")
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual(2, len(resp.json()))
         self.assertEqual(
             [
                 {"day": "Monday", "time": "16:00-16:30", "count": 5},
                 {"day": "Tuesday", "time": "11:00-11:30", "count": 3},
+            ],
+            resp.json(),
+        )
+
+    async def test_get_calendar_owners(self):
+        mock_users_result = MagicMock()
+        mock_users_result.scalars.return_value.all.return_value = [
+            AppUser(username="alice", password_hash="hash", calendar_slug="alice"),
+            AppUser(username="bob", password_hash="hash", calendar_slug="bob"),
+        ]
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_users_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.get("/api/calendars")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            [
+                {"username": "alice", "calendar_slug": "alice"},
+                {"username": "bob", "calendar_slug": "bob"},
             ],
             resp.json(),
         )
@@ -190,6 +224,13 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_db.rollback.assert_awaited_once()
 
     async def test_add_reservation_success(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            password_hash="hash",
+            calendar_slug="mock-user",
+        )
+
         mock_existing_email = MagicMock()
         mock_existing_email.scalars.return_value.first.return_value = None
 
@@ -197,7 +238,11 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_slot_reservations.scalars.return_value.all.return_value = []
 
         mock_db = AsyncMock()
-        mock_db.execute.side_effect = [mock_existing_email, mock_slot_reservations]
+        mock_db.execute.side_effect = [
+            mock_user_result,
+            mock_existing_email,
+            mock_slot_reservations,
+        ]
         mock_db.add = MagicMock()
         mock_db.refresh.side_effect = lambda obj: setattr(
             obj, "id", "3fe6fd7c-1c87-11f1-941d-325096b39f47"
@@ -210,18 +255,26 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             patch("src.api.reservation_api.send_admin_notification") as mock_admin,
         ):
             resp = await self.client.post(
-                "/api/reservations/add", json=RESERVATION_PAYLOAD
+                "/api/calendars/mock-user/reservations/add", json=RESERVATION_PAYLOAD
             )
 
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("John Cena", resp.json()["name"])
         self.assertEqual("2026-03-20", resp.json()["day"])
+        self.assertEqual("mock-user", resp.json()["owner_slug"])
 
         mock_db.add.assert_called_once()
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once()
 
     async def test_add_reservation_conflict(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            password_hash="hash",
+            calendar_slug="mock-user",
+        )
+
         mock_existing_email = MagicMock()
         mock_existing_email.scalars.return_value.first.return_value = None
 
@@ -230,6 +283,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_slot_reservations.scalars.return_value.all.return_value = [
             Reservation(
                 id=f"slot-full-{i}",
+                owner_slug="mock-user",
                 name="Mock User",
                 email=f"mockuser{i}@example.com",
                 address="Addr",
@@ -241,11 +295,17 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         ]
 
         mock_db = AsyncMock()
-        mock_db.execute.side_effect = [mock_existing_email, mock_slot_reservations]
+        mock_db.execute.side_effect = [
+            mock_user_result,
+            mock_existing_email,
+            mock_slot_reservations,
+        ]
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        resp = await self.client.post("/api/reservations/add", json=RESERVATION_PAYLOAD)
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=RESERVATION_PAYLOAD
+        )
         self.assertEqual(hs.CONFLICT, resp.status_code)
         self.assertEqual("This time slot is fully booked", resp.json()["detail"])
 
@@ -253,18 +313,28 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_db.commit.assert_not_awaited()
 
     async def test_add_reservation_email_conflict(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            password_hash="hash",
+            calendar_slug="mock-user",
+        )
+
         mock_existing_email = MagicMock()
         mock_existing_email.scalars.return_value.first.return_value = Reservation(
             id="existing-email-conflict",
+            owner_slug="mock-user",
             **RESERVATION_PAYLOAD,
         )
 
         mock_db = AsyncMock()
-        mock_db.execute.return_value = mock_existing_email
+        mock_db.execute.side_effect = [mock_user_result, mock_existing_email]
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        resp = await self.client.post("/api/reservations/add", json=RESERVATION_PAYLOAD)
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=RESERVATION_PAYLOAD
+        )
         self.assertEqual(hs.CONFLICT, resp.status_code)
         self.assertEqual(
             "This user already has a reservation for this time slot",
@@ -275,17 +345,33 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_db.commit.assert_not_awaited()
 
     async def test_add_reservation_db_error(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            password_hash="hash",
+            calendar_slug="mock-user",
+        )
+
         mock_existing = MagicMock()
         mock_existing.scalars.return_value.first.return_value = None
 
+        mock_slot_reservations = MagicMock()
+        mock_slot_reservations.scalars.return_value.all.return_value = []
+
         mock_db = AsyncMock()
         mock_db.add = MagicMock()
-        mock_db.execute.return_value = mock_existing
+        mock_db.execute.side_effect = [
+            mock_user_result,
+            mock_existing,
+            mock_slot_reservations,
+        ]
         mock_db.commit.side_effect = Exception("DB failure")
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        resp = await self.client.post("/api/reservations/add", json=RESERVATION_PAYLOAD)
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=RESERVATION_PAYLOAD
+        )
         self.assertEqual(hs.INTERNAL_SERVER_ERROR, resp.status_code)
         self.assertEqual(
             "An unexpected error occurred while saving the reservation.",
@@ -294,5 +380,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_db.rollback.assert_awaited_once()
 
     async def test_add_reservation_invalid_payload(self):
-        resp = await self.client.post("/api/reservations/add", json={"name": "John"})
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json={"name": "John"}
+        )
         self.assertEqual(hs.BAD_REQUEST, resp.status_code)

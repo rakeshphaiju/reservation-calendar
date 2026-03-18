@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../components/form/Button';
 import { reservationService } from '../services/api';
+import { authService } from '../services/auth';
 
 const ReservationList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const currentUser = authService.getUser();
 
   useEffect(() => {
     loadReservations();
@@ -40,6 +42,11 @@ const ReservationList = () => {
       <h2 className="mb-6 text-xl font-bold text-slate-800 sm:text-2xl">
         Reservation List
       </h2>
+      {currentUser?.calendar_slug && (
+        <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          Public booking link: <span className="font-semibold">/calendar/{currentUser.calendar_slug}</span>
+        </div>
+      )}
 
       {/* Mobile View */}
       <div className="space-y-4 md:hidden">

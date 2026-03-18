@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import moment from 'moment';
+import { useParams } from 'react-router-dom';
 
 import Button from '../components/form/Button';
 import SlotButton from '../components/SlotButton';
@@ -9,24 +10,49 @@ import { reservationService } from '../services/api';
 const SLOT_CAPACITY = 5;
 
 const Reserve = () => {
+  const { ownerSlug } = useParams();
   const [startDate, setStartDate] = useState(moment());
+  const [slotCounts, setSlotCounts] = useState({});
+  const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
+  const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
+  const [errors, setErrors] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState({ day: '', time: '' });
+  const [calendarExists, setCalendarExists] = useState(true);
 
-  /*  const getUpcomingDates = () => {
-     return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
-       const targetDay = moment().day(day).day();
-       const currentDay = startDate.day();
-       let daysToAdd = targetDay - currentDay;
-       if (daysToAdd < 0) daysToAdd += 7;
-       if (daysToAdd === 0) daysToAdd = 7;
-       return startDate.clone().add(daysToAdd, 'days').format('YYYY-MM-DD');
-     });
-   }; */
-
-  const getUpcomingDates = () => {
-    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
+  const getUpcomingDates = () => (
+    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
       return startDate.clone().isoWeekday(moment().day(day).isoWeekday()).format('YYYY-MM-DD');
-    });
-  };
+    })
+  );
+
+  useEffect(() => {
+    setErrors({});
+    setShowModal(false);
+    reservationService
+      .getSlots(ownerSlug)
+      .then((slots) => {
+        const counts = {};
+        const fullyBooked = [];
+        slots.forEach(({ day, time, count }) => {
+          if (!counts[day]) counts[day] = {};
+          counts[day][time] = count;
+          if (count >= SLOT_CAPACITY) fullyBooked.push({ day, time });
+        });
+        setSlotCounts(counts);
+        setFullyBookedSlots(fullyBooked);
+        setCalendarExists(true);
+      })
+      .catch((err) => {
+        if (err?.response?.status === 404) {
+          setCalendarExists(false);
+          setSlotCounts({});
+          setFullyBookedSlots([]);
+          return;
+        }
+        console.log('Failed to load reserved slots');
+      });
+  }, [ownerSlug]);
 
   const handlePreviousWeek = () => {
     const prevMonday = startDate.clone().subtract(1, 'week').isoWeekday(1);
@@ -49,30 +75,6 @@ const Reserve = () => {
     '10:00-11:00', '11:00-12:00', '12:00-13:00',
     '13:00-14:00', '15:00-16:00', '16:00-17:00', '17:00-18:00',
   ];
-
-  const [slotCounts, setSlotCounts] = useState({});
-  const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
-  const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
-  const [errors, setErrors] = useState({});
-  const [showModal, setShowModal] = useState(false);
-  const [modalData, setModalData] = useState({ day: '', time: '' });
-
-  useEffect(() => {
-    reservationService
-      .getSlots()
-      .then((slots) => {
-        const counts = {};
-        const fullyBooked = [];
-        slots.forEach(({ day, time, count }) => {
-          if (!counts[day]) counts[day] = {};
-          counts[day][time] = count;
-          if (count >= SLOT_CAPACITY) fullyBooked.push({ day, time });
-        });
-        setSlotCounts(counts);
-        setFullyBookedSlots(fullyBooked);
-      })
-      .catch(() => console.log('Failed to load reserved slots'));
-  }, []);
 
   const handleInput = (e) => {
     const { name, value } = e.target;
@@ -107,7 +109,7 @@ const Reserve = () => {
     e.preventDefault();
     try {
       const newReservation = { ...user, ...modalData };
-      await reservationService.create(newReservation);
+      await reservationService.create(ownerSlug, newReservation);
       setSlotCounts((prev) => {
         const daySlots = prev[modalData.day] || {};
         const current = daySlots[modalData.time] ?? 0;
@@ -123,26 +125,40 @@ const Reserve = () => {
       setShowModal(false);
       setUser({ name: '', address: '', email: '', phone_number: '' });
     } catch (err) {
-      if (err.response?.status === 409)
+      if (err.response?.status === 409) {
         setErrors({ general: err.response.data?.detail || 'This slot is already reserved.' });
-      else if (err.response?.status === 400)
+      } else if (err.response?.status === 400) {
         setErrors({ general: 'Please check your input fields.' });
-      else
+      } else if (err.response?.status === 404) {
+        setErrors({ general: 'This calendar does not exist anymore.' });
+      } else {
         setErrors({ general: 'Server error. Please try again later.' });
+      }
     }
   };
 
   const slotProps = { isPastOrToday, isFullyBooked, getSpotsLeft, showForm };
 
+  if (!calendarExists) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-10 text-center text-amber-800">
+        This reservation calendar could not be found.
+      </div>
+    );
+  }
+
   return (
     <div>
-      <h2 className="mb-8 text-center text-xl font-bold text-slate-800 sm:text-2xl">
-        Would you like to make a reservation on the following dates?
+      <h2 className="mb-3 text-center text-xl font-bold text-slate-800 sm:text-2xl">
+        Reserve time on {ownerSlug}&apos;s calendar
       </h2>
+      <p className="mb-8 text-center text-sm text-slate-500">
+        Share this direct link to let people book this calendar only.
+      </p>
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">
-          Your reservation calendar
+          Reservation calendar
         </h2>
         <div className="flex items-center space-x-2">
           <Button
@@ -162,7 +178,6 @@ const Reserve = () => {
         </div>
       </div>
 
-      {/* Mobile */}
       <div className="space-y-5 md:hidden">
         {dates.map((day) => (
           <section key={day} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -178,7 +193,6 @@ const Reserve = () => {
         ))}
       </div>
 
-      {/* Desktop */}
       <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
         <table className="min-w-full border-collapse">
           <thead>

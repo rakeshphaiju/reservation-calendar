@@ -49,14 +49,16 @@ export default function Navbar() {
                   Home
                 </Link>
               </li>
-              <li>
-                <Link
-                  to="/reservations"
-                  className={`${baseLinkClass} ${isActive('/reservations') ? activeClass : inactiveClass}`}
-                >
-                  Reserve
-                </Link>
-              </li>
+              {user?.calendar_slug && (
+                <li>
+                  <Link
+                    to={`/calendar/${user.calendar_slug}`}
+                    className={`${baseLinkClass} ${location.pathname === `/calendar/${user.calendar_slug}` ? activeClass : inactiveClass}`}
+                  >
+                    My Calendar
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   to="/reservelist"
