@@ -22,7 +22,6 @@ const Reserve = () => {
      });
    }; */
 
-
   const getUpcomingDates = () => {
     return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
       return startDate.clone().isoWeekday(moment().day(day).isoWeekday()).format('YYYY-MM-DD');
