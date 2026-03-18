@@ -1,58 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import moment from 'moment';
+
 import Button from '../components/form/Button';
+import SlotButton from '../components/SlotButton';
 import ReservationModal from '../components/ReservationModal';
 import { reservationService } from '../services/api';
 
 const SLOT_CAPACITY = 5;
 
 const Reserve = () => {
-  /* const getUpcomingDates = () => {
-    const today = moment();
-    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
-      const targetDay = moment().day(day).day();
-      const currentDay = today.day();
-      let daysToAdd = targetDay - currentDay;
-      if (daysToAdd < 0) daysToAdd += 7;
-      if (daysToAdd === 0) daysToAdd = 7;
-      return today.clone().add(daysToAdd, 'days').format('YYYY-MM-DD');
-    });
-  }; */
-
-  //const [startDate, setStartDate] = useState(moment().add(1, 'day'));
   const [startDate, setStartDate] = useState(moment());
 
+  /*  const getUpcomingDates = () => {
+     return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
+       const targetDay = moment().day(day).day();
+       const currentDay = startDate.day();
+       let daysToAdd = targetDay - currentDay;
+       if (daysToAdd < 0) daysToAdd += 7;
+       if (daysToAdd === 0) daysToAdd = 7;
+       return startDate.clone().add(daysToAdd, 'days').format('YYYY-MM-DD');
+     });
+   }; */
+
   const getUpcomingDates = () => {
-    return Array.from({ length: 5 }, (_, i) =>
-      startDate.clone().add(i, 'days').format('YYYY-MM-DD')
-    );
+    return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
+      return startDate.clone().isoWeekday(moment().day(day).isoWeekday()).format('YYYY-MM-DD');
+    });
   };
 
   const handlePreviousWeek = () => {
-    const tomorrow = moment().add(1, 'day');
-    // Only allow going back if we're not already at the earliest week
-    if (startDate.isAfter(tomorrow)) {
-      setStartDate(startDate.clone().subtract(1, 'week'));
+    const prevMonday = startDate.clone().subtract(1, 'week').isoWeekday(1);
+    const prevFriday = prevMonday.clone().isoWeekday(5);
+    if (prevFriday.isAfter(moment(), 'day')) {
+      setStartDate(prevMonday);
     }
   };
 
   const handleNextWeek = () => {
     const maxDate = moment().add(4, 'weeks');
-    const newStart = startDate.clone().add(1, 'week');
-    if (newStart.isSameOrBefore(maxDate, 'day')) {
-      setStartDate(newStart);
+    const nextMonday = startDate.clone().add(1, 'week').isoWeekday(1);
+    if (nextMonday.isSameOrBefore(maxDate, 'day')) {
+      setStartDate(nextMonday);
     }
   };
 
   const dates = getUpcomingDates();
   const times = [
-    '10:00-11:00', '11:00-12:00', '12:00-13:00', '13:00-14:00', '15:00-16:00', '16:00-17:00', '17:00-18:00'
+    '10:00-11:00', '11:00-12:00', '12:00-13:00',
+    '13:00-14:00', '15:00-16:00', '16:00-17:00', '17:00-18:00',
   ];
 
-  // slotCounts: { "2026-03-17": { "17:00-17:30": 3, ... } }
   const [slotCounts, setSlotCounts] = useState({});
-  // fullyBooked: slots returned by backend (count >= SLOT_CAPACITY)
   const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
   const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
   const [errors, setErrors] = useState({});
@@ -65,15 +63,11 @@ const Reserve = () => {
       .then((slots) => {
         const counts = {};
         const fullyBooked = [];
-
         slots.forEach(({ day, time, count }) => {
           if (!counts[day]) counts[day] = {};
           counts[day][time] = count;
-          if (count >= SLOT_CAPACITY) {
-            fullyBooked.push({ day, time });
-          }
+          if (count >= SLOT_CAPACITY) fullyBooked.push({ day, time });
         });
-
         setSlotCounts(counts);
         setFullyBookedSlots(fullyBooked);
       })
@@ -93,11 +87,9 @@ const Reserve = () => {
     setModalData({ day, time });
   };
 
-  // A slot is fully booked if backend returned it in the slots list
   const isFullyBooked = (day, time) =>
     fullyBookedSlots.some((s) => s.day === day && s.time === time);
 
-  // Get count of bookings for a slot from local optimistic state
   const getSlotCount = (day, time) => slotCounts?.[day]?.[time] ?? 0;
 
   const getSpotsLeft = (day, time) => {
@@ -105,18 +97,21 @@ const Reserve = () => {
     return SLOT_CAPACITY - getSlotCount(day, time);
   };
 
+  const isPastOrToday = (day, time) => {
+    const startTime = time.split('-')[0];
+    const slotStart = moment(`${day} ${startTime}`, 'YYYY-MM-DD HH:mm');
+    return slotStart.isSameOrBefore(moment());
+  };
+
   const handleConfirmReservation = async (e) => {
     e.preventDefault();
     try {
       const newReservation = { ...user, ...modalData };
       await reservationService.create(newReservation);
-
-      // Optimistically increment local slot count
       setSlotCounts((prev) => {
         const daySlots = prev[modalData.day] || {};
         const current = daySlots[modalData.time] ?? 0;
         const newCount = current + 1;
-        // If now fully booked, add to fullyBooked list
         if (newCount >= SLOT_CAPACITY) {
           setFullyBookedSlots((fb) => [...fb, { day: modalData.day, time: modalData.time }]);
         }
@@ -125,7 +120,6 @@ const Reserve = () => {
           [modalData.day]: { ...daySlots, [modalData.time]: newCount },
         };
       });
-
       setShowModal(false);
       setUser({ name: '', address: '', email: '', phone_number: '' });
     } catch (err) {
@@ -138,53 +132,7 @@ const Reserve = () => {
     }
   };
 
-  const isPastOrToday = (day, time) => {
-    const startTime = time.split('-')[0];
-    const slotEnd = moment(`${day} ${startTime}`, 'YYYY-MM-DD HH:mm');
-    return slotEnd.isSameOrBefore(moment());
-  };
-
-  const SlotButton = ({ day, time, mobile = false }) => {
-    const past = isPastOrToday(day, time);
-    const fullyBooked = isFullyBooked(day, time);
-    const disabled = past || fullyBooked;
-    const spotsLeft = getSpotsLeft(day, time);
-
-    const statusLabel = past ? '-' : fullyBooked ? 'Fully booked' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left`;
-
-    return (
-      <Button
-        disabled={disabled}
-        onClick={() => !disabled && showForm(day, time)}
-        className={mobile
-          ? `px-3 py-2 text-left border ${disabled ? 'border-slate-200' : 'border-emerald-600'}`
-          : `h-20 w-full`
-        }
-      >
-        {mobile ? (
-          <>
-            <span className="block font-medium">{time}</span>
-            <span className="block text-xs opacity-90">{statusLabel}</span>
-          </>
-        ) : (
-          <div className="flex flex-col items-center gap-1">
-            <span>{past ? '-' : fullyBooked ? 'Full' : 'Book'}</span>
-            {!disabled && (
-              <span className="text-xs opacity-80">
-                {spotsLeft}/{SLOT_CAPACITY} left
-              </span>
-            )}
-          </div>
-        )}
-      </Button>
-    );
-  };
-
-  SlotButton.propTypes = {
-    day: PropTypes.string.isRequired,
-    time: PropTypes.string.isRequired,
-    mobile: PropTypes.bool,
-  };
+  const slotProps = { isPastOrToday, isFullyBooked, getSpotsLeft, showForm };
 
   return (
     <div>
@@ -197,19 +145,20 @@ const Reserve = () => {
           Your reservation calendar
         </h2>
         <div className="flex items-center space-x-2">
-          <button
+          <Button
             onClick={handlePreviousWeek}
-            disabled={startDate.isSameOrBefore(moment().add(1, 'day'))}
-            className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50"
+            disabled={startDate.clone().subtract(1, 'week').isoWeekday(5).isSameOrBefore(moment(), 'day')}
+            className="px-3 py-1.5 bg-gray-600 text-gray-700 rounded hover:bg-gray-700 disabled:opacity-50"
           >
             Previous Week
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleNextWeek}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            disabled={startDate.clone().add(1, 'week').isoWeekday(1).isAfter(moment().add(4, 'weeks'), 'day')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
             Next Week
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -222,7 +171,7 @@ const Reserve = () => {
             </h3>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {times.map((time) => (
-                <SlotButton key={`${day}-${time}`} day={day} time={time} mobile />
+                <SlotButton key={`${day}-${time}`} day={day} time={time} mobile {...slotProps} />
               ))}
             </div>
           </section>
@@ -253,7 +202,7 @@ const Reserve = () => {
                     key={`${day}-${time}`}
                     className={`px-2 py-2 ${isFullyBooked(day, time) ? 'bg-red-50' : ''}`}
                   >
-                    <SlotButton day={day} time={time} />
+                    <SlotButton day={day} time={time} {...slotProps} />
                   </td>
                 ))}
               </tr>

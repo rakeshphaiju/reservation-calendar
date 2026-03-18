@@ -1,8 +1,7 @@
 import uuid
-from typing import List, Literal
 import http as hs
+from typing import List
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Query
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
@@ -10,51 +9,21 @@ from sqlalchemy import func
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
+from src.schemas.reservation import (
+    ReservationCreate,
+    ReservationResponse,
+    ReservationSlot,
+    PaginatedReservations,
+)
 from src.services.email_service import send_confirmation_email, send_admin_notification
 from src.auth.auth import manager
 
 
 router = APIRouter()
-
 SLOT_CAPACITY = 5
 
 
-class ReservationCreate(BaseModel):
-    name: str = Field(..., min_length=2)
-    address: str = Field(..., min_length=1)
-    email: EmailStr
-    phone_number: str = Field(..., pattern=r"^\d{10}$")
-    day: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
-    time: Literal[
-        "10:00-11:00",
-        "11:00-12:00",
-        "12:00-13:00",
-        "13:00-14:00",
-        "15:00-16:00",
-        "16:00-17:00",
-        "17:00-18:00",
-    ]
-
-
-class ReservationResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    name: str
-    email: str
-    address: str
-    phone_number: str
-    day: str
-    time: str
-
-
-class ReservationSlot(BaseModel):
-    day: str
-    time: str
-    count: int
-
-
-@router.post("/api/reserve/add", response_model=ReservationResponse)
+@router.post("/api/reservations/add", response_model=ReservationResponse)
 async def add_reservations(
     reservation: ReservationCreate,
     background_tasks: BackgroundTasks,
@@ -126,7 +95,7 @@ async def add_reservations(
         )
 
 
-@router.get("/api/reserve", response_model=List[ReservationResponse])
+@router.get("/api/reservations", response_model=PaginatedReservations)
 async def get_all_reservations(
     db: AsyncSession = Depends(get_db),
     _user=Depends(manager),
@@ -134,9 +103,18 @@ async def get_all_reservations(
     limit: int = Query(10, ge=1, le=100, description="Maximum records to return"),
 ):
     try:
-        result = await db.execute(select(Reservation))
+        total = await db.execute(select(func.count()).select_from(Reservation))
+        total_count = total.scalar_one()
+
+        result = await db.execute(select(Reservation).offset(skip).limit(limit))
         reservations = result.scalars().all()
-        return reservations
+        return {
+            "total_count": total_count,
+            "skip": skip,
+            "limit": limit,
+            "data": reservations,
+        }
+        # return reservations
     except Exception as e:
         logger.error(f"Failed to fetch reservations: {e}", exc_info=True)
         raise HTTPException(
@@ -145,7 +123,7 @@ async def get_all_reservations(
         )
 
 
-@router.get("/api/reserve/slots", response_model=List[ReservationSlot])
+@router.get("/api/reservations/slots", response_model=List[ReservationSlot])
 async def get_reserved_slots(db: AsyncSession = Depends(get_db)):
     try:
         result = await db.execute(
@@ -168,7 +146,7 @@ async def get_reserved_slots(db: AsyncSession = Depends(get_db)):
         )
 
 
-@router.get("/api/reserve/{reserve_id}", response_model=ReservationResponse)
+@router.get("/api/reservations/{reserve_id}", response_model=ReservationResponse)
 async def get_reservation(
     reserve_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -195,7 +173,7 @@ async def get_reservation(
         )
 
 
-@router.delete("/api/reserve/{reserve_id}")
+@router.delete("/api/reservations/{reserve_id}")
 async def delete_reservation(
     reserve_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
