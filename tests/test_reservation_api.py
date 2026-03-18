@@ -194,6 +194,28 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             resp.json(),
         )
 
+    async def test_get_calendar_owners(self):
+        mock_users_result = MagicMock()
+        mock_users_result.scalars.return_value.all.return_value = [
+            AppUser(username="alice", password_hash="hash", calendar_slug="alice"),
+            AppUser(username="bob", password_hash="hash", calendar_slug="bob"),
+        ]
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_users_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.get("/api/calendars")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            [
+                {"username": "alice", "calendar_slug": "alice"},
+                {"username": "bob", "calendar_slug": "bob"},
+            ],
+            resp.json(),
+        )
+
     async def test_delete_reservation_success(self):
         reservation = mock_reservations[0]
         reserve_id = reservation.id

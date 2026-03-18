@@ -149,6 +149,14 @@ const Reserve = () => {
     );
   }
 
+  if (!calendarExists) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-10 text-center text-amber-800">
+        This reservation calendar could not be found.
+      </div>
+    );
+  }
+
   return (
     <div>
       <h2 className="mb-3 text-center text-xl font-bold text-slate-800 sm:text-2xl">

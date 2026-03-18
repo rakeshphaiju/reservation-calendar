@@ -54,6 +54,18 @@ def verify_password(password: str, stored_hash: str) -> bool:
     except Exception:
         return False
 
+def verify_password(password: str, stored_hash: str) -> bool:
+    try:
+        encoded_salt, encoded_digest = stored_hash.split(":", 1)
+        salt = base64.b64decode(encoded_salt.encode("utf-8"))
+        expected_digest = base64.b64decode(encoded_digest.encode("utf-8"))
+        actual_digest = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), salt, 390000
+        )
+        return secrets.compare_digest(actual_digest, expected_digest)
+    except Exception:
+        return False
+
 
 def _slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
