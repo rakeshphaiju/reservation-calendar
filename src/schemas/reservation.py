@@ -23,6 +23,7 @@ class ReservationCreate(BaseModel):
 class ReservationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
+    owner_slug: str
     name: str
     email: str
     address: str
@@ -42,3 +43,8 @@ class PaginatedReservations(BaseModel):
     skip: int
     limit: int
     data: List[ReservationResponse]
+
+
+class CalendarOwnerSummary(BaseModel):
+    username: str
+    calendar_slug: str

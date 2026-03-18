@@ -7,6 +7,7 @@ from src.common.db import Base
 class Reservation(Base):
     __tablename__ = "reservations"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    owner_slug = Column(String, nullable=False, index=True)
     name = Column(String, nullable=False)
     email = Column(String, nullable=False)
     address = Column(String, nullable=False)

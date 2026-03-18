@@ -11,7 +11,11 @@ export const authService = {
   init: async () => {
     try {
       const { data } = await apiClient.get('/auth/me');
-      currentUser = { username: data.username };
+      currentUser = {
+        username: data.username,
+        calendar_slug: data.calendar_slug,
+        calendar_url: data.calendar_url,
+      };
     } catch {
       currentUser = null;
     }
@@ -28,11 +32,22 @@ export const authService = {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
-    const resolvedUsername = data.username || username;
-    currentUser = { username: resolvedUsername };
+    currentUser = {
+      username: data.username || username,
+      calendar_slug: data.calendar_slug,
+      calendar_url: data.calendar_url,
+    };
     notify();
 
     return currentUser;
+  },
+
+  register: async (username, password) => {
+    const { data } = await apiClient.post('/auth/register', { username, password });
+    currentUser = null;
+    notify();
+
+    return data;
   },
 
   logout: async () => {
@@ -55,4 +70,3 @@ export const authService = {
     return () => listeners.delete(callback);
   },
 };
-

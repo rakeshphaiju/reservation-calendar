@@ -34,9 +34,17 @@ const handleError = (error) => {
 export const reservationService = {
   getAll: () => apiClient.get('/reservations').then(handleResponse).catch(handleError),
 
-  getSlots: () => apiClient.get('/reservations/slots').then(handleResponse).catch(handleError),
+  getCalendars: () => apiClient.get('/calendars').then(handleResponse).catch(handleError),
 
-  create: (data) => apiClient.post('/reservations/add', data).then(handleResponse).catch(handleError),
+  getSlots: (ownerSlug) => apiClient
+    .get(`/calendars/${ownerSlug}/reservations/slots`)
+    .then(handleResponse)
+    .catch(handleError),
+
+  create: (ownerSlug, data) => apiClient
+    .post(`/calendars/${ownerSlug}/reservations/add`, data)
+    .then(handleResponse)
+    .catch(handleError),
 
   getById: (id) => apiClient.get(`/reservations/${id}`).then(handleResponse).catch(handleError),
 
