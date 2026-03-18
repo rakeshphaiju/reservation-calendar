@@ -12,17 +12,19 @@ from src.common.logger import logger
 from src.models.reservation import Reservation
 from src.models.user import AppUser
 from src.schemas.reservation import (
+    CalendarAvailabilityResponse,
     CalendarOwnerSummary,
+    CalendarSlotSummary,
     PaginatedReservations,
     ReservationCreate,
     ReservationResponse,
-    ReservationSlot,
+    SlotCapacityUpdate,
 )
 from src.services.email_service import send_admin_notification, send_confirmation_email
 
 
 router = APIRouter()
-SLOT_CAPACITY = 5
+DEFAULT_SLOT_CAPACITY = 5
 
 
 async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
@@ -46,6 +48,10 @@ async def get_calendar_owners(db: AsyncSession = Depends(get_db)):
         CalendarOwnerSummary(username=user.username, calendar_slug=user.calendar_slug)
         for user in users
     ]
+
+
+def get_owner_slot_capacity(owner: AppUser) -> int:
+    return getattr(owner, "slot_capacity", None) or DEFAULT_SLOT_CAPACITY
 
 
 @router.post(
@@ -82,7 +88,7 @@ async def add_reservations(
             )
         )
         slot_reservations = slot_reservations_result.scalars().all()
-        if len(slot_reservations) >= SLOT_CAPACITY:
+        if len(slot_reservations) >= get_owner_slot_capacity(owner):
             raise HTTPException(
                 status_code=hs.HTTPStatus.CONFLICT,
                 detail="This time slot is fully booked",
@@ -170,11 +176,11 @@ async def get_all_reservations(
 
 @router.get(
     "/api/calendars/{owner_slug}/reservations/slots",
-    response_model=List[ReservationSlot],
+    response_model=CalendarAvailabilityResponse,
 )
 async def get_reserved_slots(owner_slug: str, db: AsyncSession = Depends(get_db)):
     try:
-        await get_calendar_owner(owner_slug, db)
+        owner = await get_calendar_owner(owner_slug, db)
         result = await db.execute(
             select(
                 Reservation.day,
@@ -185,10 +191,20 @@ async def get_reserved_slots(owner_slug: str, db: AsyncSession = Depends(get_db)
             .group_by(Reservation.day, Reservation.time)
         )
         rows = result.all()
-        return [
-            ReservationSlot(day=day, time=time, count=count)
-            for day, time, count in rows
-        ]
+        slot_capacity = get_owner_slot_capacity(owner)
+        return CalendarAvailabilityResponse(
+            owner_slug=owner_slug,
+            slot_capacity=slot_capacity,
+            slots=[
+                CalendarSlotSummary(
+                    day=day,
+                    time=time,
+                    count=count,
+                    capacity=slot_capacity,
+                )
+                for day, time, count in rows
+            ],
+        )
     except HTTPException:
         raise
     except Exception as exc:
@@ -196,6 +212,43 @@ async def get_reserved_slots(owner_slug: str, db: AsyncSession = Depends(get_db)
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Error fetching reserved slots from the database.",
+        )
+
+
+@router.get("/api/dashboard/slot-capacity")
+async def get_slot_capacity(user=Depends(manager)):
+    return {"slot_capacity": get_owner_slot_capacity(user)}
+
+
+@router.put("/api/dashboard/slot-capacity")
+async def update_slot_capacity(
+    payload: SlotCapacityUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        result = await db.execute(
+            select(AppUser).where(AppUser.username == user.username)
+        )
+        db_user = result.scalars().first()
+        if not db_user:
+            raise HTTPException(
+                status_code=hs.HTTPStatus.NOT_FOUND,
+                detail="User not found",
+            )
+
+        db_user.slot_capacity = payload.slot_capacity
+        await db.commit()
+        await db.refresh(db_user)
+        return {"slot_capacity": db_user.slot_capacity}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update slot capacity: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update slot capacity.",
         )
 
 

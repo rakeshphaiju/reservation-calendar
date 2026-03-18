@@ -38,6 +38,19 @@ class ReservationSlot(BaseModel):
     count: int
 
 
+class CalendarSlotSummary(BaseModel):
+    day: str
+    time: str
+    count: int
+    capacity: int
+
+
+class CalendarAvailabilityResponse(BaseModel):
+    owner_slug: str
+    slot_capacity: int
+    slots: List[CalendarSlotSummary]
+
+
 class PaginatedReservations(BaseModel):
     total_count: int
     skip: int
@@ -48,3 +61,7 @@ class PaginatedReservations(BaseModel):
 class CalendarOwnerSummary(BaseModel):
     username: str
     calendar_slug: str
+
+
+class SlotCapacityUpdate(BaseModel):
+    slot_capacity: int = Field(..., ge=1, le=100)

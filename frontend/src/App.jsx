@@ -76,7 +76,7 @@ function Home() {
                 to="/reservelist"
                 className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
               >
-                Manage my reservations
+                Open owner dashboard
               </Link>
             </>
           ) : (

@@ -15,6 +15,7 @@ export const authService = {
         username: data.username,
         calendar_slug: data.calendar_slug,
         calendar_url: data.calendar_url,
+        slot_capacity: data.slot_capacity,
       };
     } catch {
       currentUser = null;
@@ -36,6 +37,7 @@ export const authService = {
       username: data.username || username,
       calendar_slug: data.calendar_slug,
       calendar_url: data.calendar_url,
+      slot_capacity: data.slot_capacity,
     };
     notify();
 
@@ -59,6 +61,12 @@ export const authService = {
       currentUser = null;
       notify();
     }
+  },
+
+  setUser: (user) => {
+    currentUser = user;
+    notify();
+    return currentUser;
   },
 
   getUser: () => currentUser,

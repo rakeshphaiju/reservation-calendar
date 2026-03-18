@@ -11,4 +11,5 @@ class UserRegistrationRequest(BaseModel):
 class UserResponse(BaseModel):
     username: str
     calendar_slug: str
+    slot_capacity: int
     authenticated: bool = True
