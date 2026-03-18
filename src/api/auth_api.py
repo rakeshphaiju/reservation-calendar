@@ -26,6 +26,10 @@ router = APIRouter()
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
+def get_slot_capacity(user) -> int:
+    return getattr(user, "slot_capacity", 5) or 5
+
+
 @router.post("/api/auth/register")
 async def register_user(
     payload: UserRegistrationRequest,
@@ -56,6 +60,7 @@ async def register_user(
     return {
         "username": user.username,
         "calendar_slug": user.calendar_slug,
+        "slot_capacity": get_slot_capacity(user),
         "calendar_url": f"/calendar/{user.calendar_slug}",
     }
 
@@ -77,6 +82,7 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "token_type": "bearer",
         "username": user.username,
         "calendar_slug": user.calendar_slug,
+        "slot_capacity": get_slot_capacity(user),
         "calendar_url": f"/calendar/{user.calendar_slug}",
     }
 
@@ -87,6 +93,7 @@ async def get_me(user=Depends(manager)):
         return {
             "username": user.username,
             "calendar_slug": user.calendar_slug,
+            "slot_capacity": get_slot_capacity(user),
             "calendar_url": f"/calendar/{user.calendar_slug}",
             "authenticated": True,
         }

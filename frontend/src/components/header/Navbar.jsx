@@ -64,7 +64,7 @@ export default function Navbar() {
                   to="/reservelist"
                   className={`${baseLinkClass} ${isActive('/reservelist') ? activeClass : inactiveClass}`}
                 >
-                  Reservation List
+                  Dashboard
                 </Link>
               </li>
             </ul>

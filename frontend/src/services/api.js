@@ -32,12 +32,22 @@ const handleError = (error) => {
 };
 
 export const reservationService = {
-  getAll: () => apiClient.get('/reservations').then(handleResponse).catch(handleError),
+  getAll: (params) => apiClient.get('/reservations', { params }).then(handleResponse).catch(handleError),
 
   getCalendars: () => apiClient.get('/calendars').then(handleResponse).catch(handleError),
 
   getSlots: (ownerSlug) => apiClient
     .get(`/calendars/${ownerSlug}/reservations/slots`)
+    .then(handleResponse)
+    .catch(handleError),
+
+  getSlotCapacity: () => apiClient
+    .get('/dashboard/slot-capacity')
+    .then(handleResponse)
+    .catch(handleError),
+
+  updateSlotCapacity: (slot_capacity) => apiClient
+    .put('/dashboard/slot-capacity', { slot_capacity })
     .then(handleResponse)
     .catch(handleError),
 

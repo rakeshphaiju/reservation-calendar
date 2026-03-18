@@ -30,6 +30,7 @@ manager = LoginManager(SECRET_KEY, token_url=TOKEN_URL, use_cookie=True)
 class User(BaseModel):
     username: str
     calendar_slug: str
+    slot_capacity: int = 5
 
 
 def hash_password(password: str) -> str:
@@ -84,7 +85,11 @@ async def load_user(username: str) -> User | None:
         user = result.scalars().first()
         if not user:
             return None
-        return User(username=user.username, calendar_slug=user.calendar_slug)
+        return User(
+            username=user.username,
+            calendar_slug=user.calendar_slug,
+            slot_capacity=getattr(user, "slot_capacity", 5) or 5,
+        )
 
 
 async def authenticate_user(
@@ -103,4 +108,8 @@ async def authenticate_user(
             detail="Invalid username or password",
         )
 
-    return User(username=user_record.username, calendar_slug=user_record.calendar_slug)
+    return User(
+        username=user_record.username,
+        calendar_slug=user_record.calendar_slug,
+        slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,
+    )

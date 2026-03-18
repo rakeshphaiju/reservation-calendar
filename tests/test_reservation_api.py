@@ -134,14 +134,43 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
 
         resp = await self.client.get("/api/calendars/mock-user/reservations/slots")
         self.assertEqual(hs.OK, resp.status_code)
-        self.assertEqual(2, len(resp.json()))
+        self.assertEqual("mock-user", resp.json()["owner_slug"])
+        self.assertEqual(5, resp.json()["slot_capacity"])
         self.assertEqual(
             [
-                {"day": "Monday", "time": "16:00-16:30", "count": 5},
-                {"day": "Tuesday", "time": "11:00-11:30", "count": 3},
+                {"day": "Monday", "time": "16:00-16:30", "count": 5, "capacity": 5},
+                {"day": "Tuesday", "time": "11:00-11:30", "count": 3, "capacity": 5},
             ],
-            resp.json(),
+            resp.json()["slots"],
         )
+
+    async def test_get_slot_capacity(self):
+        resp = await self.client.get("/api/dashboard/slot-capacity")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual({"slot_capacity": 5}, resp.json())
+
+    async def test_update_slot_capacity(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            password_hash="hash",
+            calendar_slug="mock-user",
+            slot_capacity=8,
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.put(
+            "/api/dashboard/slot-capacity",
+            json={"slot_capacity": 8},
+        )
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual({"slot_capacity": 8}, resp.json())
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once()
 
     async def test_get_calendar_owners(self):
         mock_users_result = MagicMock()

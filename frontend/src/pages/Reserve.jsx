@@ -7,13 +7,12 @@ import SlotButton from '../components/SlotButton';
 import ReservationModal from '../components/ReservationModal';
 import { reservationService } from '../services/api';
 
-const SLOT_CAPACITY = 5;
-
 const Reserve = () => {
   const { ownerSlug } = useParams();
   const [startDate, setStartDate] = useState(moment());
   const [slotCounts, setSlotCounts] = useState({});
   const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
+  const [slotCapacity, setSlotCapacity] = useState(5);
   const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
   const [errors, setErrors] = useState({});
   const [showModal, setShowModal] = useState(false);
@@ -31,14 +30,16 @@ const Reserve = () => {
     setShowModal(false);
     reservationService
       .getSlots(ownerSlug)
-      .then((slots) => {
+      .then((availability) => {
         const counts = {};
         const fullyBooked = [];
-        slots.forEach(({ day, time, count }) => {
+        const nextCapacity = availability.slot_capacity ?? 5;
+        availability.slots.forEach(({ day, time, count }) => {
           if (!counts[day]) counts[day] = {};
           counts[day][time] = count;
-          if (count >= SLOT_CAPACITY) fullyBooked.push({ day, time });
+          if (count >= nextCapacity) fullyBooked.push({ day, time });
         });
+        setSlotCapacity(nextCapacity);
         setSlotCounts(counts);
         setFullyBookedSlots(fullyBooked);
         setCalendarExists(true);
@@ -46,6 +47,7 @@ const Reserve = () => {
       .catch((err) => {
         if (err?.response?.status === 404) {
           setCalendarExists(false);
+          setSlotCapacity(5);
           setSlotCounts({});
           setFullyBookedSlots([]);
           return;
@@ -96,7 +98,7 @@ const Reserve = () => {
 
   const getSpotsLeft = (day, time) => {
     if (isFullyBooked(day, time)) return 0;
-    return SLOT_CAPACITY - getSlotCount(day, time);
+    return slotCapacity - getSlotCount(day, time);
   };
 
   const isPastOrToday = (day, time) => {
@@ -114,7 +116,7 @@ const Reserve = () => {
         const daySlots = prev[modalData.day] || {};
         const current = daySlots[modalData.time] ?? 0;
         const newCount = current + 1;
-        if (newCount >= SLOT_CAPACITY) {
+        if (newCount >= slotCapacity) {
           setFullyBookedSlots((fb) => [...fb, { day: modalData.day, time: modalData.time }]);
         }
         return {
@@ -137,7 +139,7 @@ const Reserve = () => {
     }
   };
 
-  const slotProps = { isPastOrToday, isFullyBooked, getSpotsLeft, showForm };
+  const slotProps = { isPastOrToday, isFullyBooked, getSpotsLeft, showForm, slotCapacity };
 
   if (!calendarExists) {
     return (

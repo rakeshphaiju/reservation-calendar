@@ -2,6 +2,7 @@ import os
 import uvicorn
 from http import HTTPStatus as hs
 from dotenv import load_dotenv
+from sqlalchemy import text
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -25,6 +26,18 @@ load_dotenv()
 AUTO_CREATE_TABLES = os.getenv("AUTO_CREATE_TABLES", "false").lower() == "true"
 
 
+async def ensure_slot_capacity_column():
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS slot_capacity INTEGER NOT NULL DEFAULT 5
+                """
+            )
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -38,6 +51,11 @@ async def lifespan(app: FastAPI):
             logger.info("DB tables ensured (AUTO_CREATE_TABLES=true).")
         except Exception as e:
             logger.exception("DB init failed during startup: %s", e)
+
+    try:
+        await ensure_slot_capacity_column()
+    except Exception as e:
+        logger.exception("Failed to ensure slot_capacity column: %s", e)
 
     # Start the scheduler
     try:

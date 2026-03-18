@@ -2,9 +2,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Button from './form/Button';
 
-const SLOT_CAPACITY = 5;
-
-const SlotButton = ({ day, time, mobile = false, isPastOrToday, isFullyBooked, getSpotsLeft, showForm }) => {
+const SlotButton = ({
+  day,
+  time,
+  mobile = false,
+  isPastOrToday,
+  isFullyBooked,
+  getSpotsLeft,
+  showForm,
+  slotCapacity,
+}) => {
     const past = isPastOrToday(day, time);
     const fullyBooked = isFullyBooked(day, time);
     const disabled = past || fullyBooked;
@@ -35,7 +42,7 @@ const SlotButton = ({ day, time, mobile = false, isPastOrToday, isFullyBooked, g
                     <span>{past ? '-' : fullyBooked ? 'Full' : 'Book'}</span>
                     {!disabled && (
                         <span className="text-xs opacity-80">
-                            {spotsLeft}/{SLOT_CAPACITY} left
+                            {spotsLeft}/{slotCapacity} left
                         </span>
                     )}
                 </div>
@@ -52,6 +59,7 @@ SlotButton.propTypes = {
     isFullyBooked: PropTypes.func.isRequired,
     getSpotsLeft: PropTypes.func.isRequired,
     showForm: PropTypes.func.isRequired,
+    slotCapacity: PropTypes.number.isRequired,
 };
 
 export default SlotButton;
