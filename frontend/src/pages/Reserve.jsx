@@ -11,14 +11,21 @@ const SLOT_CAPACITY = 5;
 const Reserve = () => {
   const [startDate, setStartDate] = useState(moment());
 
+  /*  const getUpcomingDates = () => {
+     return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
+       const targetDay = moment().day(day).day();
+       const currentDay = startDate.day();
+       let daysToAdd = targetDay - currentDay;
+       if (daysToAdd < 0) daysToAdd += 7;
+       if (daysToAdd === 0) daysToAdd = 7;
+       return startDate.clone().add(daysToAdd, 'days').format('YYYY-MM-DD');
+     });
+   }; */
+
+
   const getUpcomingDates = () => {
     return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
-      const targetDay = moment().day(day).day();
-      const currentDay = startDate.day();
-      let daysToAdd = targetDay - currentDay;
-      if (daysToAdd < 0) daysToAdd += 7;
-      if (daysToAdd === 0) daysToAdd = 7;
-      return startDate.clone().add(daysToAdd, 'days').format('YYYY-MM-DD');
+      return startDate.clone().isoWeekday(moment().day(day).isoWeekday()).format('YYYY-MM-DD');
     });
   };
 
