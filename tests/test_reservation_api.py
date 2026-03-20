@@ -22,6 +22,7 @@ mock_reservations = [
         phone_number="123456789",
         day="2026-03-20",
         time="16:00-16:30",
+        reservation_key="reservation-key-1",
     ),
     Reservation(
         id="f6eb947c-a5b5-43b0-8baa-0731a75fa6e5",
@@ -32,6 +33,7 @@ mock_reservations = [
         phone_number="987654321",
         day="2026-03-21",
         time="11:00-11:00",
+        reservation_key="reservation-key-2",
     ),
 ]
 
@@ -393,6 +395,11 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             "owner@example.com",
             mock_admin.call_args.kwargs["owner_email"],
+        )
+        self.assertTrue(mock_confirm.call_args.kwargs["reservation_key"])
+        self.assertEqual(
+            mock_confirm.call_args.kwargs["reservation_key"],
+            mock_admin.call_args.kwargs["reservation_key"],
         )
 
     async def test_add_reservation_conflict(self):

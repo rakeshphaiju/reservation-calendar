@@ -21,6 +21,7 @@ async def send_confirmation_email(
     recipient_name: str,
     day: str,
     time: str,
+    reservation_key: str,
 ):
     try:
         html_body = f"""
@@ -38,8 +39,12 @@ async def send_confirmation_email(
                 <td style="padding: 8px; border: 1px solid #ddd;"><strong>Time</strong></td>
                 <td style="padding: 8px; border: 1px solid #ddd;">{time}</td>
               </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Reservation Key</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{reservation_key}</td>
+              </tr>
             </table>
-            <p>If you need to cancel or modify your reservation, please contact us.</p>
+            <p>Please keep this reservation key safe. You can use it later to cancel or modify your reservation.</p>
             <p>Thank you for your booking!</p>
           </body>
         </html>
@@ -76,6 +81,7 @@ async def send_admin_notification(
     day: str,
     time: str,
     reservation_id: str,
+    reservation_key: str,
 ):
     if not owner_email:
         logger.warning(
@@ -126,6 +132,7 @@ async def send_admin_notification(
             </table>
             <br>
             <p style="font-size: 12px; color: gray;">Ref ID: {reservation_id}</p>
+            <p style="font-size: 12px; color: gray;">Reservation Key: {reservation_key}</p>
           </body>
         </html>
         """

@@ -26,7 +26,7 @@ load_dotenv()
 AUTO_CREATE_TABLES = os.getenv("AUTO_CREATE_TABLES", "false").lower() == "true"
 
 
-async def ensure_slot_capacity_column():
+async def ensure_schema_columns():
     async with engine.begin() as conn:
         await conn.execute(
             text(
@@ -52,6 +52,22 @@ async def ensure_slot_capacity_column():
                 """
             )
         )
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE reservations
+                ADD COLUMN IF NOT EXISTS reservation_key VARCHAR
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS ix_reservations_reservation_key
+                ON reservations (reservation_key)
+                """
+            )
+        )
 
 
 @asynccontextmanager
@@ -69,9 +85,9 @@ async def lifespan(app: FastAPI):
             logger.exception("DB init failed during startup: %s", e)
 
     try:
-        await ensure_slot_capacity_column()
+        await ensure_schema_columns()
     except Exception as e:
-        logger.exception("Failed to ensure user settings columns: %s", e)
+        logger.exception("Failed to ensure database schema columns: %s", e)
 
     # Start the scheduler
     try:

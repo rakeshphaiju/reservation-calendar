@@ -2,6 +2,7 @@ import uuid
 import http as hs
 import json
 import os
+import secrets
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
@@ -29,6 +30,10 @@ from src.services.email_service import send_admin_notification, send_confirmatio
 router = APIRouter()
 DEFAULT_SLOT_CAPACITY = 5
 DEFAULT_OWNER_NOTIFICATION_EMAIL = os.getenv("MAIL_USERNAME")
+
+
+def generate_reservation_key() -> str:
+    return secrets.token_urlsafe(8)
 
 
 async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
@@ -109,7 +114,12 @@ async def add_reservations(
                 detail="This time slot is fully booked",
             )
 
-        db_reservation = Reservation(owner_slug=owner_slug, **reservation.model_dump())
+        reservation_key = generate_reservation_key()
+        db_reservation = Reservation(
+            owner_slug=owner_slug,
+            reservation_key=reservation_key,
+            **reservation.model_dump(),
+        )
         db.add(db_reservation)
         await db.commit()
         await db.refresh(db_reservation)
@@ -120,6 +130,7 @@ async def add_reservations(
             recipient_name=reservation.name,
             day=reservation.day,
             time=reservation.time,
+            reservation_key=reservation_key,
         )
 
         background_tasks.add_task(
@@ -132,6 +143,7 @@ async def add_reservations(
             day=reservation.day,
             time=reservation.time,
             reservation_id=str(db_reservation.id),
+            reservation_key=reservation_key,
         )
 
         logger.info(

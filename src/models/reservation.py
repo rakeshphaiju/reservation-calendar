@@ -14,3 +14,4 @@ class Reservation(Base):
     phone_number = Column(String, nullable=False)
     day = Column(String, nullable=False)
     time = Column(String, nullable=False)
+    reservation_key = Column(String, nullable=True, unique=True, index=True)
