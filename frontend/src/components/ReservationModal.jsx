@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import moment from 'moment';
 import Modal from './Modal';
 import Input from './form/Input';
+import Select from './form/Select';
 import Button from './form/Button';
 
 const ReservationModal = ({
@@ -13,12 +14,20 @@ const ReservationModal = ({
     errors,
     handleInput,
     handleConfirm,
+    submitLabel,
+    heading,
+    allowSlotEdit,
+    availableDays,
+    availableTimeSlots,
 }) => {
     if (!show) return null;
 
     return (
         <Modal show={show} close={close}>
-            <p className="text-slate-600 mb-6">
+            {heading && (
+                <h3 className="mb-2 text-lg font-semibold text-slate-900">{heading}</h3>
+            )}
+            <p className="text-slate-600 mb-4">
                 Reserve{' '}
                 <span className="font-semibold text-slate-800">{modalData.time}</span>{' '}
                 on{' '}
@@ -28,7 +37,30 @@ const ReservationModal = ({
                 ?
             </p>
 
-            <form className="space-y-4 text-left">
+            <form className="space-y-2 text-left">
+                {allowSlotEdit && (
+                    <>
+                        <Select
+                            title="Date"
+                            name="day"
+                            value={modalData.day}
+                            options={availableDays.map((day) => ({
+                                value: day,
+                                label: moment(day).format('dddd, MMMM D'),
+                            }))}
+                            handlechange={handleInput}
+                        />
+
+                        <Select
+                            title="Time"
+                            name="time"
+                            value={modalData.time}
+                            options={availableTimeSlots}
+                            handlechange={handleInput}
+                        />
+                    </>
+                )}
+
                 <div>
                     <Input
                         title="Full Name"
@@ -76,7 +108,7 @@ const ReservationModal = ({
                 </div>
 
                 {errors.general && (
-                    <div className="rounded-md bg-red-50 p-3 mt-4 text-sm text-red-600 border border-red-200">
+                    <div className="rounded-md bg-red-50 p-3 mt-1 text-sm text-red-600 border border-red-200">
                         {errors.general}
                     </div>
                 )}
@@ -86,7 +118,7 @@ const ReservationModal = ({
                         Cancel
                     </Button>
                     <Button variant="primary" onClick={handleConfirm} className="flex-1 py-2.5">
-                        Reserve
+                        {submitLabel}
                     </Button>
                 </div>
             </form>
@@ -117,6 +149,19 @@ ReservationModal.propTypes = {
     }).isRequired,
     handleInput: PropTypes.func.isRequired,
     handleConfirm: PropTypes.func.isRequired,
+    submitLabel: PropTypes.string,
+    heading: PropTypes.string,
+    allowSlotEdit: PropTypes.bool,
+    availableDays: PropTypes.arrayOf(PropTypes.string),
+    availableTimeSlots: PropTypes.arrayOf(PropTypes.string),
+};
+
+ReservationModal.defaultProps = {
+    submitLabel: 'Reserve',
+    heading: '',
+    allowSlotEdit: false,
+    availableDays: [],
+    availableTimeSlots: [],
 };
 
 export default ReservationModal;

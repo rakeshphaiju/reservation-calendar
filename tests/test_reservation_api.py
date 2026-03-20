@@ -87,6 +87,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
                     {
                         "id": "3fe6fd7c-1c87-11f1-941d-325096b39f47",
                         "owner_slug": "mock-user",
+                        "reservation_key": "reservation-key-1",
                         "name": "John Doe",
                         "email": "john@example.com",
                         "address": "123 Main St",
@@ -97,6 +98,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
                     {
                         "id": "f6eb947c-a5b5-43b0-8baa-0731a75fa6e5",
                         "owner_slug": "mock-user",
+                        "reservation_key": "reservation-key-2",
                         "name": "Jane Doe",
                         "email": "jane@example.com",
                         "address": "456 Side St",
@@ -344,6 +346,97 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("Failed to delete reservation.", resp.json()["detail"])
 
         mock_db.rollback.assert_awaited_once()
+
+    async def test_get_public_reservation_by_key_success(self):
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = mock_reservations[0]
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.get("/api/public/reservations/reservation-key-1")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual("reservation-key-1", resp.json()["reservation_key"])
+        self.assertEqual("John Doe", resp.json()["name"])
+
+    async def test_get_public_reservation_by_key_not_found(self):
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = None
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.get("/api/public/reservations/missing-key")
+        self.assertEqual(hs.NOT_FOUND, resp.status_code)
+        self.assertEqual("Reservation not found", resp.json()["detail"])
+
+    async def test_update_public_reservation_by_key_success(self):
+        reservation = mock_reservations[0]
+
+        mock_reservation_result = MagicMock()
+        mock_reservation_result.scalars.return_value.first.return_value = reservation
+
+        mock_owner_result = MagicMock()
+        mock_owner_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            email="owner@example.com",
+            password_hash="hash",
+            calendar_slug="mock-user",
+            time_slots=json.dumps(["17:00-18:00", "18:00-19:00"]),
+        )
+
+        mock_existing_email = MagicMock()
+        mock_existing_email.scalars.return_value.first.return_value = reservation
+
+        mock_slot_reservations = MagicMock()
+        mock_slot_reservations.scalars.return_value.all.return_value = [reservation]
+
+        mock_db = AsyncMock()
+        mock_db.execute.side_effect = [
+            mock_reservation_result,
+            mock_owner_result,
+            mock_existing_email,
+            mock_slot_reservations,
+        ]
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        payload = {
+            **RESERVATION_PAYLOAD,
+            "name": "Updated Name",
+            "time": "18:00-19:00",
+        }
+
+        resp = await self.client.put(
+            "/api/public/reservations/reservation-key-1",
+            json=payload,
+        )
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual("Updated Name", resp.json()["name"])
+        self.assertEqual("18:00-19:00", resp.json()["time"])
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once_with(reservation)
+
+    async def test_delete_public_reservation_by_key_success(self):
+        reservation = mock_reservations[0]
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.first.return_value = reservation
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.delete("/api/public/reservations/reservation-key-1")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual({"message": "Reservation deleted successfully"}, resp.json())
+        mock_db.delete.assert_awaited_once_with(reservation)
+        mock_db.commit.assert_awaited_once()
 
     async def test_add_reservation_success(self):
         mock_user_result = MagicMock()

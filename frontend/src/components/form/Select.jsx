@@ -21,15 +21,26 @@ const Select = (props) => {
           {props.placeholder}
         </option>
         {props.options.map((option) => {
+          const normalizedOption = typeof option === 'string'
+            ? { value: option, label: option }
+            : option;
           return (
-            <option key={option} value={option} label={option}>
-              {option}
+            <option
+              key={normalizedOption.value}
+              value={normalizedOption.value}
+              label={normalizedOption.label}
+            >
+              {normalizedOption.label}
             </option>
           );
         })}
       </select>
     </div>
   );
+};
+
+Select.defaultProps = {
+  placeholder: 'Select an option',
 };
 
 Select.propTypes = {

@@ -49,6 +49,19 @@ async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
     return owner
 
 
+async def get_reservation_by_key(reservation_key: str, db: AsyncSession) -> Reservation:
+    result = await db.execute(
+        select(Reservation).where(Reservation.reservation_key == reservation_key)
+    )
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(
+            status_code=hs.HTTPStatus.NOT_FOUND,
+            detail="Reservation not found",
+        )
+    return reservation
+
+
 @router.get("/api/calendars", response_model=List[CalendarOwnerSummary])
 async def get_calendar_owners(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(AppUser).order_by(AppUser.username.asc()))
@@ -67,6 +80,59 @@ def get_owner_time_slots(owner: AppUser) -> list[str]:
     return get_user_time_slots(owner)
 
 
+async def ensure_reservation_slot_available(
+    db: AsyncSession,
+    owner: AppUser,
+    reservation: ReservationCreate,
+    owner_slug: str,
+    ignore_reservation_id: uuid.UUID | None = None,
+):
+    allowed_time_slots = set(get_owner_time_slots(owner))
+
+    if reservation.time not in allowed_time_slots:
+        raise HTTPException(
+            status_code=hs.HTTPStatus.BAD_REQUEST,
+            detail="This time slot is not available for this calendar",
+        )
+
+    existing_email_result = await db.execute(
+        select(Reservation).where(
+            Reservation.owner_slug == owner_slug,
+            Reservation.day == reservation.day,
+            Reservation.time == reservation.time,
+            Reservation.email == reservation.email,
+        )
+    )
+    existing_email_reservation = existing_email_result.scalars().first()
+    if (
+        existing_email_reservation
+        and existing_email_reservation.id != ignore_reservation_id
+    ):
+        raise HTTPException(
+            status_code=hs.HTTPStatus.CONFLICT,
+            detail="This user already has a reservation for this time slot",
+        )
+
+    slot_reservations_result = await db.execute(
+        select(Reservation).where(
+            Reservation.owner_slug == owner_slug,
+            Reservation.day == reservation.day,
+            Reservation.time == reservation.time,
+        )
+    )
+    slot_reservations = slot_reservations_result.scalars().all()
+    active_slot_reservations = [
+        slot_reservation
+        for slot_reservation in slot_reservations
+        if slot_reservation.id != ignore_reservation_id
+    ]
+    if len(active_slot_reservations) >= get_owner_slot_capacity(owner):
+        raise HTTPException(
+            status_code=hs.HTTPStatus.CONFLICT,
+            detail="This time slot is fully booked",
+        )
+
+
 @router.post(
     "/api/calendars/{owner_slug}/reservations/add", response_model=ReservationResponse
 )
@@ -78,41 +144,7 @@ async def add_reservations(
 ):
     try:
         owner = await get_calendar_owner(owner_slug, db)
-        allowed_time_slots = set(get_owner_time_slots(owner))
-
-        if reservation.time not in allowed_time_slots:
-            raise HTTPException(
-                status_code=hs.HTTPStatus.BAD_REQUEST,
-                detail="This time slot is not available for this calendar",
-            )
-
-        existing_email_result = await db.execute(
-            select(Reservation).where(
-                Reservation.owner_slug == owner_slug,
-                Reservation.day == reservation.day,
-                Reservation.time == reservation.time,
-                Reservation.email == reservation.email,
-            )
-        )
-        if existing_email_result.scalars().first():
-            raise HTTPException(
-                status_code=hs.HTTPStatus.CONFLICT,
-                detail="This user already has a reservation for this time slot",
-            )
-
-        slot_reservations_result = await db.execute(
-            select(Reservation).where(
-                Reservation.owner_slug == owner_slug,
-                Reservation.day == reservation.day,
-                Reservation.time == reservation.time,
-            )
-        )
-        slot_reservations = slot_reservations_result.scalars().all()
-        if len(slot_reservations) >= get_owner_slot_capacity(owner):
-            raise HTTPException(
-                status_code=hs.HTTPStatus.CONFLICT,
-                detail="This time slot is fully booked",
-            )
+        await ensure_reservation_slot_available(db, owner, reservation, owner_slug)
 
         reservation_key = generate_reservation_key()
         db_reservation = Reservation(
@@ -348,6 +380,97 @@ async def get_reservation(
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve reservation.",
+        )
+
+
+@router.get(
+    "/api/public/reservations/{reservation_key}", response_model=ReservationResponse
+)
+async def get_reservation_by_reservation_key(
+    reservation_key: str,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await get_reservation_by_key(reservation_key, db)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(
+            "Error retrieving reservation for key %s: %s",
+            reservation_key,
+            exc,
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve reservation.",
+        )
+
+
+@router.put(
+    "/api/public/reservations/{reservation_key}", response_model=ReservationResponse
+)
+async def update_reservation_by_reservation_key(
+    reservation_key: str,
+    payload: ReservationCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        db_reservation = await get_reservation_by_key(reservation_key, db)
+        owner = await get_calendar_owner(db_reservation.owner_slug, db)
+        await ensure_reservation_slot_available(
+            db,
+            owner,
+            payload,
+            db_reservation.owner_slug,
+            ignore_reservation_id=db_reservation.id,
+        )
+
+        for field, value in payload.model_dump().items():
+            setattr(db_reservation, field, value)
+
+        await db.commit()
+        await db.refresh(db_reservation)
+        return db_reservation
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(
+            "Error updating reservation for key %s: %s",
+            reservation_key,
+            exc,
+            exc_info=True,
+        )
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update reservation.",
+        )
+
+
+@router.delete("/api/public/reservations/{reservation_key}")
+async def delete_reservation_by_reservation_key(
+    reservation_key: str,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        reservation = await get_reservation_by_key(reservation_key, db)
+        await db.delete(reservation)
+        await db.commit()
+        return {"message": "Reservation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(
+            "Error deleting reservation for key %s: %s",
+            reservation_key,
+            exc,
+            exc_info=True,
+        )
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to delete reservation.",
         )
 
 

@@ -13,15 +13,15 @@ const Input = (props) => {
   } = props;
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-0.5">
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-slate-700"
+        className="block text-sm font-medium text-slate-700 mb-0.5"
       >
         {title}
       </label>
       <input
-        className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-1 text-slate-800 placeholder-slate-400 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         id={name}
         name={name}
         type={inputtype || 'text'}

@@ -66,6 +66,21 @@ export const reservationService = {
     .then(handleResponse)
     .catch(handleError),
 
+  getByKey: (reservationKey) => apiClient
+    .get(`/public/reservations/${reservationKey}`)
+    .then(handleResponse)
+    .catch(handleError),
+
+  updateByKey: (reservationKey, data) => apiClient
+    .put(`/public/reservations/${reservationKey}`, data)
+    .then(handleResponse)
+    .catch(handleError),
+
+  deleteByKey: (reservationKey) => apiClient
+    .delete(`/public/reservations/${reservationKey}`)
+    .then(handleResponse)
+    .catch(handleError),
+
   getById: (id) => apiClient.get(`/reservations/${id}`).then(handleResponse).catch(handleError),
 
   delete: (id) => apiClient.delete(`/reservations/${id}`).then(handleResponse).catch(handleError),
