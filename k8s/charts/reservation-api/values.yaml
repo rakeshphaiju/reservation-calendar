@@ -18,14 +18,27 @@ database:
   password: ""
   name: ""
   sslMode: disable
+  existingSecret: ""
+  databaseUrlKey: DATABASE_URL
+  passwordKey: PGPASSWORD
 
 env:
   - name: LOG_LEVEL
     value: "info"
   - name: AUTO_CREATE_TABLES
     value: "true"
-  - name: SQL_ECHO
-    value: "false"
+  - name: MAIL_USERNAME
+    value: ""
+  - name: MAIL_PASSWORD
+    value: ""
+  - name: MAIL_FROM
+    value: ""
+  - name: MAIL_FROM_NAME
+    value: "Reservation App"
+  - name: MAIL_SERVER
+    value: "smtp.gmail.com"
+  - name: MAIL_PORT
+    value: "587"
 
 # This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []

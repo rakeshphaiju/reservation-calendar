@@ -1,5 +1,5 @@
 output "host" {
-  value = "postgres.${var.namespace}.svc.cluster.local"
+  value = "${helm_release.postgres.name}-postgresql.${var.namespace}.svc.cluster.local"
 }
 
 output "port" {
@@ -7,13 +7,13 @@ output "port" {
 }
 
 output "connection_string" {
-  value = "postgresql://${var.db_user}:${var.db_password}@postgres.${var.namespace}.svc.cluster.local:5432/${var.db_name}"
+  value     = "postgresql://${var.db_user}:${var.db_password}@${helm_release.postgres.name}-postgresql.${var.namespace}.svc.cluster.local:5432/${var.db_name}"
   sensitive = true
 }
 
 output "postgresql_host" {
   description = "PostgreSQL hostname"
-  value       = "postgres-postgresql.${var.namespace}.svc.cluster.local"  # or helm_release.postgres.name
+  value       = "${helm_release.postgres.name}-postgresql.${var.namespace}.svc.cluster.local"
 }
 
 output "postgresql_port" {
@@ -23,7 +23,7 @@ output "postgresql_port" {
 
 output "postgresql_service_name" {
   description = "PostgreSQL service name"
-  value       = "postgres-postgresql"
+  value       = "${helm_release.postgres.name}-postgresql"
 }
 
 output "postgresql_namespace" {
@@ -33,6 +33,6 @@ output "postgresql_namespace" {
 
 output "postgresql_connection_string" {
   description = "PostgreSQL connection string"
-  value       = "postgresql://${var.db_user}:${var.db_password}@postgres.${var.namespace}.svc.cluster.local:5432/${var.db_name}"
+  value       = "postgresql://${var.db_user}:${var.db_password}@${helm_release.postgres.name}-postgresql.${var.namespace}.svc.cluster.local:5432/${var.db_name}"
   sensitive   = true
 }

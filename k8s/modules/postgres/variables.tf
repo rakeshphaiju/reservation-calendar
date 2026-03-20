@@ -14,7 +14,6 @@ variable "db_password" {
   type        = string
   description = "PostgreSQL password"
   sensitive   = true
-  default     = "changeme123"
 }
 
 variable "db_name" {
@@ -26,11 +25,11 @@ variable "db_name" {
 variable "storage_size" {
   type        = string
   description = "Persistent storage size for PostgreSQL"
-  default     = "2Gi"   # Matches Bitnami chart default
+  default     = "2Gi"
 }
 
 variable "chart_version" {
   type        = string
   description = "Bitnami PostgreSQL Helm chart version"
-  default     = "16.2.6"   # Stable and compatible
+  default     = "18.4.0"
 }

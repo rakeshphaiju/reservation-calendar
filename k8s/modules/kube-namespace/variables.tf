@@ -1,4 +1,4 @@
 variable "namespace" {
-    type        = string
-    default     = "reservation-app" 
+  description = "Namespace to create for the application stack."
+  type        = string
 }

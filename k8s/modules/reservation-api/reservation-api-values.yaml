@@ -9,9 +9,11 @@ database:
   host: ${db_host}
   port: ${db_port}
   user: ${db_user}
-  password: ${db_password}
   name: ${db_name}
   sslMode: ${db_ssl_mode}
+  existingSecret: ${env_secret_name}
+  databaseUrlKey: DATABASE_URL
+  passwordKey: PGPASSWORD
 
 service:
   type: ${service_type}

@@ -3,12 +3,6 @@ variable "namespace" {
   type        = string
 }
 
-variable "postgres_depends_on" {
-  description = "Dependency on PostgreSQL module"
-  type        = any
-  default     = []
-}
-
 variable "replicas" {
   description = "Number of replicas"
   type        = number
@@ -105,6 +99,7 @@ variable "extra_env_vars" {
   description = "Additional environment variables"
   type = list(object({
     name  = string
+    value = string
   }))
   default = []
 }
@@ -162,5 +157,5 @@ variable "wait_for_ready" {
 variable "atomic_upgrades" {
   description = "Atomic upgrades"
   type        = bool
-  default     = false
+  default     = true
 }

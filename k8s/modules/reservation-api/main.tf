@@ -1,10 +1,30 @@
-resource "helm_release" "reservation_api" {
-  name       = "reservation-api"
-  chart      = "${path.module}/../../charts/reservation-api"
-  namespace  = var.namespace
-  version    = var.chart_version
+locals {
+  database_url = "postgresql://${var.db_user}:${var.db_password}@${var.db_host}:${var.db_port}/${var.db_name}${var.db_ssl_mode != "disable" ? "?sslmode=${var.db_ssl_mode}" : ""}"
+}
 
-  depends_on = [var.postgres_depends_on]
+resource "kubernetes_secret" "reservation_api_env" {
+  metadata {
+    name      = "reservation-api-env"
+    namespace = var.namespace
+  }
+
+  type = "Opaque"
+
+  data = {
+    DATABASE_URL = local.database_url
+    PGPASSWORD   = var.db_password
+  }
+}
+
+resource "helm_release" "reservation_api" {
+  name            = "reservation-api"
+  chart           = "${path.module}/../../charts/reservation-api"
+  namespace       = var.namespace
+  version         = var.chart_version
+  wait            = var.wait_for_ready
+  timeout         = var.helm_timeout
+  atomic          = var.atomic_upgrades
+  cleanup_on_fail = true
 
   values = [
     templatefile("${path.module}/reservation-api-values.yaml", {
@@ -16,18 +36,13 @@ resource "helm_release" "reservation_api" {
       db_host     = var.db_host
       db_port     = var.db_port
       db_user     = var.db_user
-      db_password = var.db_password
       db_name     = var.db_name
       db_ssl_mode = var.db_ssl_mode
 
-      service_type = var.service_type
-      service_port = var.service_port
+      env_secret_name = kubernetes_secret.reservation_api_env.metadata[0].name
+      service_type    = var.service_type
+      service_port    = var.service_port
 
     })
   ]
-
-  set_sensitive {
-    name  = "database.password"
-    value = var.db_password
-  }
 }

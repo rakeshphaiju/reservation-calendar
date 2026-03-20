@@ -49,7 +49,14 @@ spec:
               echo "PostgreSQL is ready!"
           env:
             - name: PGPASSWORD
+              {{- if .Values.database.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: {{ .Values.database.passwordKey }}
+              {{- else }}
               value: {{ .Values.database.password | quote }}
+              {{- end }}
           resources:
             limits:
               memory: "64Mi"
@@ -75,9 +82,23 @@ spec:
 
           env:
             - name: DATABASE_URL
+              {{- if .Values.database.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: {{ .Values.database.databaseUrlKey }}
+              {{- else }}
               value: {{ include "reservation-api.databaseUrl" . | quote }}
+              {{- end }}
             - name: PGPASSWORD
+              {{- if .Values.database.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: {{ .Values.database.passwordKey }}
+              {{- else }}
               value: {{ .Values.database.password | quote }}
+              {{- end }}
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

@@ -1,5 +1,6 @@
 module "kube-namespace" {
-  source = "./modules/kube-namespace"
+  source    = "./modules/kube-namespace"
+  namespace = var.namespace
 }
 
 module "postgres" {
@@ -9,20 +10,28 @@ module "postgres" {
   db_password   = var.db_password
   db_name       = var.db_name
   storage_size  = var.storage_size
+  chart_version = var.postgres_chart_version
+
+  depends_on = [module.kube-namespace]
 }
 
 module "reservation_api" {
   source = "./modules/reservation-api"
 
-  namespace    = var.namespace
-  postgres_depends_on = [module.postgres]
+  namespace = var.namespace
 
-  image_repository = "rakeshphaiju/reservation-calender"
-  image_tag        = "latest"
+  replicas          = var.api_replicas
+  image_repository  = var.app_image_repository
+  image_tag         = var.app_image_tag
+  image_pull_policy = var.image_pull_policy
 
-  db_host     = module.postgres.postgresql_host
-  db_port     = module.postgres.postgresql_port
-  db_user     = var.db_user
-  db_password = var.db_password
-  db_name     = var.db_name
+  db_host      = module.postgres.postgresql_host
+  db_port      = module.postgres.postgresql_port
+  db_user      = var.db_user
+  db_password  = var.db_password
+  db_name      = var.db_name
+  service_type = var.service_type
+  service_port = var.service_port
+
+  depends_on = [module.postgres]
 }
