@@ -126,6 +126,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             password_hash="hash",
             calendar_slug="mock-user",
             time_slots=json.dumps(["16:00-16:30", "11:00-11:30"]),
+            bookable_days=json.dumps(["Monday", "Tuesday"]),
         )
 
         mock_result = MagicMock()
@@ -144,6 +145,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("mock-user", resp.json()["owner_slug"])
         self.assertEqual(5, resp.json()["slot_capacity"])
         self.assertEqual(["16:00-16:30", "11:00-11:30"], resp.json()["time_slots"])
+        self.assertEqual(["Monday", "Tuesday"], resp.json()["bookable_days"])
         self.assertEqual(
             [
                 {"day": "Monday", "time": "16:00-16:30", "count": 5, "capacity": 5},
@@ -220,6 +222,40 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual(
             {"time_slots": ["09:00-10:00", "10:00-11:00"]},
+            resp.json(),
+        )
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once()
+
+    async def test_get_bookable_days(self):
+        resp = await self.client.get("/api/dashboard/bookable-days")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            {"bookable_days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]},
+            resp.json(),
+        )
+
+    async def test_update_bookable_days(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            email="owner@example.com",
+            password_hash="hash",
+            calendar_slug="mock-user",
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.put(
+            "/api/dashboard/bookable-days",
+            json={"bookable_days": ["Monday", "Wednesday", "Saturday"]},
+        )
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            {"bookable_days": ["Monday", "Wednesday", "Saturday"]},
             resp.json(),
         )
         mock_db.commit.assert_awaited_once()
@@ -640,5 +676,30 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.BAD_REQUEST, resp.status_code)
         self.assertEqual(
             "This time slot is not available for this calendar",
+            resp.json()["detail"],
+        )
+
+    async def test_add_reservation_rejects_unconfigured_day(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = AppUser(
+            username="mock-user",
+            email="owner@example.com",
+            password_hash="hash",
+            calendar_slug="mock-user",
+            time_slots=json.dumps(["17:00-18:00"]),
+            bookable_days=json.dumps(["Monday", "Tuesday"]),
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.side_effect = [mock_user_result]
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=RESERVATION_PAYLOAD
+        )
+        self.assertEqual(hs.BAD_REQUEST, resp.status_code)
+        self.assertEqual(
+            "This day is not available for this calendar",
             resp.json()["detail"],
         )

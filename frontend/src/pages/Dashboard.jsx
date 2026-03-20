@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/form/Button';
+import ReservationList from '../components/ReservationList';
 import { reservationService } from '../services/api';
 import { authService } from '../services/auth';
 
@@ -13,14 +14,26 @@ const DEFAULT_TIME_SLOTS = [
   '16:00-17:00',
   '17:00-18:00',
 ];
+const BOOKABLE_DAY_OPTIONS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+const DEFAULT_BOOKABLE_DAYS = BOOKABLE_DAY_OPTIONS.slice(0, 5);
 
-const ReservationList = () => {
+const Dashboard = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [capacity, setCapacity] = useState('');
   const [timeSlotsText, setTimeSlotsText] = useState('');
+  const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
   const [savingCapacity, setSavingCapacity] = useState(false);
   const [savingTimeSlots, setSavingTimeSlots] = useState(false);
+  const [savingBookableDays, setSavingBookableDays] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
   const currentUser = authService.getUser();
@@ -33,14 +46,16 @@ const ReservationList = () => {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const [reservationResponse, capacityResponse, timeSlotsResponse] = await Promise.all([
+      const [reservationResponse, capacityResponse, timeSlotsResponse, bookableDaysResponse] = await Promise.all([
         reservationService.getAll({ skip: 0, limit: 100 }),
         reservationService.getSlotCapacity(),
         reservationService.getTimeSlots(),
+        reservationService.getBookableDays(),
       ]);
       setReservations(reservationResponse.data);
       setCapacity(String(capacityResponse.slot_capacity));
       setTimeSlotsText((timeSlotsResponse.time_slots?.length ? timeSlotsResponse.time_slots : DEFAULT_TIME_SLOTS).join('\n'));
+      setBookableDays(bookableDaysResponse.bookable_days?.length ? bookableDaysResponse.bookable_days : DEFAULT_BOOKABLE_DAYS);
     } catch {
       alert('Failed to load dashboard data');
     } finally {
@@ -139,6 +154,41 @@ const ReservationList = () => {
     }
   };
 
+  const handleBookableDayToggle = (day) => {
+    setBookableDays((current) => {
+      const next = current.includes(day)
+        ? current.filter((item) => item !== day)
+        : [...current, day];
+      return BOOKABLE_DAY_OPTIONS.filter((option) => next.includes(option));
+    });
+    if (feedback.message) setFeedback({ type: '', message: '' });
+  };
+
+  const handleBookableDaysSave = async () => {
+    if (!bookableDays.length) {
+      setFeedback({ type: 'error', message: 'Choose at least one bookable day before saving.' });
+      return;
+    }
+
+    try {
+      setSavingBookableDays(true);
+      const response = await reservationService.updateBookableDays(bookableDays);
+      authService.setUser({
+        ...currentUser,
+        bookable_days: response.bookable_days,
+      });
+      setBookableDays(response.bookable_days);
+      setFeedback({ type: 'success', message: 'Bookable days updated successfully.' });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: error?.response?.data?.detail || 'Failed to update bookable days.',
+      });
+    } finally {
+      setSavingBookableDays(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
       'Delete your account and all reservations on this calendar? This cannot be undone.'
@@ -181,30 +231,67 @@ const ReservationList = () => {
 
           <div className="grid gap-4 lg:w-[34rem]">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <label className="block text-sm font-semibold text-slate-800" htmlFor="slot-capacity">
-              Slot capacity
-            </label>
-            <p className="mt-1 text-sm text-slate-500">
-              Set how many reservations are allowed in each time slot.
-            </p>
-            <div className="mt-4 flex items-end gap-3">
-              <input
-                id="slot-capacity"
-                name="slot-capacity"
-                type="number"
-                min="1"
-                max="100"
-                value={capacity}
-                onChange={(e) => {
-                  setCapacity(e.target.value);
-                  if (feedback.message) setFeedback({ type: '', message: '' });
-                }}
-                className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              />
-              <Button onClick={handleCapacitySave} disabled={savingCapacity}>
-                {savingCapacity ? 'Saving...' : 'Save'}
-              </Button>
+              <label className="block text-sm font-semibold text-slate-800" htmlFor="slot-capacity">
+                Slot capacity
+              </label>
+              <p className="mt-1 text-sm text-slate-500">
+                Set how many reservations are allowed in each time slot.
+              </p>
+              <div className="mt-4 flex items-end gap-3">
+                <input
+                  id="slot-capacity"
+                  name="slot-capacity"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={capacity}
+                  onChange={(e) => {
+                    setCapacity(e.target.value);
+                    if (feedback.message) setFeedback({ type: '', message: '' });
+                  }}
+                  className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                <Button onClick={handleCapacitySave} disabled={savingCapacity}>
+                  {savingCapacity ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
             </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <label className="block text-sm font-semibold text-slate-800">
+                Bookable days
+              </label>
+              <p className="mt-1 text-sm text-slate-500">
+                Choose which weekdays appear on this calendar.
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {BOOKABLE_DAY_OPTIONS.map((day) => {
+                  const checked = bookableDays.includes(day);
+                  return (
+                    <label
+                      key={day}
+                      className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
+                        checked
+                          ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                          : 'border-slate-300 bg-white text-slate-700'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => handleBookableDayToggle(day)}
+                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span>{day}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <Button onClick={handleBookableDaysSave} disabled={savingBookableDays}>
+                  {savingBookableDays ? 'Saving...' : 'Save days'}
+                </Button>
+              </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -275,117 +362,9 @@ const ReservationList = () => {
         </article>
       </section>
 
-      <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <div>
-            <h3 className="text-xl font-bold text-slate-900">Reservation list</h3>
-            <p className="mt-1 text-sm text-slate-500">
-              Review upcoming bookings and remove reservations when plans change.
-            </p>
-          </div>
-          <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-            {reservations.length} booked
-          </div>
-        </div>
-
-        <div className="space-y-4 md:hidden">
-          {reservations.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-12 text-center text-slate-500">
-              No reservations yet.
-            </div>
-          ) : (
-            reservations.map((reservation) => (
-              <article
-                key={reservation.id}
-                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-              >
-                <div className="space-y-1 text-sm">
-                  <p className="text-slate-800">
-                    <span className="font-semibold">Full name:</span> {reservation.name}
-                  </p>
-                  <p className="text-slate-600">
-                    <span className="font-semibold text-slate-700">Address:</span>{' '}
-                    {reservation.address}
-                  </p>
-                  <p className="text-slate-600">
-                    <span className="font-semibold text-slate-700">Email:</span>{' '}
-                    {reservation.email}
-                  </p>
-                  <p className="text-slate-600">
-                    <span className="font-semibold text-slate-700">Phone:</span>{' '}
-                    {reservation.phone_number}
-                  </p>
-                  <p className="text-slate-600">
-                    <span className="font-semibold text-slate-700">Date:</span>{' '}
-                    {reservation.day}
-                  </p>
-                  <p className="text-slate-600">
-                    <span className="font-semibold text-slate-700">Time:</span>{' '}
-                    {reservation.time}
-                  </p>
-                </div>
-                <Button
-                  variant="danger"
-                  onClick={() => handleDelete(reservation.id)}
-                  className="mt-4 w-full px-3 py-2"
-                >
-                  Delete
-                </Button>
-              </article>
-            ))
-          )}
-        </div>
-
-        <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 md:block">
-          <table className="min-w-full border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Full name</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Address</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Email</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Phone number</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Time</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reservations.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-500">
-                    No reservations yet.
-                  </td>
-                </tr>
-              ) : (
-                reservations.map((reservation) => (
-                  <tr
-                    key={reservation.id}
-                    className="border-b border-slate-100 hover:bg-slate-50/60 transition-colors"
-                  >
-                    <td className="px-4 py-3 text-sm text-slate-800">{reservation.name}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{reservation.address}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{reservation.email}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{reservation.phone_number}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{reservation.day}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{reservation.time}</td>
-                    <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="danger"
-                        onClick={() => handleDelete(reservation.id)}
-                        className="px-3 py-1.5"
-                      >
-                        Delete
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <ReservationList reservations={reservations} onDelete={handleDelete} />
     </div>
   );
 };
 
-export default ReservationList;
+export default Dashboard;

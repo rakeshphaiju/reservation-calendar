@@ -18,6 +18,7 @@ export const authService = {
         calendar_url: data.calendar_url,
         slot_capacity: data.slot_capacity,
         time_slots: data.time_slots,
+        bookable_days: data.bookable_days,
       };
     } catch {
       currentUser = null;
@@ -42,6 +43,7 @@ export const authService = {
       calendar_url: data.calendar_url,
       slot_capacity: data.slot_capacity,
       time_slots: data.time_slots,
+      bookable_days: data.bookable_days,
     };
     notify();
 

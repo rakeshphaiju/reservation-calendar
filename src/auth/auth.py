@@ -37,6 +37,16 @@ DEFAULT_TIME_SLOTS = [
     "16:00-17:00",
     "17:00-18:00",
 ]
+ALL_BOOKABLE_DAYS = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+]
+DEFAULT_BOOKABLE_DAYS = ALL_BOOKABLE_DAYS[:5]
 
 
 class User(BaseModel):
@@ -45,6 +55,7 @@ class User(BaseModel):
     calendar_slug: str
     slot_capacity: int = 5
     time_slots: list[str] = DEFAULT_TIME_SLOTS.copy()
+    bookable_days: list[str] = DEFAULT_BOOKABLE_DAYS.copy()
 
 
 def get_user_time_slots(user) -> list[str]:
@@ -59,6 +70,26 @@ def get_user_time_slots(user) -> list[str]:
         except json.JSONDecodeError:
             pass
     return DEFAULT_TIME_SLOTS.copy()
+
+
+def get_user_bookable_days(user) -> list[str]:
+    raw_days = getattr(user, "bookable_days", None)
+    if isinstance(raw_days, list) and raw_days:
+        normalized = [str(day) for day in raw_days if str(day) in ALL_BOOKABLE_DAYS]
+        if normalized:
+            return normalized
+    if isinstance(raw_days, str):
+        try:
+            parsed = json.loads(raw_days)
+            if isinstance(parsed, list) and parsed:
+                normalized = [
+                    str(day) for day in parsed if str(day) in ALL_BOOKABLE_DAYS
+                ]
+                if normalized:
+                    return normalized
+        except json.JSONDecodeError:
+            pass
+    return DEFAULT_BOOKABLE_DAYS.copy()
 
 
 def hash_password(password: str) -> str:
@@ -132,6 +163,7 @@ async def load_user(username: str) -> User | None:
             calendar_slug=user.calendar_slug,
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
             time_slots=get_user_time_slots(user),
+            bookable_days=get_user_bookable_days(user),
         )
 
 
@@ -157,4 +189,5 @@ async def authenticate_user(
         calendar_slug=user_record.calendar_slug,
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,
         time_slots=get_user_time_slots(user_record),
+        bookable_days=get_user_bookable_days(user_record),
     )

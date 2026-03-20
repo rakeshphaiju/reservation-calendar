@@ -16,14 +16,34 @@ const DEFAULT_TIME_SLOTS = [
   '16:00-17:00',
   '17:00-18:00',
 ];
+const WEEKDAY_OPTIONS = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+const DEFAULT_BOOKABLE_DAYS = WEEKDAY_OPTIONS.slice(0, 5);
+const WEEKDAY_TO_ISO = {
+  Monday: 1,
+  Tuesday: 2,
+  Wednesday: 3,
+  Thursday: 4,
+  Friday: 5,
+  Saturday: 6,
+  Sunday: 7,
+};
 
 const Reserve = () => {
   const { ownerSlug } = useParams();
-  const [startDate, setStartDate] = useState(moment());
+  const [startDate, setStartDate] = useState(moment().startOf('isoWeek'));
   const [slotCounts, setSlotCounts] = useState({});
   const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
   const [slotCapacity, setSlotCapacity] = useState(5);
   const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
+  const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
   const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
   const [errors, setErrors] = useState({});
   const [showModal, setShowModal] = useState(false);
@@ -37,9 +57,7 @@ const Reserve = () => {
   const [modalMode, setModalMode] = useState('create');
 
   const getUpcomingDates = () => (
-    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map((day) => {
-      return startDate.clone().isoWeekday(moment().day(day).isoWeekday()).format('YYYY-MM-DD');
-    })
+    bookableDays.map((day) => startDate.clone().isoWeekday(WEEKDAY_TO_ISO[day]).format('YYYY-MM-DD'))
   );
 
   const loadAvailability = () => {
@@ -50,6 +68,7 @@ const Reserve = () => {
         const fullyBooked = [];
         const nextCapacity = availability.slot_capacity ?? 5;
         const nextTimeSlots = availability.time_slots?.length ? availability.time_slots : DEFAULT_TIME_SLOTS;
+        const nextBookableDays = availability.bookable_days?.length ? availability.bookable_days : DEFAULT_BOOKABLE_DAYS;
         availability.slots.forEach(({ day, time, count }) => {
           if (!counts[day]) counts[day] = {};
           counts[day][time] = count;
@@ -57,6 +76,7 @@ const Reserve = () => {
         });
         setSlotCapacity(nextCapacity);
         setTimeSlots(nextTimeSlots);
+        setBookableDays(nextBookableDays);
         setSlotCounts(counts);
         setFullyBookedSlots(fullyBooked);
         setCalendarExists(true);
@@ -66,6 +86,7 @@ const Reserve = () => {
           setCalendarExists(false);
           setSlotCapacity(5);
           setTimeSlots(DEFAULT_TIME_SLOTS);
+          setBookableDays(DEFAULT_BOOKABLE_DAYS);
           setSlotCounts({});
           setFullyBookedSlots([]);
           return;
@@ -82,8 +103,10 @@ const Reserve = () => {
 
   const handlePreviousWeek = () => {
     const prevMonday = startDate.clone().subtract(1, 'week').isoWeekday(1);
-    const prevFriday = prevMonday.clone().isoWeekday(5);
-    if (prevFriday.isAfter(moment(), 'day')) {
+    const prevLastBookableDay = prevMonday.clone().isoWeekday(
+      Math.max(...bookableDays.map((day) => WEEKDAY_TO_ISO[day]))
+    );
+    if (prevLastBookableDay.isAfter(moment(), 'day')) {
       setStartDate(prevMonday);
     }
   };
@@ -91,7 +114,10 @@ const Reserve = () => {
   const handleNextWeek = () => {
     const maxDate = moment().add(4, 'weeks');
     const nextMonday = startDate.clone().add(1, 'week').isoWeekday(1);
-    if (nextMonday.isSameOrBefore(maxDate, 'day')) {
+    const nextFirstBookableDay = nextMonday.clone().isoWeekday(
+      Math.min(...bookableDays.map((day) => WEEKDAY_TO_ISO[day]))
+    );
+    if (nextFirstBookableDay.isSameOrBefore(maxDate, 'day')) {
       setStartDate(nextMonday);
     }
   };
@@ -360,14 +386,18 @@ const Reserve = () => {
         <div className="flex items-center space-x-2">
           <Button
             onClick={handlePreviousWeek}
-            disabled={startDate.clone().subtract(1, 'week').isoWeekday(5).isSameOrBefore(moment(), 'day')}
+            disabled={startDate.clone().subtract(1, 'week').isoWeekday(
+              Math.max(...bookableDays.map((day) => WEEKDAY_TO_ISO[day]))
+            ).isSameOrBefore(moment(), 'day')}
             className="px-3 py-1.5 bg-gray-600 text-gray-700 rounded hover:bg-gray-700 disabled:opacity-50"
           >
             Previous Week
           </Button>
           <Button
             onClick={handleNextWeek}
-            disabled={startDate.clone().add(1, 'week').isoWeekday(1).isAfter(moment().add(4, 'weeks'), 'day')}
+            disabled={startDate.clone().add(1, 'week').isoWeekday(
+              Math.min(...bookableDays.map((day) => WEEKDAY_TO_ISO[day]))
+            ).isAfter(moment().add(4, 'weeks'), 'day')}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
             Next Week

@@ -32,6 +32,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertIn("access-token", resp.cookies)
         self.assertEqual("testuser", resp.json()["calendar_slug"])
         self.assertIn("time_slots", resp.json())
+        self.assertIn("bookable_days", resp.json())
 
     async def test_register_user(self):
         existing_username_result = MagicMock()
@@ -67,6 +68,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("new-user", resp.json()["calendar_slug"])
         self.assertEqual("/calendar/new-user", resp.json()["calendar_url"])
         self.assertIn("time_slots", resp.json())
+        self.assertIn("bookable_days", resp.json())
         mock_db.add.assert_called_once()
         mock_db.commit.assert_awaited_once()
 
@@ -78,6 +80,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("mock-user@example.com", resp.json()["email"])
         self.assertEqual("mock-user", resp.json()["calendar_slug"])
         self.assertIn("time_slots", resp.json())
+        self.assertIn("bookable_days", resp.json())
 
     async def test_logout_success(self):
         mock_logged_in_user(app)

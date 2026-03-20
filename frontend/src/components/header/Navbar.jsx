@@ -61,8 +61,8 @@ export default function Navbar() {
               )}
               <li>
                 <Link
-                  to="/reservelist"
-                  className={`${baseLinkClass} ${isActive('/reservelist') ? activeClass : inactiveClass}`}
+                  to="/dashboard"
+                  className={`${baseLinkClass} ${isActive('/dashboard') ? activeClass : inactiveClass}`}
                 >
                   Dashboard
                 </Link>

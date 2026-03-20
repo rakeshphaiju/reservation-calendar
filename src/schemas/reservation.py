@@ -3,6 +3,16 @@ import re
 from typing import List
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+VALID_BOOKABLE_DAYS = {
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+}
+
 
 class ReservationCreate(BaseModel):
     name: str = Field(..., min_length=2)
@@ -50,6 +60,7 @@ class CalendarAvailabilityResponse(BaseModel):
     owner_slug: str
     slot_capacity: int
     time_slots: List[str]
+    bookable_days: List[str]
     slots: List[CalendarSlotSummary]
 
 
@@ -92,5 +103,29 @@ class TimeSlotsUpdate(BaseModel):
 
         if not normalized:
             raise ValueError("At least one time slot is required")
+
+        return normalized
+
+
+class BookableDaysUpdate(BaseModel):
+    bookable_days: List[str] = Field(..., min_length=1, max_length=7)
+
+    @field_validator("bookable_days")
+    @classmethod
+    def validate_bookable_days(cls, value: List[str]) -> List[str]:
+        normalized: List[str] = []
+        seen = set()
+
+        for day in value:
+            trimmed = day.strip()
+            if trimmed not in VALID_BOOKABLE_DAYS:
+                raise ValueError("Each day must be a valid weekday name")
+            if trimmed in seen:
+                continue
+            seen.add(trimmed)
+            normalized.append(trimmed)
+
+        if not normalized:
+            raise ValueError("At least one bookable day is required")
 
         return normalized

@@ -7,6 +7,7 @@ def mock_logged_in_user(app):
             username="mock-user",
             email="mock-user@example.com",
             calendar_slug="mock-user",
+            bookable_days=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
         )
 
     app.dependency_overrides[manager] = _get_logged_in_user

@@ -3,7 +3,7 @@ import { PropTypes } from 'prop-types';
 import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/header/Navbar';
 import Reserve from './pages/Reserve';
-import Reservationlist from './pages/ReservationList';
+import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import { authService } from './services/auth';
 import { reservationService } from './services/api';
@@ -73,7 +73,7 @@ function Home() {
                 Open my calendar
               </Link>
               <Link
-                to="/reservelist"
+                to="/dashboard"
                 className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
               >
                 Open owner dashboard
@@ -133,10 +133,10 @@ export default function App() {
           <Route path="/calendar/:ownerSlug" element={<Reserve />} />
           <Route path="/reservations" element={<Navigate to="/" replace />} />
           <Route
-            path="/reservelist"
+            path="/dashboard"
             element={
               <RequireAuth>
-                <Reservationlist />
+                <Dashboard />
               </RequireAuth>
             }
           />

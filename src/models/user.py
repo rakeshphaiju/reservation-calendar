@@ -16,3 +16,4 @@ class AppUser(Base):
     calendar_slug = Column(String, nullable=False, unique=True, index=True)
     slot_capacity = Column(Integer, nullable=False, default=5, server_default="5")
     time_slots = Column(Text, nullable=False, default="[]", server_default="[]")
+    bookable_days = Column(Text, nullable=False, default="[]", server_default="[]")

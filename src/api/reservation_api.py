@@ -3,13 +3,20 @@ import http as hs
 import json
 import os
 import secrets
+from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.auth import DEFAULT_TIME_SLOTS, get_user_time_slots, manager
+from src.auth.auth import (
+    DEFAULT_BOOKABLE_DAYS,
+    DEFAULT_TIME_SLOTS,
+    get_user_bookable_days,
+    get_user_time_slots,
+    manager,
+)
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
@@ -22,6 +29,7 @@ from src.schemas.reservation import (
     ReservationCreate,
     ReservationResponse,
     SlotCapacityUpdate,
+    BookableDaysUpdate,
     TimeSlotsUpdate,
 )
 from src.services.email_service import send_admin_notification, send_confirmation_email
@@ -80,6 +88,10 @@ def get_owner_time_slots(owner: AppUser) -> list[str]:
     return get_user_time_slots(owner)
 
 
+def get_owner_bookable_days(owner: AppUser) -> list[str]:
+    return get_user_bookable_days(owner)
+
+
 async def ensure_reservation_slot_available(
     db: AsyncSession,
     owner: AppUser,
@@ -87,7 +99,15 @@ async def ensure_reservation_slot_available(
     owner_slug: str,
     ignore_reservation_id: uuid.UUID | None = None,
 ):
+    reservation_weekday = datetime.strptime(reservation.day, "%Y-%m-%d").strftime("%A")
+    allowed_bookable_days = set(get_owner_bookable_days(owner))
     allowed_time_slots = set(get_owner_time_slots(owner))
+
+    if reservation_weekday not in allowed_bookable_days:
+        raise HTTPException(
+            status_code=hs.HTTPStatus.BAD_REQUEST,
+            detail="This day is not available for this calendar",
+        )
 
     if reservation.time not in allowed_time_slots:
         raise HTTPException(
@@ -253,10 +273,12 @@ async def get_reserved_slots(owner_slug: str, db: AsyncSession = Depends(get_db)
         rows = result.all()
         slot_capacity = get_owner_slot_capacity(owner)
         time_slots = get_owner_time_slots(owner)
+        bookable_days = get_owner_bookable_days(owner)
         return CalendarAvailabilityResponse(
             owner_slug=owner_slug,
             slot_capacity=slot_capacity,
             time_slots=time_slots,
+            bookable_days=bookable_days,
             slots=[
                 CalendarSlotSummary(
                     day=day,
@@ -319,6 +341,11 @@ async def get_time_slots(user=Depends(manager)):
     return {"time_slots": get_owner_time_slots(user)}
 
 
+@router.get("/api/dashboard/bookable-days")
+async def get_bookable_days(user=Depends(manager)):
+    return {"bookable_days": get_owner_bookable_days(user)}
+
+
 @router.put("/api/dashboard/time-slots")
 async def update_time_slots(
     payload: TimeSlotsUpdate,
@@ -348,6 +375,40 @@ async def update_time_slots(
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to update time slots.",
+        )
+
+
+@router.put("/api/dashboard/bookable-days")
+async def update_bookable_days(
+    payload: BookableDaysUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        result = await db.execute(
+            select(AppUser).where(AppUser.username == user.username)
+        )
+        db_user = result.scalars().first()
+        if not db_user:
+            raise HTTPException(
+                status_code=hs.HTTPStatus.NOT_FOUND,
+                detail="User not found",
+            )
+
+        db_user.bookable_days = json.dumps(
+            payload.bookable_days or DEFAULT_BOOKABLE_DAYS
+        )
+        await db.commit()
+        await db.refresh(db_user)
+        return {"bookable_days": get_owner_bookable_days(db_user)}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update bookable days: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update bookable days.",
         )
 
 

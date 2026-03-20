@@ -55,6 +55,14 @@ async def ensure_schema_columns():
         await conn.execute(
             text(
                 """
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS bookable_days TEXT NOT NULL DEFAULT '[]'
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
                 ALTER TABLE reservations
                 ADD COLUMN IF NOT EXISTS reservation_key VARCHAR
                 """

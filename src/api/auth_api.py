@@ -8,10 +8,12 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.auth import (
+    DEFAULT_BOOKABLE_DAYS,
     TOKEN_URL,
     User,
     authenticate_user,
     generate_unique_calendar_slug,
+    get_user_bookable_days,
     get_user_time_slots,
     hash_password,
     manager,
@@ -35,6 +37,10 @@ def get_slot_capacity(user) -> int:
 
 def get_time_slots(user) -> list[str]:
     return get_user_time_slots(user)
+
+
+def get_bookable_days(user) -> list[str]:
+    return get_user_bookable_days(user)
 
 
 @router.post("/api/auth/register")
@@ -67,6 +73,7 @@ async def register_user(
         password_hash=hash_password(payload.password),
         calendar_slug=calendar_slug,
         time_slots=json.dumps(get_time_slots(None)),
+        bookable_days=json.dumps(get_bookable_days(None) or DEFAULT_BOOKABLE_DAYS),
     )
     db.add(user)
     await db.commit()
@@ -81,6 +88,7 @@ async def register_user(
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
         "time_slots": get_time_slots(user),
+        "bookable_days": get_bookable_days(user),
         "calendar_url": f"/calendar/{user.calendar_slug}",
     }
 
@@ -105,6 +113,7 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
         "time_slots": get_time_slots(user),
+        "bookable_days": get_bookable_days(user),
         "calendar_url": f"/calendar/{user.calendar_slug}",
     }
 
@@ -118,6 +127,7 @@ async def get_me(user=Depends(manager)):
             "calendar_slug": user.calendar_slug,
             "slot_capacity": get_slot_capacity(user),
             "time_slots": get_time_slots(user),
+            "bookable_days": get_bookable_days(user),
             "calendar_url": f"/calendar/{user.calendar_slug}",
             "authenticated": True,
         }
