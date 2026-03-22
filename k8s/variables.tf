@@ -62,6 +62,30 @@ variable "api_replicas" {
   default     = 2
 }
 
+variable "redis_enabled" {
+  description = "Deploy Redis in-cluster for Celery."
+  type        = bool
+  default     = true
+}
+
+variable "celery_enabled" {
+  description = "Deploy Celery worker and beat workloads."
+  type        = bool
+  default     = true
+}
+
+variable "celery_worker_replicas" {
+  description = "Number of Celery worker replicas."
+  type        = number
+  default     = 1
+}
+
+variable "celery_beat_enabled" {
+  description = "Deploy Celery beat for scheduled tasks."
+  type        = bool
+  default     = true
+}
+
 variable "image_pull_policy" {
   description = "Image pull policy for the Reservation API deployment."
   type        = string

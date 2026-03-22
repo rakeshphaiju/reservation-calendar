@@ -42,5 +42,25 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{- define "reservation-api.databaseUrl" -}}
-postgresql://{{ .Values.database.user }}:{{ .Values.database.password }}@{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}{{- if ne .Values.database.sslMode "disable" }}?sslmode={{ .Values.database.sslMode }}{{- end }}
+postgresql+asyncpg://{{ .Values.database.user }}:{{ .Values.database.password }}@{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}{{- if ne .Values.database.sslMode "disable" }}?sslmode={{ .Values.database.sslMode }}{{- end }}
+{{- end }}
+
+{{- define "reservation-api.redisServiceName" -}}
+{{- printf "%s-redis" (include "reservation-api.fullname" .) }}
+{{- end }}
+
+{{- define "reservation-api.celeryBrokerUrl" -}}
+{{- if .Values.celery.brokerUrl }}
+{{- .Values.celery.brokerUrl }}
+{{- else }}
+{{- printf "redis://%s:%v/0" (include "reservation-api.redisServiceName" .) .Values.redis.service.port }}
+{{- end }}
+{{- end }}
+
+{{- define "reservation-api.celeryResultBackend" -}}
+{{- if .Values.celery.resultBackend }}
+{{- .Values.celery.resultBackend }}
+{{- else }}
+{{- include "reservation-api.celeryBrokerUrl" . }}
+{{- end }}
 {{- end }}

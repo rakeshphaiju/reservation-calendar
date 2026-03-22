@@ -25,13 +25,17 @@ module "reservation_api" {
   image_tag         = var.app_image_tag
   image_pull_policy = var.image_pull_policy
 
-  db_host      = module.postgres.postgresql_host
-  db_port      = module.postgres.postgresql_port
-  db_user      = var.db_user
-  db_password  = var.db_password
-  db_name      = var.db_name
-  service_type = var.service_type
-  service_port = var.service_port
+  db_host                = module.postgres.postgresql_host
+  db_port                = module.postgres.postgresql_port
+  db_user                = var.db_user
+  db_password            = var.db_password
+  db_name                = var.db_name
+  service_type           = var.service_type
+  service_port           = var.service_port
+  redis_enabled          = var.redis_enabled
+  celery_enabled         = var.celery_enabled
+  celery_worker_replicas = var.celery_worker_replicas
+  celery_beat_enabled    = var.celery_beat_enabled
 
   depends_on = [module.postgres]
 }

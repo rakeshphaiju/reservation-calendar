@@ -71,6 +71,30 @@ variable "service_port" {
   default     = 80
 }
 
+variable "redis_enabled" {
+  description = "Whether to deploy Redis for Celery broker/backend."
+  type        = bool
+  default     = true
+}
+
+variable "celery_enabled" {
+  description = "Whether to deploy Celery worker and beat workloads."
+  type        = bool
+  default     = true
+}
+
+variable "celery_worker_replicas" {
+  description = "Number of Celery worker replicas."
+  type        = number
+  default     = 1
+}
+
+variable "celery_beat_enabled" {
+  description = "Whether to deploy Celery beat."
+  type        = bool
+  default     = true
+}
+
 variable "resources" {
   description = "Resource limits and requests"
   type = object({

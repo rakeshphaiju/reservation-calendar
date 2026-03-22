@@ -18,3 +18,13 @@ database:
 service:
   type: ${service_type}
   port: ${service_port}
+
+redis:
+  enabled: ${redis_enabled}
+
+celery:
+  enabled: ${celery_enabled}
+  worker:
+    replicas: ${celery_workers}
+  beat:
+    enabled: ${celery_beat}

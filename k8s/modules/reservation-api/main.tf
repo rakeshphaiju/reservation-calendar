@@ -1,5 +1,5 @@
 locals {
-  database_url = "postgresql://${var.db_user}:${var.db_password}@${var.db_host}:${var.db_port}/${var.db_name}${var.db_ssl_mode != "disable" ? "?sslmode=${var.db_ssl_mode}" : ""}"
+  database_url = "postgresql+asyncpg://${var.db_user}:${var.db_password}@${var.db_host}:${var.db_port}/${var.db_name}${var.db_ssl_mode != "disable" ? "?sslmode=${var.db_ssl_mode}" : ""}"
 }
 
 resource "kubernetes_secret" "reservation_api_env" {
@@ -42,6 +42,10 @@ resource "helm_release" "reservation_api" {
       env_secret_name = kubernetes_secret.reservation_api_env.metadata[0].name
       service_type    = var.service_type
       service_port    = var.service_port
+      redis_enabled   = var.redis_enabled
+      celery_enabled  = var.celery_enabled
+      celery_workers  = var.celery_worker_replicas
+      celery_beat     = var.celery_beat_enabled
 
     })
   ]
