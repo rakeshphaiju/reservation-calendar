@@ -17,6 +17,23 @@ $ pip install poetry==1.3.1
 $ poetry install
 ```
 
+## Running background jobs with Celery
+
+The backend now queues email sending and reservation cleanup work through Celery.
+
+For local Docker Compose runs, start:
+
+```shell
+$ docker compose up --build
+```
+
+This brings up:
+
+- `reservation_calender_api` for the FastAPI app
+- `celery_worker` for email/background task execution
+- `celery_beat` for scheduled cleanup jobs
+- `redis` as the Celery broker/backend
+
 # Frontend development
 
 ## Installing frontend dependencies

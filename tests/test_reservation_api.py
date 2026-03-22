@@ -504,8 +504,12 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[get_db] = lambda: mock_db
 
         with (
-            patch("src.api.reservation_api.send_confirmation_email") as mock_confirm,
-            patch("src.api.reservation_api.send_admin_notification") as mock_admin,
+            patch(
+                "src.api.reservation_api.send_confirmation_email_task.delay"
+            ) as mock_confirm,
+            patch(
+                "src.api.reservation_api.send_admin_notification_task.delay"
+            ) as mock_admin,
         ):
             resp = await self.client.post(
                 "/api/calendars/mock-user/reservations/add", json=RESERVATION_PAYLOAD

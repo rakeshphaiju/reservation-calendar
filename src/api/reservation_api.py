@@ -6,7 +6,7 @@ import secrets
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,7 +32,10 @@ from src.schemas.reservation import (
     BookableDaysUpdate,
     TimeSlotsUpdate,
 )
-from src.services.email_service import send_admin_notification, send_confirmation_email
+from src.tasks.celery_tasks import (
+    send_admin_notification_task,
+    send_confirmation_email_task,
+)
 
 
 router = APIRouter()
@@ -159,7 +162,6 @@ async def ensure_reservation_slot_available(
 async def add_reservations(
     owner_slug: str,
     reservation: ReservationCreate,
-    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
     try:
@@ -176,8 +178,7 @@ async def add_reservations(
         await db.commit()
         await db.refresh(db_reservation)
 
-        background_tasks.add_task(
-            send_confirmation_email,
+        send_confirmation_email_task.delay(
             recipient_email=reservation.email,
             recipient_name=reservation.name,
             day=reservation.day,
@@ -185,8 +186,7 @@ async def add_reservations(
             reservation_key=reservation_key,
         )
 
-        background_tasks.add_task(
-            send_admin_notification,
+        send_admin_notification_task.delay(
             owner_email=owner.email or DEFAULT_OWNER_NOTIFICATION_EMAIL,
             customer_name=reservation.name,
             customer_email=reservation.email,
