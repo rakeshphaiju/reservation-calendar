@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from sqlalchemy import select, delete
 from src.models.reservation import Reservation
 from src.common.db import AsyncSessionLocal
@@ -21,8 +22,9 @@ async def cleanup_past_reservations():
             past_reservation_ids = []
             for reservation in all_reservations:
                 try:
+                    start_time = reservation.time.split("-")[0]
                     reservation_datetime = datetime.strptime(
-                        f"{reservation.day} {reservation.time}", "%Y-%m-%d %H:%M"
+                        f"{reservation.day} {start_time}", "%Y-%m-%d %H:%M"
                     )
 
                     if reservation_datetime < cutoff:

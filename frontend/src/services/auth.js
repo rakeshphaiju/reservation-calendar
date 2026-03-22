@@ -7,19 +7,23 @@ const notify = () => {
   listeners.forEach((listener) => listener(currentUser));
 };
 
+const normalizeUser = (data, fallbackUsername = '') => ({
+  username: data.username || fallbackUsername,
+  email: data.email,
+  first_name: data.first_name || data.firstname || '',
+  last_name: data.last_name || data.lastname || '',
+  calendar_slug: data.calendar_slug,
+  calendar_url: data.calendar_url,
+  slot_capacity: data.slot_capacity,
+  time_slots: data.time_slots,
+  bookable_days: data.bookable_days,
+});
+
 export const authService = {
   init: async () => {
     try {
       const { data } = await apiClient.get('/auth/me');
-      currentUser = {
-        username: data.username,
-        email: data.email,
-        calendar_slug: data.calendar_slug,
-        calendar_url: data.calendar_url,
-        slot_capacity: data.slot_capacity,
-        time_slots: data.time_slots,
-        bookable_days: data.bookable_days,
-      };
+      currentUser = normalizeUser(data);
     } catch {
       currentUser = null;
     }
@@ -36,15 +40,7 @@ export const authService = {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
-    currentUser = {
-      username: data.username || username,
-      email: data.email,
-      calendar_slug: data.calendar_slug,
-      calendar_url: data.calendar_url,
-      slot_capacity: data.slot_capacity,
-      time_slots: data.time_slots,
-      bookable_days: data.bookable_days,
-    };
+    currentUser = normalizeUser(data, username);
     notify();
 
     return currentUser;

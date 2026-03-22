@@ -18,12 +18,13 @@ pydantic = {extras = ["email"], version = "^2.12.5"}  # For data validation and 
 python-dotenv = "^1.0.0"  # For loading environment variables (e.g., API keys)
 # Other utilities
 aiohttp = "3.10.11"
-apscheduler = "^3.11.2"
 alembic = "^1.18.4"
 fastapi-mail = "^1.6.2"
 fastapi-login = "^1.10.0"
 python-multipart = "^0.0.20"
 greenlet = "^3.3.2"
+celery = {extras = ["redis"], version = "^5.5.3"}
+python-dateutil = "^2.9.0.post0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

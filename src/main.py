@@ -17,7 +17,6 @@ from src.common.logger import logger
 from src.api.reservation_api import router as reservation_api
 from src.api.auth_api import router as auth_api
 from src.common.db import engine, Base
-from src.tasks.scheduler import initialize_scheduler
 
 
 load_dotenv()
@@ -97,19 +96,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.exception("Failed to ensure database schema columns: %s", e)
 
-    # Start the scheduler
-    try:
-        await initialize_scheduler()
-    except Exception as e:
-        logger.exception(f"Failed to start scheduler: {e}")
-
     yield
-
-    try:
-        initialize_scheduler.shutdown()
-        logger.info("Scheduler shut down gracefully")
-    except Exception:
-        pass
 
     try:
         await engine.dispose()
