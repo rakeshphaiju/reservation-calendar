@@ -13,7 +13,7 @@ async def cleanup_past_reservations():
         try:
             logger.info("Starting async cleanup of past reservations...")
 
-            now = datetime.now()
+            cutoff = datetime.now() - relativedelta(months=1)
 
             result = await session.execute(select(Reservation))
             all_reservations = result.scalars().all()
@@ -25,7 +25,7 @@ async def cleanup_past_reservations():
                         f"{reservation.day} {reservation.time}", "%Y-%m-%d %H:%M"
                     )
 
-                    if reservation_datetime < now:
+                    if reservation_datetime < cutoff:
                         past_reservation_ids.append(reservation.id)
 
                 except ValueError:
@@ -43,8 +43,6 @@ async def cleanup_past_reservations():
                 logger.info(f"Deleted {result.rowcount} past reservations")
             else:
                 logger.info("No past reservations to delete")
-
-            await session.close()
 
         except Exception as e:
             logger.exception(f"Error during reservation cleanup: {e}")
