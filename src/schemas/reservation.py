@@ -1,5 +1,6 @@
 import uuid
 import re
+from datetime import datetime
 from typing import List
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -22,12 +23,33 @@ class ReservationCreate(BaseModel):
     day: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
     time: str
 
+    @field_validator("day")
+    @classmethod
+    def validate_day(cls, value: str) -> str:
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError as exc:
+            raise ValueError("Day must be a valid date in YYYY-MM-DD format") from exc
+        return value
+
     @field_validator("time")
     @classmethod
     def validate_time(cls, value: str) -> str:
-        if not re.fullmatch(r"^\d{2}:\d{2}-\d{2}:\d{2}$", value):
+        trimmed = value.strip()
+        if not re.fullmatch(r"^\d{2}:\d{2}-\d{2}:\d{2}$", trimmed):
             raise ValueError("Time must be in HH:MM-HH:MM format")
-        return value
+        start, end = trimmed.split("-")
+
+        try:
+            start_time = datetime.strptime(start, "%H:%M")
+            end_time = datetime.strptime(end, "%H:%M")
+        except ValueError as exc:
+            raise ValueError("Time must use valid 24-hour values") from exc
+
+        if start_time >= end_time:
+            raise ValueError("Time must end after it starts")
+
+        return trimmed
 
 
 class ReservationResponse(BaseModel):

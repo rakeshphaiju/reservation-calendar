@@ -428,13 +428,16 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_existing_email = MagicMock()
         mock_existing_email.scalars.return_value.first.return_value = reservation
 
+        mock_lock_result = MagicMock()
+
         mock_slot_reservations = MagicMock()
-        mock_slot_reservations.scalars.return_value.all.return_value = [reservation]
+        mock_slot_reservations.scalar_one.return_value = 1
 
         mock_db = AsyncMock()
         mock_db.execute.side_effect = [
             mock_reservation_result,
             mock_owner_result,
+            mock_lock_result,
             mock_existing_email,
             mock_slot_reservations,
         ]
@@ -487,12 +490,15 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_existing_email = MagicMock()
         mock_existing_email.scalars.return_value.first.return_value = None
 
+        mock_lock_result = MagicMock()
+
         mock_slot_reservations = MagicMock()
-        mock_slot_reservations.scalars.return_value.all.return_value = []
+        mock_slot_reservations.scalar_one.return_value = 0
 
         mock_db = AsyncMock()
         mock_db.execute.side_effect = [
             mock_user_result,
+            mock_lock_result,
             mock_existing_email,
             mock_slot_reservations,
         ]
@@ -548,25 +554,15 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_existing_email = MagicMock()
         mock_existing_email.scalars.return_value.first.return_value = None
 
-        mock_slot_reservations = MagicMock()
+        mock_lock_result = MagicMock()
 
-        mock_slot_reservations.scalars.return_value.all.return_value = [
-            Reservation(
-                id=f"slot-full-{i}",
-                owner_slug="mock-user",
-                name="Mock User",
-                email=f"mockuser{i}@example.com",
-                address="Addr",
-                phone_number="1234567890",
-                day=RESERVATION_PAYLOAD["day"],
-                time=RESERVATION_PAYLOAD["time"],
-            )
-            for i in range(5)
-        ]
+        mock_slot_reservations = MagicMock()
+        mock_slot_reservations.scalar_one.return_value = 5
 
         mock_db = AsyncMock()
         mock_db.execute.side_effect = [
             mock_user_result,
+            mock_lock_result,
             mock_existing_email,
             mock_slot_reservations,
         ]
@@ -599,8 +595,14 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             **RESERVATION_PAYLOAD,
         )
 
+        mock_lock_result = MagicMock()
+
         mock_db = AsyncMock()
-        mock_db.execute.side_effect = [mock_user_result, mock_existing_email]
+        mock_db.execute.side_effect = [
+            mock_user_result,
+            mock_lock_result,
+            mock_existing_email,
+        ]
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
@@ -629,13 +631,16 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         mock_existing = MagicMock()
         mock_existing.scalars.return_value.first.return_value = None
 
+        mock_lock_result = MagicMock()
+
         mock_slot_reservations = MagicMock()
-        mock_slot_reservations.scalars.return_value.all.return_value = []
+        mock_slot_reservations.scalar_one.return_value = 0
 
         mock_db = AsyncMock()
         mock_db.add = MagicMock()
         mock_db.execute.side_effect = [
             mock_user_result,
+            mock_lock_result,
             mock_existing,
             mock_slot_reservations,
         ]
@@ -659,6 +664,38 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(hs.BAD_REQUEST, resp.status_code)
 
+    async def test_add_reservation_invalid_day_format(self):
+        payload = {**RESERVATION_PAYLOAD, "day": "2026-02-30"}
+
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=payload
+        )
+
+        self.assertEqual(hs.BAD_REQUEST, resp.status_code)
+        self.assertIn(
+            "Day must be a valid date in YYYY-MM-DD format", resp.json()["detail"]
+        )
+
+    async def test_add_reservation_invalid_time_range(self):
+        payload = {**RESERVATION_PAYLOAD, "time": "25:00-26:00"}
+
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=payload
+        )
+
+        self.assertEqual(hs.BAD_REQUEST, resp.status_code)
+        self.assertIn("Time must use valid 24-hour values", resp.json()["detail"])
+
+    async def test_add_reservation_rejects_time_that_does_not_end_after_it_starts(self):
+        payload = {**RESERVATION_PAYLOAD, "time": "11:00-11:00"}
+
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=payload
+        )
+
+        self.assertEqual(hs.BAD_REQUEST, resp.status_code)
+        self.assertIn("Time must end after it starts", resp.json()["detail"])
+
     async def test_add_reservation_rejects_unconfigured_time_slot(self):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = AppUser(
@@ -669,8 +706,10 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             time_slots=json.dumps(["09:00-10:00"]),
         )
 
+        mock_lock_result = MagicMock()
+
         mock_db = AsyncMock()
-        mock_db.execute.side_effect = [mock_user_result]
+        mock_db.execute.side_effect = [mock_user_result, mock_lock_result]
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
@@ -694,8 +733,10 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             bookable_days=json.dumps(["Monday", "Tuesday"]),
         )
 
+        mock_lock_result = MagicMock()
+
         mock_db = AsyncMock()
-        mock_db.execute.side_effect = [mock_user_result]
+        mock_db.execute.side_effect = [mock_user_result, mock_lock_result]
 
         app.dependency_overrides[get_db] = lambda: mock_db
 

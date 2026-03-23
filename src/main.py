@@ -75,6 +75,22 @@ async def ensure_schema_columns():
                 """
             )
         )
+        await conn.execute(
+            text(
+                """
+                CREATE INDEX IF NOT EXISTS ix_reservations_owner_day_time
+                ON reservations (owner_slug, day, time)
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS ux_reservations_owner_day_time_email
+                ON reservations (owner_slug, day, time, email)
+                """
+            )
+        )
 
 
 @asynccontextmanager

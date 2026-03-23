@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/form/Button';
+import Input from '../components/form/Input';
+import Checkbox from '../components/form/Checkbox';
 import ReservationList from '../components/ReservationList';
 import { reservationService } from '../services/api';
 import { authService } from '../services/auth';
@@ -98,6 +100,11 @@ const Dashboard = () => {
     }
   };
 
+  const handleCapacityChange = (e) => {
+    setCapacity(e.target.value);
+    if (feedback.message) setFeedback({ type: '', message: '' });
+  };
+
   const handleCapacitySave = async () => {
     const nextCapacity = Number(capacity);
     if (!Number.isInteger(nextCapacity) || nextCapacity < 1 || nextCapacity > 100) {
@@ -122,6 +129,11 @@ const Dashboard = () => {
     } finally {
       setSavingCapacity(false);
     }
+  };
+
+  const handleTimeSlotsChange = (e) => {
+    setTimeSlotsText(e.target.value);
+    if (feedback.message) setFeedback({ type: '', message: '' });
   };
 
   const handleTimeSlotsSave = async () => {
@@ -231,26 +243,18 @@ const Dashboard = () => {
 
           <div className="grid gap-4 lg:w-[34rem]">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <label className="block text-sm font-semibold text-slate-800" htmlFor="slot-capacity">
-                Slot capacity
-              </label>
+              <Input
+                name="slot-capacity"
+                title="Slot capacity"
+                inputtype="number"
+                value={capacity}
+                handlechange={handleCapacityChange}
+                placeholder="Enter capacity (1-100)"
+              />
               <p className="mt-1 text-sm text-slate-500">
                 Set how many reservations are allowed in each time slot.
               </p>
-              <div className="mt-4 flex items-end gap-3">
-                <input
-                  id="slot-capacity"
-                  name="slot-capacity"
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={capacity}
-                  onChange={(e) => {
-                    setCapacity(e.target.value);
-                    if (feedback.message) setFeedback({ type: '', message: '' });
-                  }}
-                  className="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
+              <div className="mt-4 flex justify-end">
                 <Button onClick={handleCapacitySave} disabled={savingCapacity}>
                   {savingCapacity ? 'Saving...' : 'Save'}
                 </Button>
@@ -264,26 +268,23 @@ const Dashboard = () => {
               <p className="mt-1 text-sm text-slate-500">
                 Choose which weekdays appear on this calendar.
               </p>
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {BOOKABLE_DAY_OPTIONS.map((day) => {
                   const checked = bookableDays.includes(day);
                   return (
-                    <label
+                    <div
                       key={day}
-                      className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
-                        checked
-                          ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
-                          : 'border-slate-300 bg-white text-slate-700'
-                      }`}
+                      className={`rounded-lg border p-3 transition ${checked
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-slate-200 bg-white'
+                        }`}
                     >
-                      <input
-                        type="checkbox"
+                      <Checkbox
+                        label={day}
                         checked={checked}
                         onChange={() => handleBookableDayToggle(day)}
-                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                       />
-                      <span>{day}</span>
-                    </label>
+                    </div>
                   );
                 })}
               </div>
@@ -306,10 +307,7 @@ const Dashboard = () => {
                 name="time-slots"
                 rows={7}
                 value={timeSlotsText}
-                onChange={(e) => {
-                  setTimeSlotsText(e.target.value);
-                  if (feedback.message) setFeedback({ type: '', message: '' });
-                }}
+                onChange={handleTimeSlotsChange}
                 className="mt-4 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               />
               <div className="mt-4 flex justify-end">

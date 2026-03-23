@@ -8,7 +8,9 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql import text
 
 from src.auth.auth import (
     DEFAULT_BOOKABLE_DAYS,
@@ -45,6 +47,19 @@ DEFAULT_OWNER_NOTIFICATION_EMAIL = os.getenv("MAIL_USERNAME")
 
 def generate_reservation_key() -> str:
     return secrets.token_urlsafe(8)
+
+
+async def acquire_slot_lock(
+    db: AsyncSession,
+    owner_slug: str,
+    day: str,
+    time: str,
+):
+    # Serialize writes for the same slot across all API replicas.
+    await db.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+        {"lock_key": f"{owner_slug}:{day}:{time}"},
+    )
 
 
 async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
@@ -119,7 +134,7 @@ async def ensure_reservation_slot_available(
         )
 
     existing_email_result = await db.execute(
-        select(Reservation).where(
+        select(Reservation.id).where(
             Reservation.owner_slug == owner_slug,
             Reservation.day == reservation.day,
             Reservation.time == reservation.time,
@@ -137,19 +152,17 @@ async def ensure_reservation_slot_available(
         )
 
     slot_reservations_result = await db.execute(
-        select(Reservation).where(
+        select(func.count()).where(
             Reservation.owner_slug == owner_slug,
             Reservation.day == reservation.day,
             Reservation.time == reservation.time,
         )
     )
-    slot_reservations = slot_reservations_result.scalars().all()
-    active_slot_reservations = [
-        slot_reservation
-        for slot_reservation in slot_reservations
-        if slot_reservation.id != ignore_reservation_id
-    ]
-    if len(active_slot_reservations) >= get_owner_slot_capacity(owner):
+    active_slot_reservations = slot_reservations_result.scalar_one()
+    if ignore_reservation_id:
+        active_slot_reservations -= 1
+
+    if active_slot_reservations >= get_owner_slot_capacity(owner):
         raise HTTPException(
             status_code=hs.HTTPStatus.CONFLICT,
             detail="This time slot is fully booked",
@@ -166,6 +179,7 @@ async def add_reservations(
 ):
     try:
         owner = await get_calendar_owner(owner_slug, db)
+        await acquire_slot_lock(db, owner_slug, reservation.day, reservation.time)
         await ensure_reservation_slot_available(db, owner, reservation, owner_slug)
 
         reservation_key = generate_reservation_key()
@@ -206,7 +220,13 @@ async def add_reservations(
         )
 
         return db_reservation
-
+    except IntegrityError as exc:
+        logger.warning("Reservation conflict while creating reservation: %s", exc)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.CONFLICT,
+            detail="This user already has a reservation for this time slot",
+        )
     except HTTPException:
         raise
     except Exception as exc:
@@ -479,6 +499,12 @@ async def update_reservation_by_reservation_key(
     try:
         db_reservation = await get_reservation_by_key(reservation_key, db)
         owner = await get_calendar_owner(db_reservation.owner_slug, db)
+        await acquire_slot_lock(
+            db,
+            db_reservation.owner_slug,
+            payload.day,
+            payload.time,
+        )
         await ensure_reservation_slot_available(
             db,
             owner,
@@ -493,6 +519,13 @@ async def update_reservation_by_reservation_key(
         await db.commit()
         await db.refresh(db_reservation)
         return db_reservation
+    except IntegrityError as exc:
+        logger.warning("Reservation conflict while updating reservation: %s", exc)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.CONFLICT,
+            detail="This user already has a reservation for this time slot",
+        )
     except HTTPException:
         raise
     except Exception as exc:
