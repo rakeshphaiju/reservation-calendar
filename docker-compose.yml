@@ -49,7 +49,7 @@ services:
     #ports:
      # - "8000:8000"
 
-  celery_worker:
+  background_task_worker:
     build:
       context: .
       dockerfile: Dockerfile
@@ -71,7 +71,7 @@ services:
       redis:
         condition: service_started
 
-  celery_beat:
+  background_job:
     build:
       context: .
       dockerfile: Dockerfile
