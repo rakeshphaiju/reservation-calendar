@@ -450,10 +450,19 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             "time": "19:00-20:00",
         }
 
-        resp = await self.client.put(
-            "/api/public/reservations/reservation-key-1",
-            json=payload,
-        )
+        with (
+            patch(
+                "src.api.reservation_api.send_confirmation_email_task.delay"
+            ) as mock_confirm,
+            patch(
+                "src.api.reservation_api.send_admin_notification_task.delay"
+            ) as mock_admin,
+        ):
+            resp = await self.client.put(
+                "/api/public/reservations/reservation-key-1",
+                json=payload,
+            )
+
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("Updated Name", resp.json()["name"])
         self.assertEqual("19:00-20:00", resp.json()["time"])

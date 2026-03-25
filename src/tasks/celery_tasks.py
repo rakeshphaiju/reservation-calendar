@@ -13,6 +13,7 @@ def send_confirmation_email_task(
     day: str,
     time: str,
     reservation_key: str,
+    is_update: bool = False,
 ):
     asyncio.run(
         send_confirmation_email(
@@ -21,6 +22,7 @@ def send_confirmation_email_task(
             day=day,
             time=time,
             reservation_key=reservation_key,
+            is_update=is_update,
         )
     )
 
@@ -36,6 +38,7 @@ def send_admin_notification_task(
     time: str,
     reservation_id: str,
     reservation_key: str,
+    is_update: bool = False,
 ):
     asyncio.run(
         send_admin_notification(
@@ -48,6 +51,7 @@ def send_admin_notification_task(
             time=time,
             reservation_id=reservation_id,
             reservation_key=reservation_key,
+            is_update=is_update,
         )
     )
 

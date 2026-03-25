@@ -521,6 +521,36 @@ async def update_reservation_by_reservation_key(
 
         await db.commit()
         await db.refresh(db_reservation)
+
+        send_confirmation_email_task.delay(
+            recipient_email=db_reservation.email,
+            recipient_name=db_reservation.name,
+            day=db_reservation.day,
+            time=db_reservation.time,
+            reservation_key=reservation_key,
+            is_update=True,
+        )
+
+        send_admin_notification_task.delay(
+            owner_email=owner.email or DEFAULT_OWNER_NOTIFICATION_EMAIL,
+            customer_name=db_reservation.name,
+            customer_email=db_reservation.email,
+            customer_phone=db_reservation.phone_number,
+            customer_address=db_reservation.address,
+            day=db_reservation.day,
+            time=db_reservation.time,
+            reservation_id=str(db_reservation.id),
+            reservation_key=reservation_key,
+            is_update=True,
+        )
+
+        logger.info(
+            "Updated reservation %s for calendar '%s' owned by '%s'",
+            db_reservation.id,
+            db_reservation.owner_slug,
+            owner.username,
+        )
+
         return db_reservation
     except IntegrityError as exc:
         logger.warning("Reservation conflict while updating reservation: %s", exc)
