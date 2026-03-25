@@ -15,5 +15,6 @@ class AppUser(Base):
     password_hash = Column(String, nullable=False)
     calendar_slug = Column(String, nullable=False, unique=True, index=True)
     slot_capacity = Column(Integer, nullable=False, default=5, server_default="5")
+    max_weeks = Column(Integer, nullable=False, default=4, server_default="4")
     time_slots = Column(Text, nullable=False, default="[]", server_default="[]")
     bookable_days = Column(Text, nullable=False, default="[]", server_default="[]")

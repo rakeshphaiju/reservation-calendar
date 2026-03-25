@@ -47,6 +47,14 @@ async def ensure_schema_columns():
             text(
                 """
                 ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS max_weeks INTEGER NOT NULL DEFAULT 4
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS time_slots TEXT NOT NULL DEFAULT '[]'
                 """
             )

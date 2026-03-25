@@ -33,6 +33,31 @@ class TestDashboardApi(BaseApiTest):
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once()
 
+    async def test_get_max_weeks(self):
+        resp = await self.client.get("/api/dashboard/max-weeks")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual({"max_weeks": 4}, resp.json())
+
+    async def test_update_max_weeks(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = make_mock_user(
+            max_weeks=12
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.put(
+            "/api/dashboard/max-weeks",
+            json={"max_weeks": 12},
+        )
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual({"max_weeks": 12}, resp.json())
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once()
+
     async def test_get_time_slots(self):
         resp = await self.client.get("/api/dashboard/time-slots")
         self.assertEqual(hs.OK, resp.status_code)

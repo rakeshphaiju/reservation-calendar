@@ -14,8 +14,10 @@ from sqlalchemy.sql import text
 
 from src.auth.auth import (
     DEFAULT_BOOKABLE_DAYS,
+    DEFAULT_MAX_WEEKS,
     DEFAULT_TIME_SLOTS,
     get_user_bookable_days,
+    get_user_max_weeks,
     get_user_time_slots,
     manager,
 )
@@ -27,6 +29,7 @@ from src.schemas.reservation import (
     CalendarAvailabilityResponse,
     CalendarOwnerSummary,
     CalendarSlotSummary,
+    MaxWeeksUpdate,
     PaginatedReservations,
     ReservationCreate,
     ReservationResponse,
@@ -100,6 +103,10 @@ async def get_calendar_owners(db: AsyncSession = Depends(get_db)):
 
 def get_owner_slot_capacity(owner: AppUser) -> int:
     return getattr(owner, "slot_capacity", None) or DEFAULT_SLOT_CAPACITY
+
+
+def get_owner_max_weeks(owner: AppUser) -> int:
+    return get_user_max_weeks(owner) or DEFAULT_MAX_WEEKS
 
 
 def get_owner_time_slots(owner: AppUser) -> list[str]:
@@ -300,6 +307,7 @@ async def get_reserved_slots(owner_slug: str, db: AsyncSession = Depends(get_db)
         return CalendarAvailabilityResponse(
             owner_slug=owner_slug,
             slot_capacity=slot_capacity,
+            max_weeks=get_owner_max_weeks(owner),
             time_slots=time_slots,
             bookable_days=bookable_days,
             slots=[
@@ -356,6 +364,43 @@ async def update_slot_capacity(
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to update slot capacity.",
+        )
+
+
+@router.get("/api/dashboard/max-weeks")
+async def get_max_weeks(user=Depends(manager)):
+    return {"max_weeks": get_owner_max_weeks(user)}
+
+
+@router.put("/api/dashboard/max-weeks")
+async def update_max_weeks(
+    payload: MaxWeeksUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        result = await db.execute(
+            select(AppUser).where(AppUser.username == user.username)
+        )
+        db_user = result.scalars().first()
+        if not db_user:
+            raise HTTPException(
+                status_code=hs.HTTPStatus.NOT_FOUND,
+                detail="User not found",
+            )
+
+        db_user.max_weeks = payload.max_weeks
+        await db.commit()
+        await db.refresh(db_user)
+        return {"max_weeks": db_user.max_weeks}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update max weeks: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update max weeks.",
         )
 
 

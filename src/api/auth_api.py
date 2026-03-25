@@ -14,6 +14,7 @@ from src.auth.auth import (
     authenticate_user,
     generate_unique_calendar_slug,
     get_user_bookable_days,
+    get_user_max_weeks,
     get_user_time_slots,
     hash_password,
     manager,
@@ -41,6 +42,10 @@ def get_time_slots(user) -> list[str]:
 
 def get_bookable_days(user) -> list[str]:
     return get_user_bookable_days(user)
+
+
+def get_max_weeks(user) -> int:
+    return get_user_max_weeks(user)
 
 
 @router.post("/api/auth/register")
@@ -87,6 +92,7 @@ async def register_user(
         "email": user.email,
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
+        "max_weeks": get_max_weeks(user),
         "time_slots": get_time_slots(user),
         "bookable_days": get_bookable_days(user),
         "calendar_url": f"/calendar/{user.calendar_slug}",
@@ -112,6 +118,7 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "email": user.email,
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
+        "max_weeks": get_max_weeks(user),
         "time_slots": get_time_slots(user),
         "bookable_days": get_bookable_days(user),
         "calendar_url": f"/calendar/{user.calendar_slug}",
@@ -126,6 +133,7 @@ async def get_me(user=Depends(manager)):
             "email": user.email,
             "calendar_slug": user.calendar_slug,
             "slot_capacity": get_slot_capacity(user),
+            "max_weeks": get_max_weeks(user),
             "time_slots": get_time_slots(user),
             "bookable_days": get_bookable_days(user),
             "calendar_url": f"/calendar/{user.calendar_slug}",

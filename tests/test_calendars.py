@@ -67,6 +67,7 @@ class TestCalendarsApi(BaseApiTest):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("mock-user", resp.json()["owner_slug"])
         self.assertEqual(5, resp.json()["slot_capacity"])
+        self.assertEqual(4, resp.json()["max_weeks"])
         self.assertEqual(["16:00-16:30", "11:00-11:30"], resp.json()["time_slots"])
         self.assertEqual(["Monday", "Tuesday"], resp.json()["bookable_days"])
         self.assertEqual(

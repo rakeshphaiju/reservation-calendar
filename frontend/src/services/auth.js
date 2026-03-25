@@ -15,6 +15,7 @@ const normalizeUser = (data, fallbackUsername = '') => ({
   calendar_slug: data.calendar_slug,
   calendar_url: data.calendar_url,
   slot_capacity: data.slot_capacity,
+  max_weeks: data.max_weeks,
   time_slots: data.time_slots,
   bookable_days: data.bookable_days,
 });

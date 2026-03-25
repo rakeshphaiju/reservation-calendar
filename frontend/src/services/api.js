@@ -46,6 +46,11 @@ export const reservationService = {
     .then(handleResponse)
     .catch(handleError),
 
+  getMaxWeeks: () => apiClient
+    .get('/dashboard/max-weeks')
+    .then(handleResponse)
+    .catch(handleError),
+
   getTimeSlots: () => apiClient
     .get('/dashboard/time-slots')
     .then(handleResponse)
@@ -58,6 +63,11 @@ export const reservationService = {
 
   updateSlotCapacity: (slot_capacity) => apiClient
     .put('/dashboard/slot-capacity', { slot_capacity })
+    .then(handleResponse)
+    .catch(handleError),
+
+  updateMaxWeeks: (max_weeks) => apiClient
+    .put('/dashboard/max-weeks', { max_weeks })
     .then(handleResponse)
     .catch(handleError),
 

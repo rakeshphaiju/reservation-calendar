@@ -25,6 +25,7 @@ export const useReservation = (ownerSlug) => {
     const [slotCounts, setSlotCounts] = useState({});
     const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
     const [slotCapacity, setSlotCapacity] = useState(5);
+    const [maxWeeks, setMaxWeeks] = useState(4);
     const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
     const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
     const [calendarExists, setCalendarExists] = useState(true);
@@ -36,6 +37,7 @@ export const useReservation = (ownerSlug) => {
                 const counts = {};
                 const fullyBooked = [];
                 const nextCapacity = availability.slot_capacity ?? 5;
+                const nextMaxWeeks = availability.max_weeks ?? 4;
                 const nextTimeSlots = availability.time_slots?.length ? availability.time_slots : DEFAULT_TIME_SLOTS;
                 const nextBookableDays = availability.bookable_days?.length ? availability.bookable_days : DEFAULT_BOOKABLE_DAYS;
 
@@ -46,6 +48,7 @@ export const useReservation = (ownerSlug) => {
                 });
 
                 setSlotCapacity(nextCapacity);
+                setMaxWeeks(nextMaxWeeks);
                 setTimeSlots(nextTimeSlots);
                 setBookableDays(nextBookableDays);
                 setSlotCounts(counts);
@@ -56,6 +59,7 @@ export const useReservation = (ownerSlug) => {
                 if (err?.response?.status === 404) {
                     setCalendarExists(false);
                     setSlotCapacity(5);
+                    setMaxWeeks(4);
                     setTimeSlots(DEFAULT_TIME_SLOTS);
                     setBookableDays(DEFAULT_BOOKABLE_DAYS);
                     setSlotCounts({});
@@ -86,6 +90,7 @@ export const useReservation = (ownerSlug) => {
 
     return {
         slotCapacity,
+        maxWeeks,
         timeSlots,
         bookableDays,
         calendarExists,

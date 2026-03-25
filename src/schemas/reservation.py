@@ -81,6 +81,7 @@ class CalendarSlotSummary(BaseModel):
 class CalendarAvailabilityResponse(BaseModel):
     owner_slug: str
     slot_capacity: int
+    max_weeks: int
     time_slots: List[str]
     bookable_days: List[str]
     slots: List[CalendarSlotSummary]
@@ -100,6 +101,10 @@ class CalendarOwnerSummary(BaseModel):
 
 class SlotCapacityUpdate(BaseModel):
     slot_capacity: int = Field(..., ge=1, le=100)
+
+
+class MaxWeeksUpdate(BaseModel):
+    max_weeks: int = Field(..., ge=1, le=52)
 
 
 class TimeSlotsUpdate(BaseModel):

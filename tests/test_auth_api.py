@@ -31,6 +31,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertIn("access-token", resp.cookies)
         self.assertEqual("testuser", resp.json()["calendar_slug"])
+        self.assertIn("max_weeks", resp.json())
         self.assertIn("time_slots", resp.json())
         self.assertIn("bookable_days", resp.json())
 
@@ -67,6 +68,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("new-user@example.com", resp.json()["email"])
         self.assertEqual("new-user", resp.json()["calendar_slug"])
         self.assertEqual("/calendar/new-user", resp.json()["calendar_url"])
+        self.assertIn("max_weeks", resp.json())
         self.assertIn("time_slots", resp.json())
         self.assertIn("bookable_days", resp.json())
         mock_db.add.assert_called_once()
@@ -79,6 +81,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("mock-user", resp.json()["username"])
         self.assertEqual("mock-user@example.com", resp.json()["email"])
         self.assertEqual("mock-user", resp.json()["calendar_slug"])
+        self.assertIn("max_weeks", resp.json())
         self.assertIn("time_slots", resp.json())
         self.assertIn("bookable_days", resp.json())
 

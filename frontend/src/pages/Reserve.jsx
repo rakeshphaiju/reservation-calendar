@@ -16,6 +16,7 @@ const Reserve = () => {
   // Custom hooks
   const {
     slotCapacity,
+    maxWeeks,
     timeSlots,
     bookableDays,
     calendarExists,
@@ -32,7 +33,7 @@ const Reserve = () => {
     isNextWeekDisabled,
     isPastOrToday,
     getEditableTimeSlots,
-  } = useWeekNavigation(bookableDays);
+  } = useWeekNavigation(bookableDays, maxWeeks);
 
   const {
     showModal,

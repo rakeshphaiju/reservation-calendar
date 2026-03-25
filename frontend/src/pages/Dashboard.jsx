@@ -31,9 +31,11 @@ const Dashboard = () => {
   const [reservations, setReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [capacity, setCapacity] = useState('');
+  const [maxWeeks, setMaxWeeks] = useState('');
   const [timeSlotsText, setTimeSlotsText] = useState('');
   const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
   const [savingCapacity, setSavingCapacity] = useState(false);
+  const [savingMaxWeeks, setSavingMaxWeeks] = useState(false);
   const [savingTimeSlots, setSavingTimeSlots] = useState(false);
   const [savingBookableDays, setSavingBookableDays] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -48,14 +50,16 @@ const Dashboard = () => {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const [reservationResponse, capacityResponse, timeSlotsResponse, bookableDaysResponse] = await Promise.all([
+      const [reservationResponse, capacityResponse, maxWeeksResponse, timeSlotsResponse, bookableDaysResponse] = await Promise.all([
         reservationService.getAll({ skip: 0, limit: 100 }),
         reservationService.getSlotCapacity(),
+        reservationService.getMaxWeeks(),
         reservationService.getTimeSlots(),
         reservationService.getBookableDays(),
       ]);
       setReservations(reservationResponse.data);
       setCapacity(String(capacityResponse.slot_capacity));
+      setMaxWeeks(String(maxWeeksResponse.max_weeks));
       setTimeSlotsText((timeSlotsResponse.time_slots?.length ? timeSlotsResponse.time_slots : DEFAULT_TIME_SLOTS).join('\n'));
       setBookableDays(bookableDaysResponse.bookable_days?.length ? bookableDaysResponse.bookable_days : DEFAULT_BOOKABLE_DAYS);
     } catch {
@@ -128,6 +132,37 @@ const Dashboard = () => {
       });
     } finally {
       setSavingCapacity(false);
+    }
+  };
+
+  const handleMaxWeeksChange = (e) => {
+    setMaxWeeks(e.target.value);
+    if (feedback.message) setFeedback({ type: '', message: '' });
+  };
+
+  const handleMaxWeeksSave = async () => {
+    const nextMaxWeeks = Number(maxWeeks);
+    if (!Number.isInteger(nextMaxWeeks) || nextMaxWeeks < 1 || nextMaxWeeks > 52) {
+      setFeedback({ type: 'error', message: 'Booking window must be a whole number between 1 and 52 weeks.' });
+      return;
+    }
+
+    try {
+      setSavingMaxWeeks(true);
+      const response = await reservationService.updateMaxWeeks(nextMaxWeeks);
+      authService.setUser({
+        ...currentUser,
+        max_weeks: response.max_weeks,
+      });
+      setMaxWeeks(String(response.max_weeks));
+      setFeedback({ type: 'success', message: 'Booking window updated successfully.' });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: error?.response?.data?.detail || 'Failed to update booking window.',
+      });
+    } finally {
+      setSavingMaxWeeks(false);
     }
   };
 
@@ -257,6 +292,25 @@ const Dashboard = () => {
               <div className="mt-4 flex justify-end">
                 <Button onClick={handleCapacitySave} disabled={savingCapacity}>
                   {savingCapacity ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <Input
+                name="max-weeks"
+                title="Booking window"
+                inputtype="number"
+                value={maxWeeks}
+                handlechange={handleMaxWeeksChange}
+                placeholder="Enter weeks (1-52)"
+              />
+              <p className="mt-1 text-sm text-slate-500">
+                Set how many weeks ahead people can navigate and book.
+              </p>
+              <div className="mt-4 flex justify-end">
+                <Button onClick={handleMaxWeeksSave} disabled={savingMaxWeeks}>
+                  {savingMaxWeeks ? 'Saving...' : 'Save'}
                 </Button>
               </div>
             </div>

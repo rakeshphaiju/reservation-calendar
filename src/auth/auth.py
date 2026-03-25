@@ -47,6 +47,7 @@ ALL_BOOKABLE_DAYS = [
     "Sunday",
 ]
 DEFAULT_BOOKABLE_DAYS = ALL_BOOKABLE_DAYS[:5]
+DEFAULT_MAX_WEEKS = 4
 
 
 class User(BaseModel):
@@ -54,6 +55,7 @@ class User(BaseModel):
     email: EmailStr | None = None
     calendar_slug: str
     slot_capacity: int = 5
+    max_weeks: int = DEFAULT_MAX_WEEKS
     time_slots: list[str] = DEFAULT_TIME_SLOTS.copy()
     bookable_days: list[str] = DEFAULT_BOOKABLE_DAYS.copy()
 
@@ -90,6 +92,13 @@ def get_user_bookable_days(user) -> list[str]:
         except json.JSONDecodeError:
             pass
     return DEFAULT_BOOKABLE_DAYS.copy()
+
+
+def get_user_max_weeks(user) -> int:
+    raw_max_weeks = getattr(user, "max_weeks", None)
+    if isinstance(raw_max_weeks, int) and raw_max_weeks > 0:
+        return raw_max_weeks
+    return DEFAULT_MAX_WEEKS
 
 
 def hash_password(password: str) -> str:
@@ -162,6 +171,7 @@ async def load_user(username: str) -> User | None:
             email=user.email,
             calendar_slug=user.calendar_slug,
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
+            max_weeks=get_user_max_weeks(user),
             time_slots=get_user_time_slots(user),
             bookable_days=get_user_bookable_days(user),
         )
@@ -188,6 +198,7 @@ async def authenticate_user(
         email=user_record.email,
         calendar_slug=user_record.calendar_slug,
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,
+        max_weeks=get_user_max_weeks(user_record),
         time_slots=get_user_time_slots(user_record),
         bookable_days=get_user_bookable_days(user_record),
     )
