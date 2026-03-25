@@ -1,6 +1,5 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import moment from 'moment';
 
 import Button from '../components/form/Button';
 import ReservationModal from '../components/ReservationModal';

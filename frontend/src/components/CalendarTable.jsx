@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import moment from 'moment';
 import SlotButton from './SlotButton';
 
@@ -37,3 +38,17 @@ export const CalendarTable = ({ dates, times, slotProps }) => {
         </div>
     );
 };
+
+CalendarTable.propTypes = {
+    dates: PropTypes.arrayOf(PropTypes.string).isRequired,
+    times: PropTypes.arrayOf(PropTypes.string).isRequired,
+    slotProps: PropTypes.shape({
+        isFullyBooked: PropTypes.func.isRequired,
+        isPastOrToday: PropTypes.func.isRequired,
+        getSpotsLeft: PropTypes.func.isRequired,
+        showForm: PropTypes.func.isRequired,
+        slotCapacity: PropTypes.number.isRequired,
+    }).isRequired,
+};
+
+export default CalendarTable;
