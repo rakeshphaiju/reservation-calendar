@@ -1,3 +1,4 @@
+// components/ReservationManager.js
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
@@ -10,7 +11,7 @@ export const ReservationManager = ({
     ownerSlug,
     onReservationChange,
     editableDays,
-    getEditableTimeSlots,
+    getEditableTimeSlots
 }) => {
     const [reservationKey, setReservationKey] = useState('');
     const [managedReservation, setManagedReservation] = useState(null);
@@ -19,13 +20,9 @@ export const ReservationManager = ({
     const [manageLoading, setManageLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [modalData, setModalData] = useState({ day: '', time: '' });
+    const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
     const [errors, setErrors] = useState({});
-
-    const isPastOrToday = (day, time) => {
-        const startTime = time.split('-')[0];
-        const slotStart = moment(`${day} ${startTime}`, 'YYYY-MM-DD HH:mm');
-        return slotStart.isSameOrBefore(moment());
-    };
+    // const [modalMode, setModalMode] = useState('edit');
 
     const handleReservationKeyLookup = async () => {
         const trimmedKey = reservationKey.trim();
@@ -34,6 +31,7 @@ export const ReservationManager = ({
             setManageSuccess('');
             return;
         }
+
         try {
             setManageLoading(true);
             setManageErrors({});
@@ -57,11 +55,13 @@ export const ReservationManager = ({
 
     const handleOpenEditReservation = () => {
         if (!managedReservation) return;
+
         if (!editableDays.length) {
             setManageErrors({ key: 'There are no future slots available to move this reservation to.' });
             setManageSuccess('');
             return;
         }
+
         const reservationIsEditable = !isPastOrToday(managedReservation.day, managedReservation.time);
         const initialDay = reservationIsEditable ? managedReservation.day : editableDays[0];
         const initialTimeOptions = getEditableTimeSlots(initialDay);
@@ -69,33 +69,28 @@ export const ReservationManager = ({
             ? managedReservation.time
             : (initialTimeOptions[0] || '');
 
+        setUser({
+            name: managedReservation.name,
+            address: managedReservation.address,
+            email: managedReservation.email,
+            phone_number: managedReservation.phone_number,
+        });
         setModalData({ day: initialDay, time: initialTime });
         setErrors({});
         setManageErrors({});
+        // setModalMode('edit');
         setShowModal(true);
-    };
-
-    const handleModalInput = (e) => {
-        const { name, value } = e.target;
-        if (name === 'day') {
-            const nextTimeSlots = getEditableTimeSlots(value);
-            setModalData((prev) => ({
-                ...prev,
-                day: value,
-                time: nextTimeSlots.includes(prev.time) ? prev.time : (nextTimeSlots[0] || ''),
-            }));
-        } else if (name === 'time') {
-            setModalData((prev) => ({ ...prev, time: value }));
-        }
     };
 
     const handleUpdateReservation = async (e) => {
         e.preventDefault();
         if (!managedReservation?.reservation_key) return;
+
         try {
+            const payload = { ...user, ...modalData };
             const updatedReservation = await reservationService.updateByKey(
                 managedReservation.reservation_key,
-                { day: modalData.day, time: modalData.time }
+                payload
             );
             setManagedReservation(updatedReservation);
             setShowModal(false);
@@ -103,18 +98,20 @@ export const ReservationManager = ({
             setManageSuccess('Reservation updated successfully.');
             onReservationChange();
         } catch (err) {
-            if (err.response?.status === 409)
+            if (err.response?.status === 409) {
                 setErrors({ general: err.response.data?.detail || 'This slot is already reserved.' });
-            else if (err.response?.status === 400)
+            } else if (err.response?.status === 400) {
                 setErrors({ general: err.response.data?.detail || 'Please check your input fields.' });
-            else
+            } else {
                 setErrors({ general: 'Server error. Please try again later.' });
+            }
         }
     };
 
     const handleDeleteByKey = async () => {
         if (!managedReservation?.reservation_key) return;
         if (!window.confirm('Delete this reservation? This action cannot be undone.')) return;
+
         try {
             setManageLoading(true);
             await reservationService.deleteByKey(managedReservation.reservation_key);
@@ -130,6 +127,12 @@ export const ReservationManager = ({
         } finally {
             setManageLoading(false);
         }
+    };
+
+    const isPastOrToday = (day, time) => {
+        const startTime = time.split('-')[0];
+        const slotStart = moment(`${day} ${startTime}`, 'YYYY-MM-DD HH:mm');
+        return slotStart.isSameOrBefore(moment());
     };
 
     return (
@@ -170,9 +173,11 @@ export const ReservationManager = ({
                         <p><span className="font-semibold text-slate-900">Time:</span> {managedReservation.time}</p>
                     </div>
                     <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                        <Button onClick={handleOpenEditReservation}>Modify reservation</Button>
+                        <Button onClick={handleOpenEditReservation}>
+                            Modify reservation
+                        </Button>
                         <Button variant="danger" onClick={handleDeleteByKey} disabled={manageLoading}>
-                            {manageLoading ? 'Deleting...' : 'Delete reservation'}
+                            Delete reservation
                         </Button>
                     </div>
                 </div>
@@ -182,13 +187,27 @@ export const ReservationManager = ({
                 show={showModal}
                 close={() => setShowModal(false)}
                 modalData={modalData}
-                user={null}
+                user={user}
                 errors={errors}
-                handleInput={handleModalInput}
+                handleInput={(e) => {
+                    const { name, value } = e.target;
+                    if (name === 'day') {
+                        const nextTimeSlots = getEditableTimeSlots(value);
+                        setModalData((prev) => ({
+                            ...prev,
+                            day: value,
+                            time: nextTimeSlots.includes(prev.time) ? prev.time : (nextTimeSlots[0] || ''),
+                        }));
+                    } else if (name === 'time') {
+                        setModalData((prev) => ({ ...prev, time: value }));
+                    } else {
+                        setUser((prev) => ({ ...prev, [name]: value }));
+                    }
+                }}
                 handleConfirm={handleUpdateReservation}
                 submitLabel="Save changes"
                 heading="Update reservation"
-                allowSlotEdit
+                allowSlotEdit={true}
                 availableDays={editableDays}
                 availableTimeSlots={getEditableTimeSlots(modalData.day)}
             />

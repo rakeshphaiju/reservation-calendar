@@ -422,11 +422,11 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
             email="owner@example.com",
             password_hash="hash",
             calendar_slug="mock-user",
-            time_slots=json.dumps(["17:00-18:00", "18:00-19:00"]),
+            time_slots=json.dumps(["17:00-18:00", "18:00-19:00", "19:00-20:00"]),
         )
 
         mock_existing_email = MagicMock()
-        mock_existing_email.scalars.return_value.first.return_value = reservation
+        mock_existing_email.scalars.return_value.first.return_value = None
 
         mock_lock_result = MagicMock()
 
@@ -447,7 +447,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         payload = {
             **RESERVATION_PAYLOAD,
             "name": "Updated Name",
-            "time": "18:00-19:00",
+            "time": "19:00-20:00",
         }
 
         resp = await self.client.put(
@@ -456,7 +456,7 @@ class TestReservationsApi(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("Updated Name", resp.json()["name"])
-        self.assertEqual("18:00-19:00", resp.json()["time"])
+        self.assertEqual("19:00-20:00", resp.json()["time"])
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once_with(reservation)
 

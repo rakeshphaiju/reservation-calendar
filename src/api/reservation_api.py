@@ -133,34 +133,37 @@ async def ensure_reservation_slot_available(
             detail="This time slot is not available for this calendar",
         )
 
+    existing_email_filters = [
+        Reservation.owner_slug == owner_slug,
+        Reservation.day == reservation.day,
+        Reservation.time == reservation.time,
+        Reservation.email == reservation.email,
+    ]
+    if ignore_reservation_id:
+        existing_email_filters.append(Reservation.id != ignore_reservation_id)
+
     existing_email_result = await db.execute(
-        select(Reservation.id).where(
-            Reservation.owner_slug == owner_slug,
-            Reservation.day == reservation.day,
-            Reservation.time == reservation.time,
-            Reservation.email == reservation.email,
-        )
+        select(Reservation.id).where(*existing_email_filters)
     )
-    existing_email_reservation = existing_email_result.scalars().first()
-    if (
-        existing_email_reservation
-        and existing_email_reservation.id != ignore_reservation_id
-    ):
+    existing_email_reservation_id = existing_email_result.scalars().first()
+    if existing_email_reservation_id:
         raise HTTPException(
             status_code=hs.HTTPStatus.CONFLICT,
             detail="This user already has a reservation for this time slot",
         )
 
+    slot_reservation_filters = [
+        Reservation.owner_slug == owner_slug,
+        Reservation.day == reservation.day,
+        Reservation.time == reservation.time,
+    ]
+    if ignore_reservation_id:
+        slot_reservation_filters.append(Reservation.id != ignore_reservation_id)
+
     slot_reservations_result = await db.execute(
-        select(func.count()).where(
-            Reservation.owner_slug == owner_slug,
-            Reservation.day == reservation.day,
-            Reservation.time == reservation.time,
-        )
+        select(func.count()).where(*slot_reservation_filters)
     )
     active_slot_reservations = slot_reservations_result.scalar_one()
-    if ignore_reservation_id:
-        active_slot_reservations -= 1
 
     if active_slot_reservations >= get_owner_slot_capacity(owner):
         raise HTTPException(
