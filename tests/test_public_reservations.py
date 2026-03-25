@@ -78,8 +78,12 @@ class TestPublicReservationsApi(BaseApiTest):
         payload = {**RESERVATION_PAYLOAD, "name": "Updated Name", "time": "19:00-20:00"}
 
         with (
-            patch("src.api.reservation_api.send_confirmation_email_task.delay"),
-            patch("src.api.reservation_api.send_admin_notification_task.delay"),
+            patch(
+                "src.api.reservations.reservations_api.send_confirmation_email_task.delay"
+            ),
+            patch(
+                "src.api.reservations.reservations_api.send_admin_notification_task.delay"
+            ),
         ):
             resp = await self.client.put(
                 "/api/public/reservations/reservation-key-1",

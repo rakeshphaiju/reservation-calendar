@@ -41,10 +41,10 @@ class TestAddReservationApi(BaseApiTest):
 
         with (
             patch(
-                "src.api.reservation_api.send_confirmation_email_task.delay"
+                "src.api.reservations.reservations_api.send_confirmation_email_task.delay"
             ) as mock_confirm,
             patch(
-                "src.api.reservation_api.send_admin_notification_task.delay"
+                "src.api.reservations.reservations_api.send_admin_notification_task.delay"
             ) as mock_admin,
         ):
             resp = await self.client.post(

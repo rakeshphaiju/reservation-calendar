@@ -14,7 +14,12 @@ from fastapi.responses import JSONResponse, FileResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.common.logger import logger
-from src.api.reservation_api import router as reservation_api
+from src.api.reservations import (
+    admin_reservations_api,
+    calendars_api,
+    dashboard_api,
+    reservations_api,
+)
 from src.api.auth_api import router as auth_api
 from src.common.db import engine, Base
 
@@ -143,7 +148,11 @@ app.add_middleware(
 )
 
 app.include_router(auth_api)
-app.include_router(reservation_api)
+# app.include_router(reservation_api)
+app.include_router(calendars_api.router)
+app.include_router(reservations_api.router)
+app.include_router(admin_reservations_api.router)
+app.include_router(dashboard_api.router)
 
 
 @app.get("/api/health")

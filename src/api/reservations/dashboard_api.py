@@ -1,0 +1,149 @@
+import json
+import http as hs
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.auth.auth import DEFAULT_BOOKABLE_DAYS, DEFAULT_TIME_SLOTS, manager
+from src.common.db import get_db
+from src.common.logger import logger
+from src.models.user import AppUser
+from src.schemas.reservation import (
+    BookableDaysUpdate,
+    MaxWeeksUpdate,
+    SlotCapacityUpdate,
+    TimeSlotsUpdate,
+)
+from src.api.reservations._utils import (
+    get_owner_bookable_days,
+    get_owner_max_weeks,
+    get_owner_slot_capacity,
+    get_owner_time_slots,
+)
+
+router = APIRouter()
+
+
+async def _get_db_user(username: str, db: AsyncSession) -> AppUser:
+    result = await db.execute(select(AppUser).where(AppUser.username == username))
+    db_user = result.scalars().first()
+    if not db_user:
+        raise HTTPException(
+            status_code=hs.HTTPStatus.NOT_FOUND, detail="User not found"
+        )
+    return db_user
+
+
+@router.get("/api/dashboard/slot-capacity")
+async def get_slot_capacity(user=Depends(manager)):
+    return {"slot_capacity": get_owner_slot_capacity(user)}
+
+
+@router.put("/api/dashboard/slot-capacity")
+async def update_slot_capacity(
+    payload: SlotCapacityUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        db_user = await _get_db_user(user.username, db)
+        db_user.slot_capacity = payload.slot_capacity
+        await db.commit()
+        await db.refresh(db_user)
+        return {"slot_capacity": db_user.slot_capacity}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update slot capacity: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update slot capacity.",
+        )
+
+
+@router.get("/api/dashboard/max-weeks")
+async def get_max_weeks(user=Depends(manager)):
+    return {"max_weeks": get_owner_max_weeks(user)}
+
+
+@router.put("/api/dashboard/max-weeks")
+async def update_max_weeks(
+    payload: MaxWeeksUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        db_user = await _get_db_user(user.username, db)
+        db_user.max_weeks = payload.max_weeks
+        await db.commit()
+        await db.refresh(db_user)
+        return {"max_weeks": db_user.max_weeks}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update max weeks: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update max weeks.",
+        )
+
+
+@router.get("/api/dashboard/time-slots")
+async def get_time_slots(user=Depends(manager)):
+    return {"time_slots": get_owner_time_slots(user)}
+
+
+@router.put("/api/dashboard/time-slots")
+async def update_time_slots(
+    payload: TimeSlotsUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        db_user = await _get_db_user(user.username, db)
+        db_user.time_slots = json.dumps(payload.time_slots or DEFAULT_TIME_SLOTS)
+        await db.commit()
+        await db.refresh(db_user)
+        return {"time_slots": get_owner_time_slots(db_user)}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update time slots: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update time slots.",
+        )
+
+
+@router.get("/api/dashboard/bookable-days")
+async def get_bookable_days(user=Depends(manager)):
+    return {"bookable_days": get_owner_bookable_days(user)}
+
+
+@router.put("/api/dashboard/bookable-days")
+async def update_bookable_days(
+    payload: BookableDaysUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        db_user = await _get_db_user(user.username, db)
+        db_user.bookable_days = json.dumps(
+            payload.bookable_days or DEFAULT_BOOKABLE_DAYS
+        )
+        await db.commit()
+        await db.refresh(db_user)
+        return {"bookable_days": get_owner_bookable_days(db_user)}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update bookable days: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update bookable days.",
+        )
