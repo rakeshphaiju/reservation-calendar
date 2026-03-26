@@ -53,6 +53,7 @@ DEFAULT_MAX_WEEKS = 4
 class User(BaseModel):
     username: str
     email: EmailStr | None = None
+    fullname: str
     calendar_slug: str
     slot_capacity: int = 5
     max_weeks: int = DEFAULT_MAX_WEEKS
@@ -169,6 +170,7 @@ async def load_user(username: str) -> User | None:
         return User(
             username=user.username,
             email=user.email,
+            fullname=user.fullname,
             calendar_slug=user.calendar_slug,
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
             max_weeks=get_user_max_weeks(user),
@@ -196,6 +198,7 @@ async def authenticate_user(
     return User(
         username=user_record.username,
         email=user_record.email,
+        fullname=user_record.fullname,
         calendar_slug=user_record.calendar_slug,
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,
         max_weeks=get_user_max_weeks(user_record),

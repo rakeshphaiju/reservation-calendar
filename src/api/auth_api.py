@@ -75,6 +75,7 @@ async def register_user(
     user = AppUser(
         username=payload.username,
         email=payload.email,
+        fullname=payload.fullname,
         password_hash=hash_password(payload.password),
         calendar_slug=calendar_slug,
         time_slots=json.dumps(get_time_slots(None)),
@@ -90,6 +91,7 @@ async def register_user(
     return {
         "username": user.username,
         "email": user.email,
+        "fullname": user.fullname,
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
         "max_weeks": get_max_weeks(user),
@@ -115,6 +117,7 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "access_token": access_token,
         "token_type": "bearer",
         "username": user.username,
+        "fullname": user.fullname,
         "email": user.email,
         "calendar_slug": user.calendar_slug,
         "slot_capacity": get_slot_capacity(user),
@@ -131,6 +134,7 @@ async def get_me(user=Depends(manager)):
         return {
             "username": user.username,
             "email": user.email,
+            "fullname": user.fullname,
             "calendar_slug": user.calendar_slug,
             "slot_capacity": get_slot_capacity(user),
             "max_weeks": get_max_weeks(user),
