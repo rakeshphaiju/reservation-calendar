@@ -182,3 +182,145 @@ async def send_admin_notification(
             owner_email,
             str(e),
         )
+
+
+async def send_cancellation_email(
+    recipient_email: EmailStr,
+    recipient_name: str,
+    day: str,
+    time: str,
+    reservation_key: str,
+    calender_owner: str = "",
+):
+    try:
+        html_body = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>Reservation Cancelled</h2>
+            <p>Dear <strong>{recipient_name}</strong>,</p>
+            <p>Your reservation with {calender_owner} has been successfully cancelled. Here are the details of the cancelled booking:</p>
+            <table style="border-collapse: collapse; width: 300px;">
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Date</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{day}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Time</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{time}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>Reservation Key</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{reservation_key}</td>
+              </tr>
+            </table>
+            <p>If this was a mistake or you'd like to rebook, please visit our booking page.</p>
+            <p>We hope to see you again!</p>
+          </body>
+        </html>
+        """
+
+        message = MessageSchema(
+            subject="Reservation Cancelled",
+            recipients=[recipient_email],
+            body=html_body,
+            subtype=MessageType.html,
+        )
+
+        logger.info(
+            "Attempting to send cancellation email to customer: %s", recipient_email
+        )
+
+        fm = FastMail(conf)
+        await fm.send_message(message)
+
+        logger.info("Successfully sent cancellation email to %s", recipient_email)
+
+    except Exception as e:
+        logger.error(
+            "Failed to send cancellation email to %s. Error: %s",
+            recipient_email,
+            str(e),
+        )
+
+
+async def send_admin_cancellation_notification(
+    owner_email: EmailStr | None,
+    customer_name: str,
+    customer_email: str,
+    day: str,
+    time: str,
+    reservation_id: str,
+    reservation_key: str,
+):
+    if not owner_email:
+        logger.warning(
+            "Skipping admin cancellation notification for reservation %s because no owner email is configured",
+            reservation_id,
+        )
+        return
+
+    try:
+        html_body = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #c0392b;">Reservation Cancelled</h2>
+            <p>A reservation has been cancelled by the customer.</p>
+
+            <h3>Cancelled Booking Details</h3>
+            <table style="border-collapse: collapse; width: 400px; text-align: left;">
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Date</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{day}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Time</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{time}</td>
+              </tr>
+            </table>
+
+            <h3>Customer Details</h3>
+            <table style="border-collapse: collapse; width: 400px; text-align: left;">
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Name</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{customer_name}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Email</strong></td>
+                <td style="padding: 8px; border: 1px solid #ddd;">
+                  <a href="mailto:{customer_email}">{customer_email}</a>
+                </td>
+              </tr>
+            </table>
+            <br>
+            <p style="font-size: 12px; color: gray;">Ref ID: {reservation_id}</p>
+            <p style="font-size: 12px; color: gray;">Reservation Key: {reservation_key}</p>
+          </body>
+        </html>
+        """
+
+        message = MessageSchema(
+            subject=f"Cancelled Booking: {customer_name} on {day}",
+            recipients=[owner_email],
+            body=html_body,
+            subtype=MessageType.html,
+        )
+
+        logger.info(
+            "Attempting to send admin cancellation notification to: %s for reservation %s",
+            owner_email,
+            reservation_id,
+        )
+
+        fm = FastMail(conf)
+        await fm.send_message(message)
+
+        logger.info(
+            "Successfully sent admin cancellation notification to %s", owner_email
+        )
+
+    except Exception as e:
+        logger.error(
+            "Failed to send admin cancellation notification to %s. Error: %s",
+            owner_email,
+            str(e),
+        )

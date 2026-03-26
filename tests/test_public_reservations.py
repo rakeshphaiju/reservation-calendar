@@ -96,8 +96,24 @@ class TestPublicReservationsApi(BaseApiTest):
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once_with(reservation)
 
-    async def test_delete_public_reservation_by_key_success(self):
+    @patch("src.api.reservations.reservations_api.send_cancellation_email_task")
+    @patch(
+        "src.api.reservations.reservations_api.send_admin_cancellation_notification_task"
+    )
+    @patch("src.api.reservations.reservations_api.get_calendar_owner")
+    async def test_delete_public_reservation_by_key_success(
+        self,
+        mock_get_calendar_owner,
+        mock_admin_cancellation_task,
+        mock_cancellation_email_task,
+    ):
         reservation = self.mock_reservations[0]
+
+        mock_owner = MagicMock()
+        mock_owner.fullname = "Mock Name"
+        mock_owner.email = "owner@example.com"
+        mock_owner.username = "owner"
+        mock_get_calendar_owner.return_value = mock_owner
 
         mock_result = MagicMock()
         mock_result.scalars.return_value.first.return_value = reservation

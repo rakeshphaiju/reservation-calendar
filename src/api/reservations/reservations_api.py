@@ -12,6 +12,8 @@ from src.schemas.reservation import ReservationCreate, ReservationResponse
 from src.tasks.celery_tasks import (
     send_admin_notification_task,
     send_confirmation_email_task,
+    send_admin_cancellation_notification_task,
+    send_cancellation_email_task,
 )
 from src.api.reservations._utils import (
     acquire_slot_lock,
@@ -214,8 +216,45 @@ async def delete_reservation_by_reservation_key(
 ):
     try:
         reservation = await get_reservation_by_key(reservation_key, db)
+        owner = await get_calendar_owner(reservation.owner_slug, db)
+
+        snapshot = {
+            "name": reservation.name,
+            "email": reservation.email,
+            "day": reservation.day,
+            "time": reservation.time,
+            "id": str(reservation.id),
+        }
+
         await db.delete(reservation)
         await db.commit()
+
+        send_cancellation_email_task.delay(
+            recipient_email=snapshot["email"],
+            recipient_name=snapshot["name"],
+            day=snapshot["day"],
+            time=snapshot["time"],
+            reservation_key=reservation_key,
+            calender_owner=owner.fullname,
+        )
+
+        send_admin_cancellation_notification_task.delay(
+            owner_email=owner.email or DEFAULT_OWNER_NOTIFICATION_EMAIL,
+            customer_name=snapshot["name"],
+            customer_email=snapshot["email"],
+            day=snapshot["day"],
+            time=snapshot["time"],
+            reservation_id=snapshot["id"],
+            reservation_key=reservation_key,
+        )
+
+        logger.info(
+            "Deleted reservation %s for calendar '%s' owned by '%s'",
+            snapshot["id"],
+            reservation.owner_slug,
+            owner.username,
+        )
+
         return {"message": "Reservation deleted successfully"}
     except HTTPException:
         raise

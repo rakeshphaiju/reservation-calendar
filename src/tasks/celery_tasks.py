@@ -1,7 +1,12 @@
 import asyncio
 
 from src.common.logger import logger
-from src.services.email_service import send_admin_notification, send_confirmation_email
+from src.services.email_service import (
+    send_admin_notification,
+    send_admin_cancellation_notification,
+    send_cancellation_email,
+    send_confirmation_email,
+)
 from src.tasks.celery_app import celery_app
 from src.tasks.scripts.cleanup_past_reservations import cleanup_past_reservations
 
@@ -54,6 +59,52 @@ def send_admin_notification_task(
             reservation_id=reservation_id,
             reservation_key=reservation_key,
             is_update=is_update,
+        )
+    )
+
+
+@celery_app.task(name="src.tasks.celery_tasks.send_cancellation_email_task")
+def send_cancellation_email_task(
+    recipient_email: str,
+    recipient_name: str,
+    day: str,
+    time: str,
+    reservation_key: str,
+    calender_owner: str = "",
+):
+    asyncio.run(
+        send_cancellation_email(
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            day=day,
+            time=time,
+            reservation_key=reservation_key,
+            calender_owner=calender_owner,
+        )
+    )
+
+
+@celery_app.task(
+    name="src.tasks.celery_tasks.send_admin_cancellation_notification_task"
+)
+def send_admin_cancellation_notification_task(
+    owner_email: str | None,
+    customer_name: str,
+    customer_email: str,
+    day: str,
+    time: str,
+    reservation_id: str,
+    reservation_key: str,
+):
+    asyncio.run(
+        send_admin_cancellation_notification(
+            owner_email=owner_email,
+            customer_name=customer_name,
+            customer_email=customer_email,
+            day=day,
+            time=time,
+            reservation_id=reservation_id,
+            reservation_key=reservation_key,
         )
     )
 
