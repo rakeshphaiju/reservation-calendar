@@ -6,12 +6,16 @@ class UserRegistrationRequest(BaseModel):
         ..., min_length=3, max_length=50, pattern=r"^[a-zA-Z0-9_.-]+$"
     )
     email: EmailStr
+    fullname: str = Field(
+        ..., min_length=2, max_length=100, pattern=r"^[a-zA-Z\s'\-\.]+$"
+    )
     password: str = Field(..., min_length=8, max_length=128)
 
 
 class UserResponse(BaseModel):
     username: str
     email: EmailStr | None = None
+    fullname: str
     calendar_slug: str
     slot_capacity: int
     max_weeks: int

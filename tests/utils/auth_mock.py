@@ -6,6 +6,7 @@ def mock_logged_in_user(app):
         return User(
             username="mock-user",
             email="mock-user@example.com",
+            fullname="Mock User",
             calendar_slug="mock-user",
             max_weeks=4,
             bookable_days=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],

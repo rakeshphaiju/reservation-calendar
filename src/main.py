@@ -44,6 +44,14 @@ async def ensure_schema_columns():
             text(
                 """
                 ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS fullname VARCHAR
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS slot_capacity INTEGER NOT NULL DEFAULT 5
                 """
             )

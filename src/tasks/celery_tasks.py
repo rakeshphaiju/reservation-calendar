@@ -14,6 +14,7 @@ def send_confirmation_email_task(
     time: str,
     reservation_key: str,
     is_update: bool = False,
+    calender_owner: str = "",
 ):
     asyncio.run(
         send_confirmation_email(
@@ -23,6 +24,7 @@ def send_confirmation_email_task(
             time=time,
             reservation_key=reservation_key,
             is_update=is_update,
+            calender_owner=calender_owner,
         )
     )
 

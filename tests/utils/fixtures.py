@@ -44,6 +44,7 @@ def make_mock_user(**kwargs):
     defaults = dict(
         username="mock-user",
         email="owner@example.com",
+        fullname="Mock User",
         password_hash="hash",
         calendar_slug="mock-user",
     )

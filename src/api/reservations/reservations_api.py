@@ -55,6 +55,7 @@ async def add_reservations(
             day=reservation.day,
             time=reservation.time,
             reservation_key=reservation_key,
+            calender_owner=owner.fullname,
         )
 
         send_admin_notification_task.delay(
@@ -159,6 +160,7 @@ async def update_reservation_by_reservation_key(
             time=db_reservation.time,
             reservation_key=reservation_key,
             is_update=True,
+            calender_owner=owner.fullname,
         )
 
         send_admin_notification_task.delay(

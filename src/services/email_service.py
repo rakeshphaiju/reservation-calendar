@@ -23,6 +23,7 @@ async def send_confirmation_email(
     time: str,
     reservation_key: str,
     is_update: bool = False,
+    calender_owner: str = "",
 ):
 
     action = "Updated" if is_update else "Confirmed"
@@ -34,7 +35,7 @@ async def send_confirmation_email(
           <body style="font-family: Arial, sans-serif; padding: 20px;">
             <h2>Reservation {action}!</h2>
             <p>Dear <strong>{recipient_name}</strong>,</p>
-            <p>Your reservation has been successfully {action_text}. Here are the details:</p>
+            <p>Your reservation has been successfully {action_text} with {calender_owner}. Here are the details:</p>
             <table style="border-collapse: collapse; width: 300px;">
               <tr>
                 <td style="padding: 8px; border: 1px solid #ddd;"><strong>Date</strong></td>

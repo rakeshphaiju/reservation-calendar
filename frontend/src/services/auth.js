@@ -10,6 +10,7 @@ const notify = () => {
 const normalizeUser = (data, fallbackUsername = '') => ({
   username: data.username || fallbackUsername,
   email: data.email,
+  fullname: data.fullname,
   first_name: data.first_name || data.firstname || '',
   last_name: data.last_name || data.lastname || '',
   calendar_slug: data.calendar_slug,
@@ -47,8 +48,8 @@ export const authService = {
     return currentUser;
   },
 
-  register: async (username, email, password) => {
-    const { data } = await apiClient.post('/auth/register', { username, email, password });
+  register: async (username, email, fullname, password) => {
+    const { data } = await apiClient.post('/auth/register', { username, email, fullname, password });
     currentUser = null;
     notify();
 

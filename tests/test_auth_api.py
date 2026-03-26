@@ -22,6 +22,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[authenticate_user] = lambda: User(
             username="testuser",
             email="testuser@example.com",
+            fullname="Test User",
             calendar_slug="testuser",
         )
         resp = await self.client.post(
@@ -60,6 +61,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
             json={
                 "username": "new-user",
                 "email": "new-user@example.com",
+                "fullname": "New User",
                 "password": "strongpass123",
             },
         )

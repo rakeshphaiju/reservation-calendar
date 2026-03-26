@@ -8,6 +8,7 @@ export default function Login() {
   const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [fullname, setFullname] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,7 +27,7 @@ export default function Login() {
 
     try {
       if (mode === 'register') {
-        const data = await authService.register(username, email, password);
+        const data = await authService.register(username, email, fullname, password);
         setSuccess(`Account created. Your booking link is /calendar/${data.calendar_slug}`);
         setMode('login');
       } else {
@@ -87,6 +88,15 @@ export default function Login() {
         </div>
         {mode === 'register' && (
           <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Fullname</label>
+            <Input
+              name="fullname"
+              type="fullname"
+              value={fullname}
+              onChange={(e) => setFullname(e.target.value)}
+              required
+              placeholder=""
+            />
             <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
             <Input
               name="email"
