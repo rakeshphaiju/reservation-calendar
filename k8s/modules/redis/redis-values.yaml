@@ -1,0 +1,12 @@
+auth:
+  enabled: false
+
+master:
+  persistence:
+    size: "${volume_size}"
+
+replica:
+  persistence:
+    size: "${volume_size}"
+
+  replicaCount: ${replica_count}

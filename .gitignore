@@ -12,3 +12,4 @@ venv/
 !.vscode/*.dist
 !.vscode/extensions.json
 !.vscode/use-dist-configs.sh
+*.tgz

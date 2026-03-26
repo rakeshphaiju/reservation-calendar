@@ -75,7 +75,7 @@ helm version
 ## 2. Start minikube
 
 ```bash
-minikube start --cpus=4 --memory=8192
+minikube start
 minikube addons enable ingress
 minikube addons enable metrics-server
 ```

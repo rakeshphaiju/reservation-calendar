@@ -15,6 +15,13 @@ module "postgres" {
   depends_on = [module.kube-namespace]
 }
 
+module "redis" {
+  source        = "./modules/redis"
+  namespace     = var.namespace
+
+  depends_on = [module.kube-namespace]
+}
+
 module "reservation_api" {
   source = "./modules/reservation-api"
 
@@ -23,8 +30,7 @@ module "reservation_api" {
   replicas          = var.api_replicas
   image_repository  = var.app_image_repository
   image_tag         = var.app_image_tag
-  image_pull_policy = var.image_pull_policy
-
+  redis_host       = module.redis.redis_host_internal
   db_host      = module.postgres.postgresql_host
   db_port      = module.postgres.postgresql_port
   db_user      = var.db_user

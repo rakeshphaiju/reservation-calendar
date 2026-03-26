@@ -26,6 +26,10 @@ variable "image_pull_policy" {
   default     = "Always"
 }
 
+variable "redis_host" {
+  description = "Redis host used as celery broker"
+}
+
 variable "db_host" {
   description = "Database host"
   type        = string
@@ -157,5 +161,5 @@ variable "wait_for_ready" {
 variable "atomic_upgrades" {
   description = "Atomic upgrades"
   type        = bool
-  default     = true
+  default     = false
 }

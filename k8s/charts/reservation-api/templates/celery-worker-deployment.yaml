@@ -1,10 +1,12 @@
+{{- if .Values.celery.worker.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "reservation-api.fullname" . }}
+  name: {{ include "reservation-api.celeryWorkerFullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "reservation-api.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-worker
     {{- with .Values.labels }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -13,14 +15,16 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.celery.worker.replicaCount }}
   selector:
     matchLabels:
       {{- include "reservation-api.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: celery-worker
   template:
     metadata:
       labels:
         {{- include "reservation-api.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: celery-worker
         {{- with .Values.labels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -32,8 +36,6 @@ spec:
       serviceAccountName: {{ include "reservation-api.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      
-      # Init container to wait for database
       initContainers:
         - name: wait-for-postgres
           image: "postgres:16-alpine"
@@ -64,22 +66,20 @@ spec:
             requests:
               memory: "32Mi"
               cpu: "25m"
-
       containers:
-        - name: {{ .Chart.Name }}
+        - name: celery-worker
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          
+          command:
+            - celery
+            - -A
+            - src.tasks.celery_app.celery_app
+            - worker
+            - --loglevel={{ .Values.celery.worker.logLevel }}
           {{- with .Values.securityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-
-          ports:
-            - name: http
-              containerPort: {{ .Values.service.targetPort }}
-              protocol: TCP
-
           env:
             - name: DATABASE_URL
               {{- if .Values.database.existingSecret }}
@@ -106,28 +106,8 @@ spec:
             {{- with .Values.env }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
-
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-
-          readinessProbe:
-            httpGet:
-              path: /api/health
-              port: {{ .Values.service.targetPort }}
-            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
-            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
-            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
-
-          livenessProbe:
-            httpGet:
-              path: /api/health
-              port: {{ .Values.service.targetPort }}
-            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
-            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
-            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
-            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
-
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -140,3 +120,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

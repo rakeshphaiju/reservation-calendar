@@ -16,6 +16,10 @@ resource "kubernetes_secret" "reservation_api_env" {
   }
 }
 
+locals {
+  celery_broker_url = "redis://${var.redis_host}:6379/0"
+}
+
 resource "helm_release" "reservation_api" {
   name            = "reservation-api"
   chart           = "${path.module}/../../charts/reservation-api"
@@ -32,6 +36,7 @@ resource "helm_release" "reservation_api" {
       image_repository  = var.image_repository
       image_tag         = var.image_tag
       image_pull_policy = var.image_pull_policy
+      celery_broker_url = local.celery_broker_url
 
       db_host     = var.db_host
       db_port     = var.db_port

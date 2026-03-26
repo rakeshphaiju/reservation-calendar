@@ -5,6 +5,26 @@ image:
   tag: ${image_tag}
   pullPolicy: ${image_pull_policy}
 
+env:
+  - name: AUTO_CREATE_TABLES
+    value: "true"
+  - name: MAIL_USERNAME
+    value: ""
+  - name: MAIL_PASSWORD
+    value: ""
+  - name: MAIL_FROM
+    value: ""
+  - name: MAIL_FROM_NAME
+    value: "Reservation App"
+  - name: MAIL_SERVER
+    value: "smtp.gmail.com"
+  - name: MAIL_PORT
+    value: "587"
+
+celery:
+  brokerUrl: ${celery_broker_url}
+  resultBackend: ${celery_broker_url}
+
 database:
   host: ${db_host}
   port: ${db_port}

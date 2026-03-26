@@ -44,3 +44,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "reservation-api.databaseUrl" -}}
 postgresql://{{ .Values.database.user }}:{{ .Values.database.password }}@{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}{{- if ne .Values.database.sslMode "disable" }}?sslmode={{ .Values.database.sslMode }}{{- end }}
 {{- end }}
+
+{{- define "reservation-api.celeryWorkerFullname" -}}
+{{- printf "%s-celery-worker" (include "reservation-api.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{- define "reservation-api.celeryBeatFullname" -}}
+{{- printf "%s-celery-beat" (include "reservation-api.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
