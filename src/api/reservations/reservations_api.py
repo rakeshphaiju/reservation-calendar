@@ -1,7 +1,7 @@
 import http as hs
 import os
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -104,10 +104,11 @@ async def add_reservations(
 )
 async def get_reservation_by_reservation_key(
     reservation_key: str,
+    email: str = Query(..., description="Email used when booking"),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        return await get_reservation_by_key(reservation_key, db)
+        return await get_reservation_by_key(reservation_key, email, db)
     except HTTPException:
         raise
     except Exception as exc:
@@ -130,10 +131,11 @@ async def get_reservation_by_reservation_key(
 async def update_reservation_by_reservation_key(
     reservation_key: str,
     payload: ReservationCreate,
+    email: str = Query(..., description="Email used when booking"),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        db_reservation = await get_reservation_by_key(reservation_key, db)
+        db_reservation = await get_reservation_by_key(reservation_key, email, db)
         owner = await get_calendar_owner(db_reservation.owner_slug, db)
         await acquire_slot_lock(
             db,
@@ -212,10 +214,11 @@ async def update_reservation_by_reservation_key(
 @router.delete("/api/public/reservations/{reservation_key}")
 async def delete_reservation_by_reservation_key(
     reservation_key: str,
+    email: str = Query(..., description="Email used when booking"),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        reservation = await get_reservation_by_key(reservation_key, db)
+        reservation = await get_reservation_by_key(reservation_key, email, db)
         owner = await get_calendar_owner(reservation.owner_slug, db)
 
         snapshot = {
@@ -224,6 +227,7 @@ async def delete_reservation_by_reservation_key(
             "day": reservation.day,
             "time": reservation.time,
             "id": str(reservation.id),
+            "owner_slug": reservation.owner_slug,
         }
 
         await db.delete(reservation)
@@ -251,7 +255,7 @@ async def delete_reservation_by_reservation_key(
         logger.info(
             "Deleted reservation %s for calendar '%s' owned by '%s'",
             snapshot["id"],
-            reservation.owner_slug,
+            snapshot["owner_slug"],
             owner.username,
         )
 

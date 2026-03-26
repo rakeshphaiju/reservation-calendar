@@ -86,18 +86,24 @@ export const reservationService = {
     .then(handleResponse)
     .catch(handleError),
 
-  getByKey: (reservationKey) => apiClient
-    .get(`/public/reservations/${reservationKey}`)
+  getByKey: (reservationKey, email) => apiClient
+    .get(`/public/reservations/${reservationKey}`, {
+      params: { email },
+    })
     .then(handleResponse)
     .catch(handleError),
 
-  updateByKey: (reservationKey, data) => apiClient
-    .put(`/public/reservations/${reservationKey}`, data)
+  updateByKey: (reservationKey, email, data) => apiClient
+    .put(`/public/reservations/${reservationKey}`, data, {
+      params: { email },
+    })
     .then(handleResponse)
     .catch(handleError),
 
-  deleteByKey: (reservationKey) => apiClient
-    .delete(`/public/reservations/${reservationKey}`)
+  deleteByKey: (reservationKey, email) => apiClient
+    .delete(`/public/reservations/${reservationKey}`, {
+      params: { email },
+    })
     .then(handleResponse)
     .catch(handleError),
 

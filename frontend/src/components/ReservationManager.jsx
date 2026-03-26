@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import moment from 'moment';
 
 import Button from './form/Button';
+import Input from './form/Input';
 import ReservationModal from './ReservationModal';
 import { reservationService } from '../services/api';
 
@@ -22,12 +23,20 @@ export const ReservationManager = ({
     const [modalData, setModalData] = useState({ day: '', time: '' });
     const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
     const [errors, setErrors] = useState({});
+    const [lookupEmail, setLookupEmail] = useState('');
     // const [modalMode, setModalMode] = useState('edit');
 
     const handleReservationKeyLookup = async () => {
         const trimmedKey = reservationKey.trim();
+        const trimmedEmail = lookupEmail.trim();
         if (!trimmedKey) {
             setManageErrors({ key: 'Enter your reservation key.' });
+            setManageSuccess('');
+            return;
+        }
+
+        if (!trimmedEmail) {
+            setManageErrors({ key: 'Enter the email used when booking.' });
             setManageSuccess('');
             return;
         }
@@ -36,7 +45,7 @@ export const ReservationManager = ({
             setManageLoading(true);
             setManageErrors({});
             setManageSuccess('');
-            const reservation = await reservationService.getByKey(trimmedKey);
+            const reservation = await reservationService.getByKey(trimmedKey, trimmedEmail);
             if (reservation.owner_slug !== ownerSlug) {
                 setManagedReservation(null);
                 setManageErrors({ key: 'This reservation key belongs to a different calendar.' });
@@ -90,6 +99,7 @@ export const ReservationManager = ({
             const payload = { ...user, ...modalData };
             const updatedReservation = await reservationService.updateByKey(
                 managedReservation.reservation_key,
+                managedReservation.email,
                 payload
             );
             setManagedReservation(updatedReservation);
@@ -114,7 +124,7 @@ export const ReservationManager = ({
 
         try {
             setManageLoading(true);
-            await reservationService.deleteByKey(managedReservation.reservation_key);
+            await reservationService.deleteByKey(managedReservation.reservation_key, managedReservation.email);
             setManagedReservation(null);
             setReservationKey('');
             setManageErrors({});
@@ -141,14 +151,21 @@ export const ReservationManager = ({
                 <div className="lg:max-w-2xl">
                     <h3 className="text-lg font-semibold text-slate-900">Modify or delete an existing reservation</h3>
                     <p className="mt-1 text-sm text-slate-600">
-                        Enter the reservation key from your confirmation email to manage your booking.
+                        Enter the reservation key from your confirmation email and email to manage your booking.
                     </p>
                 </div>
                 <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
-                    <input
+                    <Input
                         value={reservationKey}
                         onChange={(e) => setReservationKey(e.target.value)}
                         placeholder="Enter reservation key"
+                        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:min-w-[18rem]"
+                    />
+                    <Input
+                        value={lookupEmail}
+                        onChange={(e) => setLookupEmail(e.target.value)}
+                        placeholder="Enter your email"
+                        type="email"
                         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 sm:min-w-[18rem]"
                     />
                     <Button onClick={handleReservationKeyLookup} disabled={manageLoading}>

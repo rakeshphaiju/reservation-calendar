@@ -87,26 +87,30 @@ export default function Login() {
           />
         </div>
         {mode === 'register' && (
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Fullname</label>
-            <Input
-              name="fullname"
-              type="fullname"
-              value={fullname}
-              onChange={(e) => setFullname(e.target.value)}
-              required
-              placeholder=""
-            />
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-            <Input
-              name="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder="owner@example.com"
-            />
-          </div>
+          <>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Fullname</label>
+              <Input
+                name="fullname"
+                type="fullname"
+                value={fullname}
+                onChange={(e) => setFullname(e.target.value)}
+                required
+                placeholder=""
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+              <Input
+                name="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="owner@example.com"
+              />
+            </div>
+          </>
         )}
         {error && (
           <div className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">

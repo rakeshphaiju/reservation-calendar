@@ -23,7 +23,10 @@ class TestPublicReservationsApi(BaseApiTest):
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        resp = await self.client.get("/api/public/reservations/reservation-key-1")
+        resp = await self.client.get(
+            "/api/public/reservations/reservation-key-1",
+            params={"email": "johne@example.com"},
+        )
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("reservation-key-1", resp.json()["reservation_key"])
         self.assertEqual("John Doe", resp.json()["name"])
@@ -37,7 +40,10 @@ class TestPublicReservationsApi(BaseApiTest):
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        resp = await self.client.get("/api/public/reservations/missing-key")
+        resp = await self.client.get(
+            "/api/public/reservations/missing-key",
+            params={"email": "johndoe@example.com"},
+        )
         self.assertEqual(hs.NOT_FOUND, resp.status_code)
         self.assertEqual("Reservation not found", resp.json()["detail"])
 
@@ -87,6 +93,7 @@ class TestPublicReservationsApi(BaseApiTest):
         ):
             resp = await self.client.put(
                 "/api/public/reservations/reservation-key-1",
+                params={"email": "johndoe@example.com"},
                 json=payload,
             )
 
@@ -123,7 +130,10 @@ class TestPublicReservationsApi(BaseApiTest):
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        resp = await self.client.delete("/api/public/reservations/reservation-key-1")
+        resp = await self.client.delete(
+            "/api/public/reservations/reservation-key-1",
+            params={"email": "john@example.com"},
+        )
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual({"message": "Reservation deleted successfully"}, resp.json())
         mock_db.delete.assert_awaited_once_with(reservation)

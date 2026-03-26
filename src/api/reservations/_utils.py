@@ -66,9 +66,13 @@ async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
     return owner
 
 
-async def get_reservation_by_key(reservation_key: str, db: AsyncSession) -> Reservation:
+async def get_reservation_by_key(
+    reservation_key: str, email: str, db: AsyncSession
+) -> Reservation:
     result = await db.execute(
-        select(Reservation).where(Reservation.reservation_key == reservation_key)
+        select(Reservation).where(
+            Reservation.reservation_key == reservation_key, Reservation.email == email
+        )
     )
     reservation = result.scalars().first()
     if not reservation:
