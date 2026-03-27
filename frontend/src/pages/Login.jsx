@@ -9,6 +9,7 @@ import { authService } from '../services/auth';
 
 export default function Login() {
   const [mode, setMode] = useState('login');
+  const [loginInput, setLoginInput] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [fullname, setFullname] = useState('');
@@ -39,7 +40,7 @@ export default function Login() {
         setSuccess(`Account created. Your booking link is /calendar/${data.calendar_slug}`);
         setMode('login');
       } else {
-        await authService.login(username, password);
+        await authService.login(loginInput, password);
         navigate(from, { replace: true });
       }
     } catch (err) {
@@ -64,6 +65,9 @@ export default function Login() {
     setMode(mode === 'login' ? 'register' : 'login');
     setError('');
     setSuccess('');
+    setUsername('');
+    setEmail('');
+    setFullname('');
     setRetypePassword('');
   };
 
@@ -80,12 +84,11 @@ export default function Login() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Username</label>
           <Input
             name="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            title="Username or Email"
+            value={loginInput}
+            onChange={(e) => setLoginInput(e.target.value)}
             required
             placeholder=""
           />
@@ -93,10 +96,10 @@ export default function Login() {
 
         {mode === 'register' && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Full name</label>
             <Input
               name="fullname"
               type="text"
+              title="Full name"
               value={fullname}
               onChange={(e) => setFullname(e.target.value)}
               required
@@ -107,10 +110,9 @@ export default function Login() {
 
         {mode === 'register' && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
             <Input
               name="email"
-              type="email"
+              title="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -120,9 +122,9 @@ export default function Login() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
           <PasswordInput
             name="password"
+            title="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -130,9 +132,9 @@ export default function Login() {
 
         {mode === 'register' && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Retype password</label>
             <PasswordInput
               name="retypePassword"
+              title="Retype password"
               value={retypePassword}
               onChange={(e) => {
                 setRetypePassword(e.target.value);

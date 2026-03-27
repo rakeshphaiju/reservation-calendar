@@ -158,7 +158,7 @@ async def get_me(user=Depends(manager)):
 
 
 @router.post("/api/logout")
-async def logout(response: Response):
+async def logout(response: Response, user=Depends(manager)):
     try:
         response.delete_cookie(
             key="access-token",
@@ -167,7 +167,7 @@ async def logout(response: Response):
             secure=False,
             path="/",
         )
-        logger.info("User logged out successfully")
+        logger.info("User %s logged out successfully", user.username)
         return {"message": "Logged out successfully"}
     except Exception as exc:
         logger.error("Unexpected error during logout: %s", exc, exc_info=True)
