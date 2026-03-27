@@ -16,7 +16,12 @@ class UserResponse(BaseModel):
     username: str
     email: EmailStr | None = None
     fullname: str
-    calendar_slug: str
+    calendar_slug: str = Field(
+        ...,
+        min_length=3,
+        max_length=50,
+        pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
+    )
     slot_capacity: int
     max_weeks: int
     time_slots: list[str]
