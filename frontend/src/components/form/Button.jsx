@@ -17,6 +17,7 @@ const Button = ({
         primary: 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98]',
         secondary: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
         danger: 'bg-red-600 text-white hover:bg-red-500 active:scale-[0.98]',
+        ghost: 'bg-transparent text-emerald-600 hover:text-emerald-700',
         disabled: 'cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200',
     };
 
@@ -39,7 +40,7 @@ Button.propTypes = {
     children: PropTypes.node.isRequired,
     onClick: PropTypes.func,
     type: PropTypes.oneOf(['button', 'submit', 'reset']),
-    variant: PropTypes.oneOf(['primary', 'secondary', 'danger', 'disabled']),
+    variant: PropTypes.oneOf(['primary', 'secondary', 'danger', 'ghost', 'disabled']),
     className: PropTypes.string,
     disabled: PropTypes.bool,
 };
