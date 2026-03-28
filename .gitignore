@@ -13,3 +13,5 @@ venv/
 !.vscode/extensions.json
 !.vscode/use-dist-configs.sh
 *.tgz
+htmlcov/
+.coverage

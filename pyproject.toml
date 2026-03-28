@@ -26,6 +26,7 @@ greenlet = "^3.3.2"
 celery = {extras = ["redis"], version = "^5.5.3"}
 python-dateutil = "^2.9.0.post0"
 resend = "^2.26.0"
+pytest-cov = "^7.1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"
