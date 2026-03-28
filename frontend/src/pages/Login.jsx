@@ -86,13 +86,14 @@ export default function Login() {
         <div>
           <Input
             name="username"
-            title="Username or Email"
+            title={mode === 'login' ? "Username or Email" : "Username"}
             value={loginInput}
             onChange={(e) => setLoginInput(e.target.value)}
             required
             placeholder=""
           />
         </div>
+
 
         {mode === 'register' && (
           <div>
