@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import moment from 'moment';
 import Modal from './Modal';
 import Input from './form/Input';
-import Select from './form/Select';
 import Button from './form/Button';
 
 const ReservationModal = ({
@@ -16,9 +15,6 @@ const ReservationModal = ({
     handleConfirm,
     submitLabel,
     heading,
-    allowSlotEdit,
-    availableDays,
-    availableTimeSlots,
 }) => {
     if (!show) return null;
 
@@ -38,29 +34,6 @@ const ReservationModal = ({
             </p>
 
             <form className="space-y-2 text-left">
-                {allowSlotEdit && (
-                    <>
-                        <Select
-                            title="Date"
-                            name="day"
-                            value={modalData.day}
-                            options={availableDays.map((day) => ({
-                                value: day,
-                                label: moment(day).format('dddd, MMMM D'),
-                            }))}
-                            handlechange={handleInput}
-                        />
-
-                        <Select
-                            title="Time"
-                            name="time"
-                            value={modalData.time}
-                            options={availableTimeSlots}
-                            handlechange={handleInput}
-                        />
-                    </>
-                )}
-
                 <div>
                     <Input
                         title="Full Name"
@@ -151,17 +124,11 @@ ReservationModal.propTypes = {
     handleConfirm: PropTypes.func.isRequired,
     submitLabel: PropTypes.string,
     heading: PropTypes.string,
-    allowSlotEdit: PropTypes.bool,
-    availableDays: PropTypes.arrayOf(PropTypes.string),
-    availableTimeSlots: PropTypes.arrayOf(PropTypes.string),
 };
 
 ReservationModal.defaultProps = {
     submitLabel: 'Reserve',
     heading: '',
-    allowSlotEdit: false,
-    availableDays: [],
-    availableTimeSlots: [],
 };
 
 export default ReservationModal;

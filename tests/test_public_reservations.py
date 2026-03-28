@@ -6,7 +6,7 @@ from src.main import app
 from src.models.user import AppUser
 from src.common.db import get_db
 from tests.utils.base import BaseApiTest
-from tests.utils.fixtures import make_mock_reservations, RESERVATION_PAYLOAD
+from tests.utils.fixtures import make_mock_reservations
 
 
 class TestPublicReservationsApi(BaseApiTest):
@@ -81,7 +81,7 @@ class TestPublicReservationsApi(BaseApiTest):
 
         app.dependency_overrides[get_db] = lambda: mock_db
 
-        payload = {**RESERVATION_PAYLOAD, "name": "Updated Name", "time": "19:00-20:00"}
+        payload = {"day": "2026-03-20", "time": "19:00-20:00"}
 
         with (
             patch(
@@ -98,10 +98,29 @@ class TestPublicReservationsApi(BaseApiTest):
             )
 
         self.assertEqual(hs.OK, resp.status_code)
-        self.assertEqual("Updated Name", resp.json()["name"])
+        self.assertEqual("John Doe", resp.json()["name"])
         self.assertEqual("19:00-20:00", resp.json()["time"])
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once_with(reservation)
+
+    async def test_update_public_reservation_by_key_rejects_non_slot_fields(self):
+        mock_db = AsyncMock()
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        payload = {
+            "day": "2026-03-20",
+            "time": "19:00-20:00",
+            "name": "Updated Name",
+        }
+
+        resp = await self.client.put(
+            "/api/public/reservations/reservation-key-1",
+            params={"email": "johndoe@example.com"},
+            json=payload,
+        )
+
+        self.assertEqual(hs.BAD_REQUEST, resp.status_code)
+        mock_db.execute.assert_not_awaited()
 
     @patch("src.api.reservations.reservations_api.send_cancellation_email_task")
     @patch(

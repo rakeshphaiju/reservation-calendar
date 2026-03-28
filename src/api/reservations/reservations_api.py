@@ -8,7 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
-from src.schemas.reservation import ReservationCreate, ReservationResponse
+from src.schemas.reservation import (
+    ReservationCreate,
+    ReservationResponse,
+    ReservationUpdate,
+)
 from src.tasks.celery_tasks import (
     send_admin_notification_task,
     send_confirmation_email_task,
@@ -39,7 +43,13 @@ async def add_reservations(
     try:
         owner = await get_calendar_owner(owner_slug, db)
         await acquire_slot_lock(db, owner_slug, reservation.day, reservation.time)
-        await ensure_reservation_slot_available(db, owner, reservation, owner_slug)
+        await ensure_reservation_slot_available(
+            db,
+            owner,
+            reservation,
+            reservation.email,
+            owner_slug,
+        )
 
         reservation_key = generate_reservation_key()
         db_reservation = Reservation(
@@ -130,7 +140,7 @@ async def get_reservation_by_reservation_key(
 )
 async def update_reservation_by_reservation_key(
     reservation_key: str,
-    payload: ReservationCreate,
+    payload: ReservationUpdate,
     email: str = Query(..., description="Email used when booking"),
     db: AsyncSession = Depends(get_db),
 ):
@@ -147,12 +157,12 @@ async def update_reservation_by_reservation_key(
             db,
             owner,
             payload,
+            db_reservation.email,
             db_reservation.owner_slug,
             ignore_reservation_id=db_reservation.id,
         )
-
-        for field, value in payload.model_dump().items():
-            setattr(db_reservation, field, value)
+        db_reservation.day = payload.day
+        db_reservation.time = payload.time
 
         await db.commit()
         await db.refresh(db_reservation)

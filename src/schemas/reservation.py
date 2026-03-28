@@ -52,6 +52,23 @@ class ReservationCreate(BaseModel):
         return trimmed
 
 
+class ReservationUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    day: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
+    time: str
+
+    @field_validator("day")
+    @classmethod
+    def validate_day(cls, value: str) -> str:
+        return ReservationCreate.validate_day(value)
+
+    @field_validator("time")
+    @classmethod
+    def validate_time(cls, value: str) -> str:
+        return ReservationCreate.validate_time(value)
+
+
 class ReservationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID

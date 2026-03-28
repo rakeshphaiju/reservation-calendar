@@ -16,7 +16,7 @@ from src.auth.auth import (
 )
 from src.models.reservation import Reservation
 from src.models.user import AppUser
-from src.schemas.reservation import ReservationCreate
+from src.schemas.reservation import ReservationCreate, ReservationUpdate
 
 DEFAULT_SLOT_CAPACITY = 5
 
@@ -86,7 +86,8 @@ async def get_reservation_by_key(
 async def ensure_reservation_slot_available(
     db: AsyncSession,
     owner: AppUser,
-    reservation: ReservationCreate,
+    reservation: ReservationCreate | ReservationUpdate,
+    reservation_email: str,
     owner_slug: str,
     ignore_reservation_id: uuid.UUID | None = None,
 ):
@@ -110,7 +111,7 @@ async def ensure_reservation_slot_available(
         Reservation.owner_slug == owner_slug,
         Reservation.day == reservation.day,
         Reservation.time == reservation.time,
-        Reservation.email == reservation.email,
+        Reservation.email == reservation_email,
     ]
     if ignore_reservation_id:
         existing_email_filters.append(Reservation.id != ignore_reservation_id)

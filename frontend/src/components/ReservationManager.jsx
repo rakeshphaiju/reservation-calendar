@@ -5,7 +5,7 @@ import moment from 'moment';
 
 import Button from './form/Button';
 import Input from './form/Input';
-import ReservationModal from './ReservationModal';
+import ReservationUpdateModal from './ReservationUpdateModal';
 import { reservationService } from '../services/api';
 
 export const ReservationManager = ({
@@ -21,7 +21,6 @@ export const ReservationManager = ({
     const [manageLoading, setManageLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [modalData, setModalData] = useState({ day: '', time: '' });
-    const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
     const [errors, setErrors] = useState({});
     const [lookupEmail, setLookupEmail] = useState('');
     // const [modalMode, setModalMode] = useState('edit');
@@ -78,12 +77,6 @@ export const ReservationManager = ({
             ? managedReservation.time
             : (initialTimeOptions[0] || '');
 
-        setUser({
-            name: managedReservation.name,
-            address: managedReservation.address,
-            email: managedReservation.email,
-            phone_number: managedReservation.phone_number,
-        });
         setModalData({ day: initialDay, time: initialTime });
         setErrors({});
         setManageErrors({});
@@ -96,11 +89,10 @@ export const ReservationManager = ({
         if (!managedReservation?.reservation_key) return;
 
         try {
-            const payload = { ...user, ...modalData };
             const updatedReservation = await reservationService.updateByKey(
                 managedReservation.reservation_key,
                 managedReservation.email,
-                payload
+                modalData
             );
             setManagedReservation(updatedReservation);
             setShowModal(false);
@@ -186,6 +178,8 @@ export const ReservationManager = ({
                     <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
                         <p><span className="font-semibold text-slate-900">Name:</span> {managedReservation.name}</p>
                         <p><span className="font-semibold text-slate-900">Email:</span> {managedReservation.email}</p>
+                        <p><span className="font-semibold text-slate-900">Address:</span> {managedReservation.address}</p>
+                        <p><span className="font-semibold text-slate-900">Phone:</span> {managedReservation.phone_number}</p>
                         <p><span className="font-semibold text-slate-900">Date:</span> {managedReservation.day}</p>
                         <p><span className="font-semibold text-slate-900">Time:</span> {managedReservation.time}</p>
                     </div>
@@ -200,11 +194,10 @@ export const ReservationManager = ({
                 </div>
             )}
 
-            <ReservationModal
+            <ReservationUpdateModal
                 show={showModal}
                 close={() => setShowModal(false)}
                 modalData={modalData}
-                user={user}
                 errors={errors}
                 handleInput={(e) => {
                     const { name, value } = e.target;
@@ -217,14 +210,9 @@ export const ReservationManager = ({
                         }));
                     } else if (name === 'time') {
                         setModalData((prev) => ({ ...prev, time: value }));
-                    } else {
-                        setUser((prev) => ({ ...prev, [name]: value }));
                     }
                 }}
                 handleConfirm={handleUpdateReservation}
-                submitLabel="Save changes"
-                heading="Update reservation"
-                allowSlotEdit={true}
                 availableDays={editableDays}
                 availableTimeSlots={getEditableTimeSlots(modalData.day)}
             />

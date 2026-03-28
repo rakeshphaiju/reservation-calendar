@@ -130,9 +130,6 @@ const Reserve = () => {
         handleConfirm={handleConfirmReservation}
         submitLabel="Reserve"
         heading=""
-        allowSlotEdit={false}
-        availableDays={dates}
-        availableTimeSlots={timeSlots}
       />
     </div>
   );
