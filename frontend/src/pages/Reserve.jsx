@@ -3,9 +3,9 @@ import { useParams } from 'react-router-dom';
 
 import Button from '../components/form/Button';
 import ReservationModal from '../components/ReservationModal';
-import { CalendarTable } from '../components/CalendarTable';
-import { MobileCalendarView } from '../components/MobileCalendarView';
-import { ReservationManager } from '../components/ReservationManager';
+import { CalendarTable } from '../components/reservations/CalendarTable';
+import { MobileCalendarView } from '../components/reservations/MobileCalendarView';
+import { ReservationManager } from '../components/reservations/ReservationManager';
 import { useReservation } from '../hooks/useReservation';
 import { useWeekNavigation } from '../hooks/useWeekNavigation';
 import { useReservationModal } from '../hooks/useReservationModal';

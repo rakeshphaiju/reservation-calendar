@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
-import SlotButton from './SlotButton';
+import SlotButton from '../SlotButton';
 
 export const MobileCalendarView = ({ dates, times, slotProps }) => {
     return (

@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Button from '../components/form/Button';
-import Input from '../components/form/Input';
-import Checkbox from '../components/form/Checkbox';
-import ReservationList from '../components/ReservationList';
 import { reservationService } from '../services/api';
 import { authService } from '../services/auth';
+import ReservationList from '../components/dashboard/ReservationList';
+import CalendarSetupCard from '../components/dashboard/CalendarSetupCard';
+import CapacitySettings from '../components/dashboard/CapacitySettings';
+import MaxWeeksSettings from '../components/dashboard/MaxWeeksSettings';
+import BookableDaysSettings from '../components/dashboard/BookableDaysSettings';
+import TimeSlotsSettings from '../components/dashboard/TimeSlotsSettings';
+import DashboardStats from '../components/dashboard/DashboardStats';
+import DeleteAccountSection from '../components/dashboard/DeleteAccountSection';
 
 const DEFAULT_TIME_SLOTS = [
   '10:00-11:00',
@@ -16,16 +20,7 @@ const DEFAULT_TIME_SLOTS = [
   '16:00-17:00',
   '17:00-18:00',
 ];
-const BOOKABLE_DAY_OPTIONS = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
-];
-const DEFAULT_BOOKABLE_DAYS = BOOKABLE_DAY_OPTIONS.slice(0, 5);
+const DEFAULT_BOOKABLE_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 const Dashboard = () => {
   const [reservations, setReservations] = useState([]);
@@ -51,7 +46,13 @@ const Dashboard = () => {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const [reservationResponse, capacityResponse, maxWeeksResponse, timeSlotsResponse, bookableDaysResponse] = await Promise.all([
+      const [
+        reservationResponse,
+        capacityResponse,
+        maxWeeksResponse,
+        timeSlotsResponse,
+        bookableDaysResponse,
+      ] = await Promise.all([
         reservationService.getAll({ skip: 0, limit: 100 }),
         reservationService.getSlotCapacity(),
         reservationService.getMaxWeeks(),
@@ -61,8 +62,17 @@ const Dashboard = () => {
       setReservations(reservationResponse.data);
       setCapacity(String(capacityResponse.slot_capacity));
       setMaxWeeks(String(maxWeeksResponse.max_weeks));
-      setTimeSlotsText((timeSlotsResponse.time_slots?.length ? timeSlotsResponse.time_slots : DEFAULT_TIME_SLOTS).join('\n'));
-      setBookableDays(bookableDaysResponse.bookable_days?.length ? bookableDaysResponse.bookable_days : DEFAULT_BOOKABLE_DAYS);
+      setTimeSlotsText(
+        (timeSlotsResponse.time_slots?.length
+          ? timeSlotsResponse.time_slots
+          : DEFAULT_TIME_SLOTS
+        ).join('\n')
+      );
+      setBookableDays(
+        bookableDaysResponse.bookable_days?.length
+          ? bookableDaysResponse.bookable_days
+          : DEFAULT_BOOKABLE_DAYS
+      );
     } catch {
       alert('Failed to load dashboard data');
     } finally {
@@ -85,7 +95,6 @@ const Dashboard = () => {
       const slotStart = new Date(`${reservation.day}T${reservation.time.split('-')[0]}:00`);
       return slotStart.getTime() >= Date.now();
     }).length;
-
     return {
       totalReservations: reservations.length,
       reservedSlots: slotCount,
@@ -95,10 +104,9 @@ const Dashboard = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this reservation?')) return;
-
     try {
       await reservationService.delete(id);
-      setReservations((current) => current.filter((reservation) => reservation.id !== id));
+      setReservations((current) => current.filter((r) => r.id !== id));
       setFeedback({ type: 'success', message: 'Reservation deleted.' });
     } catch {
       alert('Failed to delete reservation');
@@ -116,14 +124,10 @@ const Dashboard = () => {
       setFeedback({ type: 'error', message: 'Capacity must be a whole number between 1 and 100.' });
       return;
     }
-
     try {
       setSavingCapacity(true);
       const response = await reservationService.updateSlotCapacity(nextCapacity);
-      authService.setUser({
-        ...currentUser,
-        slot_capacity: response.slot_capacity,
-      });
+      authService.setUser({ ...currentUser, slot_capacity: response.slot_capacity });
       setCapacity(String(response.slot_capacity));
       setFeedback({ type: 'success', message: 'Slot capacity updated successfully.' });
     } catch (error) {
@@ -147,14 +151,10 @@ const Dashboard = () => {
       setFeedback({ type: 'error', message: 'Booking window must be a whole number between 1 and 52 weeks.' });
       return;
     }
-
     try {
       setSavingMaxWeeks(true);
       const response = await reservationService.updateMaxWeeks(nextMaxWeeks);
-      authService.setUser({
-        ...currentUser,
-        max_weeks: response.max_weeks,
-      });
+      authService.setUser({ ...currentUser, max_weeks: response.max_weeks });
       setMaxWeeks(String(response.max_weeks));
       setFeedback({ type: 'success', message: 'Booking window updated successfully.' });
     } catch (error) {
@@ -177,19 +177,14 @@ const Dashboard = () => {
       .split('\n')
       .map((slot) => slot.trim())
       .filter(Boolean);
-
     if (!nextTimeSlots.length) {
       setFeedback({ type: 'error', message: 'Add at least one time slot before saving.' });
       return;
     }
-
     try {
       setSavingTimeSlots(true);
       const response = await reservationService.updateTimeSlots(nextTimeSlots);
-      authService.setUser({
-        ...currentUser,
-        time_slots: response.time_slots,
-      });
+      authService.setUser({ ...currentUser, time_slots: response.time_slots });
       setTimeSlotsText(response.time_slots.join('\n'));
       setFeedback({ type: 'success', message: 'Time slots updated successfully.' });
     } catch (error) {
@@ -204,6 +199,7 @@ const Dashboard = () => {
 
   const handleBookableDayToggle = (day) => {
     setBookableDays((current) => {
+      const BOOKABLE_DAY_OPTIONS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       const next = current.includes(day)
         ? current.filter((item) => item !== day)
         : [...current, day];
@@ -217,14 +213,10 @@ const Dashboard = () => {
       setFeedback({ type: 'error', message: 'Choose at least one bookable day before saving.' });
       return;
     }
-
     try {
       setSavingBookableDays(true);
       const response = await reservationService.updateBookableDays(bookableDays);
-      authService.setUser({
-        ...currentUser,
-        bookable_days: response.bookable_days,
-      });
+      authService.setUser({ ...currentUser, bookable_days: response.bookable_days });
       setBookableDays(response.bookable_days);
       setFeedback({ type: 'success', message: 'Bookable days updated successfully.' });
     } catch (error) {
@@ -238,11 +230,7 @@ const Dashboard = () => {
   };
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      'Delete your account and all reservations on this calendar? This cannot be undone.'
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm('Delete your account and all reservations on this calendar? This cannot be undone.')) return;
     try {
       setDeletingAccount(true);
       await authService.deleteAccount();
@@ -295,123 +283,47 @@ const Dashboard = () => {
             </h2>
             {currentUser?.calendar_slug && currentUser?.calendar_created ? (
               <p className="mt-3 text-sm text-slate-600">
-                Public booking link: <span className="font-semibold">/calendar/{currentUser.calendar_slug}</span>
+                Public booking link:{' '}
+                <span className="font-semibold">/calendar/{currentUser.calendar_slug}</span>
               </p>
             ) : (
               <p className="mt-3 text-sm text-amber-700">
-                Your calendar is still private. Customize the settings below, then create it from this dashboard.
+                Your calendar is still private. Customize the settings below, then create it.
               </p>
             )}
           </div>
 
           <div className="grid gap-4 lg:w-[34rem]">
             {!currentUser?.calendar_created && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <h3 className="text-base font-semibold text-amber-900">Create your calendar</h3>
-                <p className="mt-1 text-sm text-amber-800">
-                  Registration creates your owner account only. Once your booking rules look right, publish the calendar here.
-                </p>
-                <div className="mt-4 flex justify-end">
-                  <Button onClick={handleCreateCalendar} disabled={creatingCalendar}>
-                    {creatingCalendar ? 'Creating...' : 'Create calendar'}
-                  </Button>
-                </div>
-              </div>
+              <CalendarSetupCard
+                onCreateCalendar={handleCreateCalendar}
+                creating={creatingCalendar}
+              />
             )}
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Input
-                name="slot-capacity"
-                title="Slot capacity"
-                inputtype="number"
-                value={capacity}
-                handlechange={handleCapacityChange}
-                placeholder="Enter capacity (1-100)"
-              />
-              <p className="mt-1 text-sm text-slate-500">
-                Set how many reservations are allowed in each time slot.
-              </p>
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleCapacitySave} disabled={savingCapacity}>
-                  {savingCapacity ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <Input
-                name="max-weeks"
-                title="Booking window"
-                inputtype="number"
-                value={maxWeeks}
-                handlechange={handleMaxWeeksChange}
-                placeholder="Enter weeks (1-52)"
-              />
-              <p className="mt-1 text-sm text-slate-500">
-                Set how many weeks ahead people can navigate and book.
-              </p>
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleMaxWeeksSave} disabled={savingMaxWeeks}>
-                  {savingMaxWeeks ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <label className="block text-sm font-semibold text-slate-800">
-                Bookable days
-              </label>
-              <p className="mt-1 text-sm text-slate-500">
-                Choose which weekdays appear on this calendar.
-              </p>
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {BOOKABLE_DAY_OPTIONS.map((day) => {
-                  const checked = bookableDays.includes(day);
-                  return (
-                    <div
-                      key={day}
-                      className={`rounded-lg border p-3 transition ${checked
-                        ? 'border-emerald-500 bg-emerald-50'
-                        : 'border-slate-200 bg-white'
-                        }`}
-                    >
-                      <Checkbox
-                        label={day}
-                        checked={checked}
-                        onChange={() => handleBookableDayToggle(day)}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleBookableDaysSave} disabled={savingBookableDays}>
-                  {savingBookableDays ? 'Saving...' : 'Save days'}
-                </Button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <label className="block text-sm font-semibold text-slate-800" htmlFor="time-slots">
-                Bookable time slots
-              </label>
-              <p className="mt-1 text-sm text-slate-500">
-                Add one time slot per line in <code>HH:MM-HH:MM</code> format.
-              </p>
-              <textarea
-                id="time-slots"
-                name="time-slots"
-                rows={7}
-                value={timeSlotsText}
-                onChange={handleTimeSlotsChange}
-                className="mt-4 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-800 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              />
-              <div className="mt-4 flex justify-end">
-                <Button onClick={handleTimeSlotsSave} disabled={savingTimeSlots}>
-                  {savingTimeSlots ? 'Saving...' : 'Save time slots'}
-                </Button>
-              </div>
-            </div>
+            <CapacitySettings
+              capacity={capacity}
+              onChange={handleCapacityChange}
+              onSave={handleCapacitySave}
+              saving={savingCapacity}
+            />
+            <MaxWeeksSettings
+              maxWeeks={maxWeeks}
+              onChange={handleMaxWeeksChange}
+              onSave={handleMaxWeeksSave}
+              saving={savingMaxWeeks}
+            />
+            <BookableDaysSettings
+              bookableDays={bookableDays}
+              onToggle={handleBookableDayToggle}
+              onSave={handleBookableDaysSave}
+              saving={savingBookableDays}
+            />
+            <TimeSlotsSettings
+              timeSlotsText={timeSlotsText}
+              onChange={handleTimeSlotsChange}
+              onSave={handleTimeSlotsSave}
+              saving={savingTimeSlots}
+            />
           </div>
         </div>
 
@@ -422,39 +334,13 @@ const Dashboard = () => {
         )}
       </section>
 
-      <section className="rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-rose-900">Delete account</h3>
-            <p className="mt-1 text-sm text-rose-700">
-              This removes your calendar owner account and permanently deletes all reservations for this calendar.
-            </p>
-          </div>
-          <Button
-            variant="danger"
-            onClick={handleDeleteAccount}
-            disabled={deletingAccount}
-            className="px-5 py-2.5"
-          >
-            {deletingAccount ? 'Deleting...' : 'Delete account'}
-          </Button>
-        </div>
-      </section>
+      <DeleteAccountSection onDelete={handleDeleteAccount} deleting={deletingAccount} />
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Total reservations</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{stats.totalReservations}</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Reserved slots</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{stats.reservedSlots}</p>
-        </article>
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm text-slate-500">Upcoming reservations</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{stats.upcomingReservations}</p>
-        </article>
-      </section>
+      <DashboardStats
+        total={stats.totalReservations}
+        reservedSlots={stats.reservedSlots}
+        upcoming={stats.upcomingReservations}
+      />
 
       <ReservationList reservations={reservations} onDelete={handleDelete} />
     </div>

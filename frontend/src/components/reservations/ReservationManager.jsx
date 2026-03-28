@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
 
-import Button from './form/Button';
-import Input from './form/Input';
-import ReservationUpdateModal from './ReservationUpdateModal';
-import { reservationService } from '../services/api';
+import Button from '../form/Button';
+import Input from '../form/Input';
+import ReservationUpdateModal from '../ReservationUpdateModal';
+import { reservationService } from '../../services/api';
 
 export const ReservationManager = ({
     ownerSlug,

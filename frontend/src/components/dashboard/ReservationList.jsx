@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import Button from './form/Button';
+import Button from '../form/Button';
 
 const VIEW_OPTIONS = [
   { id: 'list', label: 'List view' },
@@ -78,11 +78,10 @@ const ReservationList = ({ reservations, onDelete }) => {
                   key={option.id}
                   type="button"
                   onClick={() => setViewMode(option.id)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${active
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                    }`}
                 >
                   {option.label}
                 </button>
