@@ -22,6 +22,7 @@ class UserResponse(BaseModel):
         max_length=50,
         pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$",
     )
+    calendar_created: bool = True
     slot_capacity: int
     max_weeks: int
     time_slots: list[str]

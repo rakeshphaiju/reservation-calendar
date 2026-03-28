@@ -3,6 +3,7 @@ from http import HTTPStatus as hs
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi.responses import RedirectResponse
 from fastapi_login.exceptions import InvalidCredentialsException
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,6 +49,18 @@ def get_max_weeks(user) -> int:
     return get_user_max_weeks(user)
 
 
+def build_calendar_url(user) -> str | None:
+    if not getattr(user, "calendar_created", True):
+        return None
+    return f"/calendar/{user.calendar_slug}"
+
+
+@router.get("/api/auth/register")
+async def register_get_redirect():
+    """Registration is POST-only; browsers that open this URL get sent to the UI."""
+    return RedirectResponse(url="/login?register=1", status_code=307)
+
+
 @router.post("/api/auth/register")
 async def register_user(
     payload: UserRegistrationRequest,
@@ -78,6 +91,7 @@ async def register_user(
         fullname=payload.fullname,
         password_hash=hash_password(payload.password),
         calendar_slug=calendar_slug,
+        calendar_created=False,
         time_slots=json.dumps(get_time_slots(None)),
         bookable_days=json.dumps(get_bookable_days(None) or DEFAULT_BOOKABLE_DAYS),
     )
@@ -85,7 +99,7 @@ async def register_user(
     await db.commit()
 
     logger.info(
-        "Created new user '%s' with calendar '%s'", user.username, calendar_slug
+        "Created new user '%s' with draft calendar '%s'", user.username, calendar_slug
     )
 
     return {
@@ -93,11 +107,12 @@ async def register_user(
         "email": user.email,
         "fullname": user.fullname,
         "calendar_slug": user.calendar_slug,
+        "calendar_created": user.calendar_created,
         "slot_capacity": get_slot_capacity(user),
         "max_weeks": get_max_weeks(user),
         "time_slots": get_time_slots(user),
         "bookable_days": get_bookable_days(user),
-        "calendar_url": f"/calendar/{user.calendar_slug}",
+        "calendar_url": build_calendar_url(user),
     }
 
 
@@ -120,11 +135,12 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "fullname": user.fullname,
         "email": user.email,
         "calendar_slug": user.calendar_slug,
+        "calendar_created": user.calendar_created,
         "slot_capacity": get_slot_capacity(user),
         "max_weeks": get_max_weeks(user),
         "time_slots": get_time_slots(user),
         "bookable_days": get_bookable_days(user),
-        "calendar_url": f"/calendar/{user.calendar_slug}",
+        "calendar_url": build_calendar_url(user),
     }
 
 
@@ -136,11 +152,12 @@ async def get_me(user=Depends(manager)):
             "email": user.email,
             "fullname": user.fullname,
             "calendar_slug": user.calendar_slug,
+            "calendar_created": user.calendar_created,
             "slot_capacity": get_slot_capacity(user),
             "max_weeks": get_max_weeks(user),
             "time_slots": get_time_slots(user),
             "bookable_days": get_bookable_days(user),
-            "calendar_url": f"/calendar/{user.calendar_slug}",
+            "calendar_url": build_calendar_url(user),
             "authenticated": True,
         }
     except AttributeError as exc:

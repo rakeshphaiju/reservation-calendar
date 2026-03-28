@@ -64,20 +64,22 @@ function Home() {
           Each user can manage a separate reservation calendar and share a unique booking link.
         </p>
         <div className="mt-10 flex flex-wrap justify-center gap-4">
-          {currentUser?.calendar_slug ? (
+          {currentUser ? (
             <>
-              <Link
-                to={`/calendar/${currentUser.calendar_slug}`}
-                className="inline-flex items-center rounded-xl bg-emerald-500 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
-              >
-                Open my calendar
-              </Link>
               <Link
                 to="/dashboard"
                 className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-base font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
               >
                 Open owner dashboard
               </Link>
+              {currentUser.calendar_created && (
+                <Link
+                  to={`/calendar/${currentUser.calendar_slug}`}
+                  className="inline-flex items-center rounded-xl bg-emerald-500 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
+                >
+                  Open my calendar
+                </Link>
+              )}
             </>
           ) : (
             <Link
@@ -100,7 +102,7 @@ function Home() {
 
         {calendars.length === 0 ? (
           <div className="rounded-xl bg-slate-50 px-4 py-10 text-center text-slate-500">
-            No calendars yet. Create the first user account to get started.
+            No public calendars yet. Register, customize your settings in the dashboard, then create your calendar.
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">

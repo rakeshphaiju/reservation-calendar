@@ -55,7 +55,9 @@ async def acquire_slot_lock(
 
 async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
     result = await db.execute(
-        select(AppUser).where(AppUser.calendar_slug == owner_slug)
+        select(AppUser).where(
+            AppUser.calendar_slug == owner_slug, AppUser.calendar_created.is_(True)
+        )
     )
     owner = result.scalars().first()
     if not owner:

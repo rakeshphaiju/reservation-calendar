@@ -38,6 +38,7 @@ const Dashboard = () => {
   const [savingMaxWeeks, setSavingMaxWeeks] = useState(false);
   const [savingTimeSlots, setSavingTimeSlots] = useState(false);
   const [savingBookableDays, setSavingBookableDays] = useState(false);
+  const [creatingCalendar, setCreatingCalendar] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
   const currentUser = authService.getUser();
@@ -256,6 +257,29 @@ const Dashboard = () => {
     }
   };
 
+  const handleCreateCalendar = async () => {
+    try {
+      setCreatingCalendar(true);
+      const response = await reservationService.createCalendar();
+      authService.setUser({
+        ...currentUser,
+        calendar_created: response.calendar_created,
+        calendar_url: response.calendar_url,
+      });
+      setFeedback({
+        type: 'success',
+        message: `Calendar created successfully. Your public booking link is ${response.calendar_url}.`,
+      });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: error?.response?.data?.detail || 'Failed to create calendar.',
+      });
+    } finally {
+      setCreatingCalendar(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center">Loading owner dashboard...</div>;
 
   return (
@@ -269,14 +293,32 @@ const Dashboard = () => {
             <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
               Manage {currentUser?.username}&apos;s calendar
             </h2>
-            {currentUser?.calendar_slug && (
+            {currentUser?.calendar_slug && currentUser?.calendar_created ? (
               <p className="mt-3 text-sm text-slate-600">
                 Public booking link: <span className="font-semibold">/calendar/{currentUser.calendar_slug}</span>
+              </p>
+            ) : (
+              <p className="mt-3 text-sm text-amber-700">
+                Your calendar is still private. Customize the settings below, then create it from this dashboard.
               </p>
             )}
           </div>
 
           <div className="grid gap-4 lg:w-[34rem]">
+            {!currentUser?.calendar_created && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <h3 className="text-base font-semibold text-amber-900">Create your calendar</h3>
+                <p className="mt-1 text-sm text-amber-800">
+                  Registration creates your owner account only. Once your booking rules look right, publish the calendar here.
+                </p>
+                <div className="mt-4 flex justify-end">
+                  <Button onClick={handleCreateCalendar} disabled={creatingCalendar}>
+                    {creatingCalendar ? 'Creating...' : 'Create calendar'}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
               <Input
                 name="slot-capacity"

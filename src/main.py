@@ -61,6 +61,14 @@ async def ensure_schema_columns():
             text(
                 """
                 ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS calendar_created BOOLEAN NOT NULL DEFAULT TRUE
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS max_weeks INTEGER NOT NULL DEFAULT 4
                 """
             )

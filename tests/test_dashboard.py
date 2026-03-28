@@ -122,3 +122,27 @@ class TestDashboardApi(BaseApiTest):
         )
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once()
+
+    async def test_create_calendar(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = make_mock_user(
+            calendar_created=False
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.post("/api/dashboard/create-calendar")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            {
+                "calendar_created": True,
+                "calendar_slug": "mock-user",
+                "calendar_url": "/calendar/mock-user",
+            },
+            resp.json(),
+        )
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once()

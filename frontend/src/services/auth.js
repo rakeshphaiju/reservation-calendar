@@ -14,6 +14,7 @@ const normalizeUser = (data, fallbackUsername = '') => ({
   first_name: data.first_name || data.firstname || '',
   last_name: data.last_name || data.lastname || '',
   calendar_slug: data.calendar_slug,
+  calendar_created: data.calendar_created ?? true,
   calendar_url: data.calendar_url,
   slot_capacity: data.slot_capacity,
   max_weeks: data.max_weeks,

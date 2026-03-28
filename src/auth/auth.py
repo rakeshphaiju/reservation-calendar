@@ -55,6 +55,7 @@ class User(BaseModel):
     email: EmailStr | None = None
     fullname: str
     calendar_slug: str
+    calendar_created: bool = True
     slot_capacity: int = 5
     max_weeks: int = DEFAULT_MAX_WEEKS
     time_slots: list[str] = DEFAULT_TIME_SLOTS.copy()
@@ -159,6 +160,7 @@ async def load_user(username: str) -> User | None:
             email=user.email,
             fullname=user.fullname,
             calendar_slug=user.calendar_slug,
+            calendar_created=getattr(user, "calendar_created", True),
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
             max_weeks=get_user_max_weeks(user),
             time_slots=get_user_time_slots(user),
@@ -194,6 +196,7 @@ async def authenticate_user(
         email=user_record.email,
         fullname=user_record.fullname,
         calendar_slug=user_record.calendar_slug,
+        calendar_created=getattr(user_record, "calendar_created", True),
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,
         max_weeks=get_user_max_weeks(user_record),
         time_slots=get_user_time_slots(user_record),

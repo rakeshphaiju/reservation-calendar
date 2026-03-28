@@ -147,3 +147,36 @@ async def update_bookable_days(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to update bookable days.",
         )
+
+
+@router.post("/api/dashboard/create-calendar")
+async def create_calendar(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        db_user = await _get_db_user(user.username, db)
+        if not db_user.calendar_created:
+            db_user.calendar_created = True
+            await db.commit()
+            await db.refresh(db_user)
+            logger.info(
+                "Published calendar '%s' for '%s'",
+                db_user.calendar_slug,
+                db_user.username,
+            )
+
+        return {
+            "calendar_created": db_user.calendar_created,
+            "calendar_slug": db_user.calendar_slug,
+            "calendar_url": f"/calendar/{db_user.calendar_slug}",
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to create calendar: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to create calendar.",
+        )

@@ -81,6 +81,11 @@ export const reservationService = {
     .then(handleResponse)
     .catch(handleError),
 
+  createCalendar: () => apiClient
+    .post('/dashboard/create-calendar')
+    .then(handleResponse)
+    .catch(handleError),
+
   create: (ownerSlug, data) => apiClient
     .post(`/calendars/${ownerSlug}/reservations/add`, data)
     .then(handleResponse)

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 
 import Button from '../components/form/Button';
 import Input from '../components/form/Input';
@@ -8,7 +8,10 @@ import { authService } from '../services/auth';
 
 
 export default function Login() {
-  const [mode, setMode] = useState('login');
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState(() =>
+    searchParams.get('register') === '1' ? 'register' : 'login'
+  );
   const [loginInput, setLoginInput] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -36,8 +39,8 @@ export default function Login() {
     setLoading(true);
     try {
       if (mode === 'register') {
-        const data = await authService.register(username, email, fullname, password);
-        setSuccess(`Account created. Your booking link is /calendar/${data.calendar_slug}`);
+        await authService.register(username.trim(), email, fullname, password);
+        setSuccess('Account created. Sign in and finish your setup in the dashboard to create your calendar.');
         setMode('login');
       } else {
         await authService.login(loginInput, password);
@@ -65,9 +68,11 @@ export default function Login() {
     setMode(mode === 'login' ? 'register' : 'login');
     setError('');
     setSuccess('');
+    setLoginInput('');
     setUsername('');
     setEmail('');
     setFullname('');
+    setPassword('');
     setRetypePassword('');
   };
 
@@ -79,7 +84,7 @@ export default function Login() {
       <p className="mb-6 text-sm text-slate-600">
         {mode === 'login'
           ? 'Sign in to manage your own reservation calendar.'
-          : 'Create a user account and we will generate a unique calendar link for you.'}
+          : 'Create a user account first, then customize settings from the dashboard before publishing your calendar.'}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -87,8 +92,10 @@ export default function Login() {
           <Input
             name="username"
             title={mode === 'login' ? "Username or Email" : "Username"}
-            value={loginInput}
-            onChange={(e) => setLoginInput(e.target.value)}
+            value={mode === 'login' ? loginInput : username}
+            onChange={(e) =>
+              mode === 'login' ? setLoginInput(e.target.value) : setUsername(e.target.value)
+            }
             required
             placeholder=""
           />

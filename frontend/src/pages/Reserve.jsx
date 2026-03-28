@@ -64,7 +64,7 @@ const Reserve = () => {
   if (!calendarExists) {
     return (
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-10 text-center text-amber-800">
-        This reservation calendar could not be found.
+        This reservation calendar is not available yet.
       </div>
     );
   }

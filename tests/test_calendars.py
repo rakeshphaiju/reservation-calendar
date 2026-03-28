@@ -15,14 +15,18 @@ class TestCalendarsApi(BaseApiTest):
             AppUser(
                 username="alice",
                 email="alice@example.com",
+                fullname="Alice Example",
                 password_hash="hash",
                 calendar_slug="alice",
+                calendar_created=True,
             ),
             AppUser(
                 username="bob",
                 email="bob@example.com",
+                fullname="Bob Example",
                 password_hash="hash",
                 calendar_slug="bob",
+                calendar_created=True,
             ),
         ]
 
@@ -46,8 +50,10 @@ class TestCalendarsApi(BaseApiTest):
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
             email="owner@example.com",
+            fullname="Mock User",
             password_hash="hash",
             calendar_slug="mock-user",
+            calendar_created=True,
             time_slots=json.dumps(["16:00-16:30", "11:00-11:30"]),
             bookable_days=json.dumps(["Monday", "Tuesday"]),
         )

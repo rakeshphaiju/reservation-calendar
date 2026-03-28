@@ -27,7 +27,11 @@ router = APIRouter()
 
 @router.get("/api/calendars", response_model=List[CalendarOwnerSummary])
 async def get_calendar_owners(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(AppUser).order_by(AppUser.username.asc()))
+    result = await db.execute(
+        select(AppUser)
+        .where(AppUser.calendar_created.is_(True))
+        .order_by(AppUser.username.asc())
+    )
     users = result.scalars().all()
     return [
         CalendarOwnerSummary(username=user.username, calendar_slug=user.calendar_slug)

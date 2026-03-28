@@ -110,7 +110,7 @@ export default function Navbar() {
                 </Link>
               </li>
 
-              {user?.calendar_slug && (
+              {user?.calendar_slug && user?.calendar_created && (
                 <li>
                   <Link
                     to={`/calendar/${user.calendar_slug}`}
