@@ -58,7 +58,7 @@ function Home() {
     <div className="space-y-10 py-8">
       <section className="text-center">
         <h1 className="text-4xl font-bold text-slate-800 tracking-tight sm:text-5xl">
-          Reservation Calendar
+          Booking Nest
         </h1>
         <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
           Each user can manage a separate reservation calendar and share a unique booking link.

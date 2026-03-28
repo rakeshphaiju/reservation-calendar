@@ -95,7 +95,7 @@ export default function Navbar() {
             to="/"
             className="inline-block text-lg font-bold text-white tracking-tight sm:text-xl"
           >
-            Reservation Calendar
+            Booking Nest
           </Link>
 
           <div className="mt-3 flex flex-wrap items-center gap-3 md:mt-0">
