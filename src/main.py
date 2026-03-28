@@ -3,9 +3,10 @@ import uvicorn
 from http import HTTPStatus as hs
 from dotenv import load_dotenv
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -21,7 +22,7 @@ from src.api.reservations import (
     reservations_api,
 )
 from src.api.auth_api import router as auth_api
-from src.common.db import engine, Base
+from src.common.db import engine, Base, get_db
 
 
 load_dotenv()
@@ -156,7 +157,6 @@ app.add_middleware(
 )
 
 app.include_router(auth_api)
-# app.include_router(reservation_api)
 app.include_router(calendars_api.router)
 app.include_router(reservations_api.router)
 app.include_router(admin_reservations_api.router)
@@ -164,8 +164,22 @@ app.include_router(dashboard_api.router)
 
 
 @app.get("/api/health")
-async def health_check():
-    return {"status": "ok"}
+async def health_check(db: AsyncSession = Depends(get_db)):
+    checks = {}
+
+    try:
+        await db.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as e:
+        logger.error("Health check DB failure: %s", e)
+        checks["database"] = "unavailable"
+
+    overall = "ok" if all(v == "ok" for v in checks.values()) else "degraded"
+
+    return {
+        "status": overall,
+        "checks": checks,
+    }
 
 
 @app.head("/")
