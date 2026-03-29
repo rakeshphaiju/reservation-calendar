@@ -19,6 +19,8 @@ const Reserve = () => {
     maxWeeks,
     timeSlots,
     bookableDays,
+    calendarDescription,
+    calendarLocation,
     calendarExists,
     isFullyBooked,
     getSpotsLeft,
@@ -77,6 +79,20 @@ const Reserve = () => {
       <p className="mb-8 text-center text-sm text-slate-500">
         Share this direct link to let people book this calendar only.
       </p>
+
+      {(calendarDescription || calendarLocation) && (
+        <section className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+          <h3 className="text-base font-semibold text-slate-900">Details: </h3>
+          {calendarDescription && (
+            <p className="mt-2 whitespace-pre-line text-sm text-slate-600">{calendarDescription}</p>
+          )}
+          {calendarLocation && (
+            <p className="mt-3 text-sm text-slate-700">
+              <span className="font-semibold">Location:</span> {calendarLocation}
+            </p>
+          )}
+        </section>
+      )}
 
       <ReservationManager
         ownerSlug={ownerSlug}

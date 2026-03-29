@@ -27,4 +27,6 @@ class UserResponse(BaseModel):
     max_weeks: int
     time_slots: list[str]
     bookable_days: list[str]
+    calendar_description: str | None = None
+    calendar_location: str | None = None
     authenticated: bool = True

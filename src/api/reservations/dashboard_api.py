@@ -11,11 +11,14 @@ from src.common.logger import logger
 from src.models.user import AppUser
 from src.schemas.reservation import (
     BookableDaysUpdate,
+    CalendarDetailsUpdate,
     MaxWeeksUpdate,
     SlotCapacityUpdate,
     TimeSlotsUpdate,
 )
 from src.api.reservations._utils import (
+    get_owner_calendar_description,
+    get_owner_calendar_location,
     get_owner_bookable_days,
     get_owner_max_weeks,
     get_owner_slot_capacity,
@@ -146,6 +149,41 @@ async def update_bookable_days(
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to update bookable days.",
+        )
+
+
+@router.get("/api/dashboard/calendar-details")
+async def get_calendar_details(user=Depends(manager)):
+    return {
+        "calendar_description": get_owner_calendar_description(user),
+        "calendar_location": get_owner_calendar_location(user),
+    }
+
+
+@router.put("/api/dashboard/calendar-details")
+async def update_calendar_details(
+    payload: CalendarDetailsUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        db_user = await _get_db_user(user.username, db)
+        db_user.calendar_description = payload.calendar_description
+        db_user.calendar_location = payload.calendar_location
+        await db.commit()
+        await db.refresh(db_user)
+        return {
+            "calendar_description": get_owner_calendar_description(db_user),
+            "calendar_location": get_owner_calendar_location(db_user),
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to update calendar details: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to update calendar details.",
         )
 
 

@@ -8,6 +8,7 @@ import CapacitySettings from '../components/dashboard/CapacitySettings';
 import MaxWeeksSettings from '../components/dashboard/MaxWeeksSettings';
 import BookableDaysSettings from '../components/dashboard/BookableDaysSettings';
 import TimeSlotsSettings from '../components/dashboard/TimeSlotsSettings';
+import CalendarDetailsSettings from '../components/dashboard/CalendarDetailsSettings';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import DeleteAccountSection from '../components/dashboard/DeleteAccountSection';
 
@@ -29,10 +30,13 @@ const Dashboard = () => {
   const [maxWeeks, setMaxWeeks] = useState('');
   const [timeSlotsText, setTimeSlotsText] = useState('');
   const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
+  const [calendarDescription, setCalendarDescription] = useState('');
+  const [calendarLocation, setCalendarLocation] = useState('');
   const [savingCapacity, setSavingCapacity] = useState(false);
   const [savingMaxWeeks, setSavingMaxWeeks] = useState(false);
   const [savingTimeSlots, setSavingTimeSlots] = useState(false);
   const [savingBookableDays, setSavingBookableDays] = useState(false);
+  const [savingCalendarDetails, setSavingCalendarDetails] = useState(false);
   const [creatingCalendar, setCreatingCalendar] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [feedback, setFeedback] = useState({ type: '', message: '' });
@@ -52,12 +56,14 @@ const Dashboard = () => {
         maxWeeksResponse,
         timeSlotsResponse,
         bookableDaysResponse,
+        calendarDetailsResponse,
       ] = await Promise.all([
-        reservationService.getAll({ skip: 0, limit: 100 }),
+        reservationService.getAll({ skip: 0, limit: 1000 }),
         reservationService.getSlotCapacity(),
         reservationService.getMaxWeeks(),
         reservationService.getTimeSlots(),
         reservationService.getBookableDays(),
+        reservationService.getCalendarDetails(),
       ]);
       setReservations(reservationResponse.data);
       setCapacity(String(capacityResponse.slot_capacity));
@@ -73,6 +79,8 @@ const Dashboard = () => {
           ? bookableDaysResponse.bookable_days
           : DEFAULT_BOOKABLE_DAYS
       );
+      setCalendarDescription(calendarDetailsResponse.calendar_description || '');
+      setCalendarLocation(calendarDetailsResponse.calendar_location || '');
     } catch {
       alert('Failed to load dashboard data');
     } finally {
@@ -229,6 +237,41 @@ const Dashboard = () => {
     }
   };
 
+  const handleCalendarDescriptionChange = (e) => {
+    setCalendarDescription(e.target.value);
+    if (feedback.message) setFeedback({ type: '', message: '' });
+  };
+
+  const handleCalendarLocationChange = (e) => {
+    setCalendarLocation(e.target.value);
+    if (feedback.message) setFeedback({ type: '', message: '' });
+  };
+
+  const handleCalendarDetailsSave = async () => {
+    try {
+      setSavingCalendarDetails(true);
+      const response = await reservationService.updateCalendarDetails(
+        calendarDescription,
+        calendarLocation
+      );
+      authService.setUser({
+        ...currentUser,
+        calendar_description: response.calendar_description,
+        calendar_location: response.calendar_location,
+      });
+      setCalendarDescription(response.calendar_description || '');
+      setCalendarLocation(response.calendar_location || '');
+      setFeedback({ type: 'success', message: 'Details:  updated successfully.' });
+    } catch (error) {
+      setFeedback({
+        type: 'error',
+        message: error?.response?.data?.detail || 'Failed to update calendar details.',
+      });
+    } finally {
+      setSavingCalendarDetails(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (!window.confirm('Delete your account and all reservations on this calendar? This cannot be undone.')) return;
     try {
@@ -273,27 +316,31 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600">
-              Owner Dashboard
-            </p>
-            <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
-              Manage {currentUser?.username}&apos;s calendar
-            </h2>
-            {currentUser?.calendar_slug && currentUser?.calendar_created ? (
-              <p className="mt-3 text-sm text-slate-600">
-                Public booking link:{' '}
-                <span className="font-semibold">/calendar/{currentUser.calendar_slug}</span>
-              </p>
-            ) : (
-              <p className="mt-3 text-sm text-amber-700">
-                Your calendar is still private. Customize the settings below, then create it.
-              </p>
-            )}
-          </div>
 
-          <div className="grid gap-4 lg:w-[34rem]">
+        {/* Full-width header */}
+        <div className="mb-6">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600">
+            Owner Dashboard
+          </p>
+          <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
+            Manage {currentUser?.username}&apos;s calendar
+          </h2>
+          {currentUser?.calendar_slug && currentUser?.calendar_created ? (
+            <p className="mt-3 text-sm text-slate-600">
+              Public booking link:{' '}
+              <span className="font-semibold">/calendar/{currentUser.calendar_slug}</span>
+            </p>
+          ) : (
+            <p className="mt-3 text-sm text-amber-700">
+              Your calendar is still private. Customize the settings below, then create it.
+            </p>
+          )}
+        </div>
+
+        {/* Two-column settings grid */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Left column */}
+          <div className="flex flex-col gap-4">
             {!currentUser?.calendar_created && (
               <CalendarSetupCard
                 onCreateCalendar={handleCreateCalendar}
@@ -317,6 +364,18 @@ const Dashboard = () => {
               onToggle={handleBookableDayToggle}
               onSave={handleBookableDaysSave}
               saving={savingBookableDays}
+            />
+          </div>
+
+          {/* Right column */}
+          <div className="flex flex-col gap-4">
+            <CalendarDetailsSettings
+              description={calendarDescription}
+              location={calendarLocation}
+              onDescriptionChange={handleCalendarDescriptionChange}
+              onLocationChange={handleCalendarLocationChange}
+              onSave={handleCalendarDetailsSave}
+              saving={savingCalendarDetails}
             />
             <TimeSlotsSettings
               timeSlotsText={timeSlotsText}

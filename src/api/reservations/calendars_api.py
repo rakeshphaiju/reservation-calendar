@@ -16,6 +16,8 @@ from src.schemas.reservation import (
 )
 from src.api.reservations._utils import (
     get_calendar_owner,
+    get_owner_calendar_description,
+    get_owner_calendar_location,
     get_owner_bookable_days,
     get_owner_max_weeks,
     get_owner_slot_capacity,
@@ -63,6 +65,8 @@ async def get_reserved_slots(owner_slug: str, db: AsyncSession = Depends(get_db)
             max_weeks=get_owner_max_weeks(owner),
             time_slots=get_owner_time_slots(owner),
             bookable_days=get_owner_bookable_days(owner),
+            calendar_description=get_owner_calendar_description(owner),
+            calendar_location=get_owner_calendar_location(owner),
             slots=[
                 CalendarSlotSummary(
                     day=day,

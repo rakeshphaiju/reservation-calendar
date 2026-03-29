@@ -14,6 +14,8 @@ from src.auth.auth import (
     User,
     authenticate_user,
     generate_unique_calendar_slug,
+    get_user_calendar_description,
+    get_user_calendar_location,
     get_user_bookable_days,
     get_user_max_weeks,
     get_user_time_slots,
@@ -47,6 +49,14 @@ def get_bookable_days(user) -> list[str]:
 
 def get_max_weeks(user) -> int:
     return get_user_max_weeks(user)
+
+
+def get_calendar_description(user) -> str | None:
+    return get_user_calendar_description(user)
+
+
+def get_calendar_location(user) -> str | None:
+    return get_user_calendar_location(user)
 
 
 def build_calendar_url(user) -> str | None:
@@ -112,6 +122,8 @@ async def register_user(
         "max_weeks": get_max_weeks(user),
         "time_slots": get_time_slots(user),
         "bookable_days": get_bookable_days(user),
+        "calendar_description": get_calendar_description(user),
+        "calendar_location": get_calendar_location(user),
         "calendar_url": build_calendar_url(user),
     }
 
@@ -140,6 +152,8 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "max_weeks": get_max_weeks(user),
         "time_slots": get_time_slots(user),
         "bookable_days": get_bookable_days(user),
+        "calendar_description": get_calendar_description(user),
+        "calendar_location": get_calendar_location(user),
         "calendar_url": build_calendar_url(user),
     }
 
@@ -157,6 +171,8 @@ async def get_me(user=Depends(manager)):
             "max_weeks": get_max_weeks(user),
             "time_slots": get_time_slots(user),
             "bookable_days": get_bookable_days(user),
+            "calendar_description": get_calendar_description(user),
+            "calendar_location": get_calendar_location(user),
             "calendar_url": build_calendar_url(user),
             "authenticated": True,
         }

@@ -11,6 +11,8 @@ def mock_logged_in_user(app):
             calendar_created=True,
             max_weeks=4,
             bookable_days=["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            calendar_description="Bring any documents you need reviewed.",
+            calendar_location="Helsinki office",
         )
 
     app.dependency_overrides[manager] = _get_logged_in_user

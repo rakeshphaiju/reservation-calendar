@@ -92,6 +92,22 @@ async def ensure_schema_columns():
         await conn.execute(
             text(
                 """
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS calendar_description TEXT
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS calendar_location VARCHAR
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
                 ALTER TABLE reservations
                 ADD COLUMN IF NOT EXISTS reservation_key VARCHAR
                 """

@@ -48,5 +48,7 @@ def make_mock_user(**kwargs):
         password_hash="hash",
         calendar_slug="mock-user",
         calendar_created=True,
+        calendar_description=None,
+        calendar_location=None,
     )
     return AppUser(**{**defaults, **kwargs})

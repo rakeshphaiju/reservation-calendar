@@ -29,6 +29,8 @@ export const useReservation = (ownerSlug) => {
     const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
     const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
     const [calendarExists, setCalendarExists] = useState(true);
+    const [calendarDescription, setCalendarDescription] = useState(null);
+    const [calendarLocation, setCalendarLocation] = useState(null);
 
     const loadAvailability = () => {
         reservationService
@@ -51,6 +53,8 @@ export const useReservation = (ownerSlug) => {
                 setMaxWeeks(nextMaxWeeks);
                 setTimeSlots(nextTimeSlots);
                 setBookableDays(nextBookableDays);
+                setCalendarDescription(availability.calendar_description ?? null);
+                setCalendarLocation(availability.calendar_location ?? null);
                 setSlotCounts(counts);
                 setFullyBookedSlots(fullyBooked);
                 setCalendarExists(true);
@@ -62,6 +66,8 @@ export const useReservation = (ownerSlug) => {
                     setMaxWeeks(4);
                     setTimeSlots(DEFAULT_TIME_SLOTS);
                     setBookableDays(DEFAULT_BOOKABLE_DAYS);
+                    setCalendarDescription(null);
+                    setCalendarLocation(null);
                     setSlotCounts({});
                     setFullyBookedSlots([]);
                 } else {
@@ -93,6 +99,8 @@ export const useReservation = (ownerSlug) => {
         maxWeeks,
         timeSlots,
         bookableDays,
+        calendarDescription,
+        calendarLocation,
         calendarExists,
         isFullyBooked,
         getSpotsLeft,

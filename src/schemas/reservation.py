@@ -101,6 +101,8 @@ class CalendarAvailabilityResponse(BaseModel):
     max_weeks: int
     time_slots: List[str]
     bookable_days: List[str]
+    calendar_description: str | None = None
+    calendar_location: str | None = None
     slots: List[CalendarSlotSummary]
 
 
@@ -173,3 +175,16 @@ class BookableDaysUpdate(BaseModel):
             raise ValueError("At least one bookable day is required")
 
         return normalized
+
+
+class CalendarDetailsUpdate(BaseModel):
+    calendar_description: str | None = Field(default=None, max_length=2000)
+    calendar_location: str | None = Field(default=None, max_length=255)
+
+    @field_validator("calendar_description", "calendar_location")
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        trimmed = value.strip()
+        return trimmed or None

@@ -60,6 +60,24 @@ class User(BaseModel):
     max_weeks: int = DEFAULT_MAX_WEEKS
     time_slots: list[str] = DEFAULT_TIME_SLOTS.copy()
     bookable_days: list[str] = DEFAULT_BOOKABLE_DAYS.copy()
+    calendar_description: str | None = None
+    calendar_location: str | None = None
+
+
+def get_user_calendar_description(user) -> str | None:
+    raw_description = getattr(user, "calendar_description", None)
+    if not isinstance(raw_description, str):
+        return None
+    trimmed = raw_description.strip()
+    return trimmed or None
+
+
+def get_user_calendar_location(user) -> str | None:
+    raw_location = getattr(user, "calendar_location", None)
+    if not isinstance(raw_location, str):
+        return None
+    trimmed = raw_location.strip()
+    return trimmed or None
 
 
 def get_user_time_slots(user) -> list[str]:
@@ -165,6 +183,8 @@ async def load_user(username: str) -> User | None:
             max_weeks=get_user_max_weeks(user),
             time_slots=get_user_time_slots(user),
             bookable_days=get_user_bookable_days(user),
+            calendar_description=get_user_calendar_description(user),
+            calendar_location=get_user_calendar_location(user),
         )
 
 
@@ -201,4 +221,6 @@ async def authenticate_user(
         max_weeks=get_user_max_weeks(user_record),
         time_slots=get_user_time_slots(user_record),
         bookable_days=get_user_bookable_days(user_record),
+        calendar_description=get_user_calendar_description(user_record),
+        calendar_location=get_user_calendar_location(user_record),
     )

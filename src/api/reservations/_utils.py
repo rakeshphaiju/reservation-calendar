@@ -10,6 +10,8 @@ from sqlalchemy.sql import text
 
 from src.auth.auth import (
     DEFAULT_MAX_WEEKS,
+    get_user_calendar_description,
+    get_user_calendar_location,
     get_user_bookable_days,
     get_user_max_weeks,
     get_user_time_slots,
@@ -39,6 +41,14 @@ def get_owner_time_slots(owner: AppUser) -> list[str]:
 
 def get_owner_bookable_days(owner: AppUser) -> list[str]:
     return get_user_bookable_days(owner)
+
+
+def get_owner_calendar_description(owner: AppUser) -> str | None:
+    return get_user_calendar_description(owner)
+
+
+def get_owner_calendar_location(owner: AppUser) -> str | None:
+    return get_user_calendar_location(owner)
 
 
 async def acquire_slot_lock(

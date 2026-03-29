@@ -56,6 +56,8 @@ class TestCalendarsApi(BaseApiTest):
             calendar_created=True,
             time_slots=json.dumps(["16:00-16:30", "11:00-11:30"]),
             bookable_days=json.dumps(["Monday", "Tuesday"]),
+            calendar_description="Please arrive five minutes early.",
+            calendar_location="Studio B",
         )
 
         mock_result = MagicMock()
@@ -76,6 +78,11 @@ class TestCalendarsApi(BaseApiTest):
         self.assertEqual(4, resp.json()["max_weeks"])
         self.assertEqual(["16:00-16:30", "11:00-11:30"], resp.json()["time_slots"])
         self.assertEqual(["Monday", "Tuesday"], resp.json()["bookable_days"])
+        self.assertEqual(
+            "Please arrive five minutes early.",
+            resp.json()["calendar_description"],
+        )
+        self.assertEqual("Studio B", resp.json()["calendar_location"])
         self.assertEqual(
             [
                 {"day": "Monday", "time": "16:00-16:30", "count": 5, "capacity": 5},

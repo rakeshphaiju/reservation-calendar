@@ -123,6 +123,44 @@ class TestDashboardApi(BaseApiTest):
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once()
 
+    async def test_get_calendar_details(self):
+        resp = await self.client.get("/api/dashboard/calendar-details")
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            {
+                "calendar_description": "Bring any documents you need reviewed.",
+                "calendar_location": "Helsinki office",
+            },
+            resp.json(),
+        )
+
+    async def test_update_calendar_details(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = make_mock_user()
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.put(
+            "/api/dashboard/calendar-details",
+            json={
+                "calendar_description": "Meet in the front lobby.",
+                "calendar_location": "Room 204",
+            },
+        )
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            {
+                "calendar_description": "Meet in the front lobby.",
+                "calendar_location": "Room 204",
+            },
+            resp.json(),
+        )
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once()
+
     async def test_create_calendar(self):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = make_mock_user(

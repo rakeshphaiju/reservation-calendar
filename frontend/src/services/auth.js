@@ -20,6 +20,8 @@ const normalizeUser = (data, fallbackUsername = '') => ({
   max_weeks: data.max_weeks,
   time_slots: data.time_slots,
   bookable_days: data.bookable_days,
+  calendar_description: data.calendar_description,
+  calendar_location: data.calendar_location,
 });
 
 export const authService = {
