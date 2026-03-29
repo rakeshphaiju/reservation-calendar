@@ -19,7 +19,7 @@ async def get_all_reservations(
     db: AsyncSession = Depends(get_db),
     user=Depends(manager),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(10, ge=1, le=100, description="Maximum records to return"),
+    limit: int = Query(10, ge=1, le=1000, description="Maximum records to return"),
 ):
     try:
         total = await db.execute(
