@@ -12,6 +12,7 @@ import CalendarDetailsSettings from '../components/dashboard/CalendarDetailsSett
 import DashboardStats from '../components/dashboard/DashboardStats';
 import DeleteAccountSection from '../components/dashboard/DeleteAccountSection';
 
+
 const DEFAULT_TIME_SLOTS = [
   '10:00-11:00',
   '11:00-12:00',
@@ -22,6 +23,10 @@ const DEFAULT_TIME_SLOTS = [
   '17:00-18:00',
 ];
 const DEFAULT_BOOKABLE_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const BOOKABLE_DAY_OPTIONS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const EMPTY_FEEDBACK = { type: '', message: '' };
+
 
 const Dashboard = () => {
   const [reservations, setReservations] = useState([]);
@@ -39,13 +44,28 @@ const Dashboard = () => {
   const [savingCalendarDetails, setSavingCalendarDetails] = useState(false);
   const [creatingCalendar, setCreatingCalendar] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
-  const [feedback, setFeedback] = useState({ type: '', message: '' });
+  const [feedback, setFeedback] = useState({
+    capacity: EMPTY_FEEDBACK,
+    maxWeeks: EMPTY_FEEDBACK,
+    timeSlots: EMPTY_FEEDBACK,
+    bookableDays: EMPTY_FEEDBACK,
+    calendarDetails: EMPTY_FEEDBACK,
+  });
   const currentUser = authService.getUser();
   const navigate = useNavigate();
+
+
+  const setFieldFeedback = (field, type, message) =>
+    setFeedback((prev) => ({ ...prev, [field]: { type, message } }));
+
+  const clearFieldFeedback = (field) =>
+    setFeedback((prev) => ({ ...prev, [field]: EMPTY_FEEDBACK }));
+
 
   useEffect(() => {
     loadDashboard();
   }, []);
+
 
   const loadDashboard = async () => {
     try {
@@ -88,6 +108,7 @@ const Dashboard = () => {
     }
   };
 
+
   const groupedReservations = useMemo(() => {
     return reservations.reduce((groups, reservation) => {
       const key = `${reservation.day} ${reservation.time}`;
@@ -96,6 +117,7 @@ const Dashboard = () => {
       return groups;
     }, {});
   }, [reservations]);
+
 
   const stats = useMemo(() => {
     const slotCount = Object.keys(groupedReservations).length;
@@ -110,26 +132,22 @@ const Dashboard = () => {
     };
   }, [groupedReservations, reservations]);
 
+
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this reservation?')) return;
     try {
       await reservationService.delete(id);
       setReservations((current) => current.filter((r) => r.id !== id));
-      setFeedback({ type: 'success', message: 'Reservation deleted.' });
     } catch {
       alert('Failed to delete reservation');
     }
   };
 
-  const handleCapacityChange = (e) => {
-    setCapacity(e.target.value);
-    if (feedback.message) setFeedback({ type: '', message: '' });
-  };
 
   const handleCapacitySave = async () => {
     const nextCapacity = Number(capacity);
     if (!Number.isInteger(nextCapacity) || nextCapacity < 1 || nextCapacity > 100) {
-      setFeedback({ type: 'error', message: 'Capacity must be a whole number between 1 and 100.' });
+      setFieldFeedback('capacity', 'error', 'Capacity must be a whole number between 1 and 100.');
       return;
     }
     try {
@@ -137,26 +155,23 @@ const Dashboard = () => {
       const response = await reservationService.updateSlotCapacity(nextCapacity);
       authService.setUser({ ...currentUser, slot_capacity: response.slot_capacity });
       setCapacity(String(response.slot_capacity));
-      setFeedback({ type: 'success', message: 'Slot capacity updated successfully.' });
+      setFieldFeedback('capacity', 'success', 'Slot capacity updated successfully.');
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: error?.response?.data?.detail || 'Failed to update slot capacity.',
-      });
+      setFieldFeedback(
+        'capacity',
+        'error',
+        error?.response?.data?.detail || 'Failed to update slot capacity.'
+      );
     } finally {
       setSavingCapacity(false);
     }
   };
 
-  const handleMaxWeeksChange = (e) => {
-    setMaxWeeks(e.target.value);
-    if (feedback.message) setFeedback({ type: '', message: '' });
-  };
 
   const handleMaxWeeksSave = async () => {
     const nextMaxWeeks = Number(maxWeeks);
     if (!Number.isInteger(nextMaxWeeks) || nextMaxWeeks < 1 || nextMaxWeeks > 52) {
-      setFeedback({ type: 'error', message: 'Booking window must be a whole number between 1 and 52 weeks.' });
+      setFieldFeedback('maxWeeks', 'error', 'Booking window must be a whole number between 1 and 52 weeks.');
       return;
     }
     try {
@@ -164,21 +179,18 @@ const Dashboard = () => {
       const response = await reservationService.updateMaxWeeks(nextMaxWeeks);
       authService.setUser({ ...currentUser, max_weeks: response.max_weeks });
       setMaxWeeks(String(response.max_weeks));
-      setFeedback({ type: 'success', message: 'Booking window updated successfully.' });
+      setFieldFeedback('maxWeeks', 'success', 'Booking window updated successfully.');
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: error?.response?.data?.detail || 'Failed to update booking window.',
-      });
+      setFieldFeedback(
+        'maxWeeks',
+        'error',
+        error?.response?.data?.detail || 'Failed to update booking window.'
+      );
     } finally {
       setSavingMaxWeeks(false);
     }
   };
 
-  const handleTimeSlotsChange = (e) => {
-    setTimeSlotsText(e.target.value);
-    if (feedback.message) setFeedback({ type: '', message: '' });
-  };
 
   const handleTimeSlotsSave = async () => {
     const nextTimeSlots = timeSlotsText
@@ -186,7 +198,7 @@ const Dashboard = () => {
       .map((slot) => slot.trim())
       .filter(Boolean);
     if (!nextTimeSlots.length) {
-      setFeedback({ type: 'error', message: 'Add at least one time slot before saving.' });
+      setFieldFeedback('timeSlots', 'error', 'Add at least one time slot before saving.');
       return;
     }
     try {
@@ -194,31 +206,33 @@ const Dashboard = () => {
       const response = await reservationService.updateTimeSlots(nextTimeSlots);
       authService.setUser({ ...currentUser, time_slots: response.time_slots });
       setTimeSlotsText(response.time_slots.join('\n'));
-      setFeedback({ type: 'success', message: 'Time slots updated successfully.' });
+      setFieldFeedback('timeSlots', 'success', 'Time slots updated successfully.');
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: error?.response?.data?.detail || 'Failed to update time slots.',
-      });
+      setFieldFeedback(
+        'timeSlots',
+        'error',
+        error?.response?.data?.detail || 'Failed to update time slots.'
+      );
     } finally {
       setSavingTimeSlots(false);
     }
   };
 
+
   const handleBookableDayToggle = (day) => {
     setBookableDays((current) => {
-      const BOOKABLE_DAY_OPTIONS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
       const next = current.includes(day)
         ? current.filter((item) => item !== day)
         : [...current, day];
       return BOOKABLE_DAY_OPTIONS.filter((option) => next.includes(option));
     });
-    if (feedback.message) setFeedback({ type: '', message: '' });
+    clearFieldFeedback('bookableDays');
   };
+
 
   const handleBookableDaysSave = async () => {
     if (!bookableDays.length) {
-      setFeedback({ type: 'error', message: 'Choose at least one bookable day before saving.' });
+      setFieldFeedback('bookableDays', 'error', 'Choose at least one bookable day before saving.');
       return;
     }
     try {
@@ -226,26 +240,18 @@ const Dashboard = () => {
       const response = await reservationService.updateBookableDays(bookableDays);
       authService.setUser({ ...currentUser, bookable_days: response.bookable_days });
       setBookableDays(response.bookable_days);
-      setFeedback({ type: 'success', message: 'Bookable days updated successfully.' });
+      setFieldFeedback('bookableDays', 'success', 'Bookable days updated successfully.');
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: error?.response?.data?.detail || 'Failed to update bookable days.',
-      });
+      setFieldFeedback(
+        'bookableDays',
+        'error',
+        error?.response?.data?.detail || 'Failed to update bookable days.'
+      );
     } finally {
       setSavingBookableDays(false);
     }
   };
 
-  const handleCalendarDescriptionChange = (e) => {
-    setCalendarDescription(e.target.value);
-    if (feedback.message) setFeedback({ type: '', message: '' });
-  };
-
-  const handleCalendarLocationChange = (e) => {
-    setCalendarLocation(e.target.value);
-    if (feedback.message) setFeedback({ type: '', message: '' });
-  };
 
   const handleCalendarDetailsSave = async () => {
     try {
@@ -261,16 +267,18 @@ const Dashboard = () => {
       });
       setCalendarDescription(response.calendar_description || '');
       setCalendarLocation(response.calendar_location || '');
-      setFeedback({ type: 'success', message: 'Details:  updated successfully.' });
+      setFieldFeedback('calendarDetails', 'success', 'Calendar details updated successfully.');
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: error?.response?.data?.detail || 'Failed to update calendar details.',
-      });
+      setFieldFeedback(
+        'calendarDetails',
+        'error',
+        error?.response?.data?.detail || 'Failed to update calendar details.'
+      );
     } finally {
       setSavingCalendarDetails(false);
     }
   };
+
 
   const handleDeleteAccount = async () => {
     if (!window.confirm('Delete your account and all reservations on this calendar? This cannot be undone.')) return;
@@ -279,14 +287,12 @@ const Dashboard = () => {
       await authService.deleteAccount();
       navigate('/login', { replace: true });
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: error?.response?.data?.detail || 'Failed to delete account.',
-      });
+      alert(error?.response?.data?.detail || 'Failed to delete account.');
     } finally {
       setDeletingAccount(false);
     }
   };
+
 
   const handleCreateCalendar = async () => {
     try {
@@ -297,21 +303,16 @@ const Dashboard = () => {
         calendar_created: response.calendar_created,
         calendar_url: response.calendar_url,
       });
-      setFeedback({
-        type: 'success',
-        message: `Calendar created successfully. Your public booking link is ${response.calendar_url}.`,
-      });
     } catch (error) {
-      setFeedback({
-        type: 'error',
-        message: error?.response?.data?.detail || 'Failed to create calendar.',
-      });
+      alert(error?.response?.data?.detail || 'Failed to create calendar.');
     } finally {
       setCreatingCalendar(false);
     }
   };
 
+
   if (loading) return <div className="p-8 text-center">Loading owner dashboard...</div>;
+
 
   return (
     <div className="space-y-6">
@@ -339,6 +340,7 @@ const Dashboard = () => {
 
         {/* Two-column settings grid */}
         <div className="grid gap-4 lg:grid-cols-2">
+
           {/* Left column */}
           <div className="flex flex-col gap-4">
             {!currentUser?.calendar_created && (
@@ -349,21 +351,24 @@ const Dashboard = () => {
             )}
             <CapacitySettings
               capacity={capacity}
-              onChange={handleCapacityChange}
+              onChange={(e) => { setCapacity(e.target.value); clearFieldFeedback('capacity'); }}
               onSave={handleCapacitySave}
               saving={savingCapacity}
+              feedback={feedback.capacity}
             />
             <MaxWeeksSettings
               maxWeeks={maxWeeks}
-              onChange={handleMaxWeeksChange}
+              onChange={(e) => { setMaxWeeks(e.target.value); clearFieldFeedback('maxWeeks'); }}
               onSave={handleMaxWeeksSave}
               saving={savingMaxWeeks}
+              feedback={feedback.maxWeeks}
             />
             <BookableDaysSettings
               bookableDays={bookableDays}
               onToggle={handleBookableDayToggle}
               onSave={handleBookableDaysSave}
               saving={savingBookableDays}
+              feedback={feedback.bookableDays}
             />
           </div>
 
@@ -372,25 +377,22 @@ const Dashboard = () => {
             <CalendarDetailsSettings
               description={calendarDescription}
               location={calendarLocation}
-              onDescriptionChange={handleCalendarDescriptionChange}
-              onLocationChange={handleCalendarLocationChange}
+              onDescriptionChange={(e) => { setCalendarDescription(e.target.value); clearFieldFeedback('calendarDetails'); }}
+              onLocationChange={(e) => { setCalendarLocation(e.target.value); clearFieldFeedback('calendarDetails'); }}
               onSave={handleCalendarDetailsSave}
               saving={savingCalendarDetails}
+              feedback={feedback.calendarDetails}
             />
             <TimeSlotsSettings
               timeSlotsText={timeSlotsText}
-              onChange={handleTimeSlotsChange}
+              onChange={(e) => { setTimeSlotsText(e.target.value); clearFieldFeedback('timeSlots'); }}
               onSave={handleTimeSlotsSave}
               saving={savingTimeSlots}
+              feedback={feedback.timeSlots}
             />
           </div>
-        </div>
 
-        {feedback.message && (
-          <p className={`mt-4 text-sm ${feedback.type === 'error' ? 'text-rose-600' : 'text-emerald-700'}`}>
-            {feedback.message}
-          </p>
-        )}
+        </div>
       </section>
 
       <DeleteAccountSection onDelete={handleDeleteAccount} deleting={deletingAccount} />
@@ -405,5 +407,6 @@ const Dashboard = () => {
     </div>
   );
 };
+
 
 export default Dashboard;
