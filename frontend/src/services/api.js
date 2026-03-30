@@ -96,6 +96,11 @@ export const reservationService = {
     .then(handleResponse)
     .catch(handleError),
 
+  makeCalendarPrivate: () => apiClient
+    .post('/dashboard/make-calendar-private')
+    .then(handleResponse)
+    .catch(handleError),
+
   create: (ownerSlug, data) => apiClient
     .post(`/calendars/${ownerSlug}/reservations/add`, data)
     .then(handleResponse)

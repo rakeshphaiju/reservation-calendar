@@ -218,3 +218,40 @@ async def create_calendar(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
             detail="Failed to create calendar.",
         )
+
+
+@router.post("/api/dashboard/make-calendar-private")
+async def make_calendar_private(
+    db: AsyncSession = Depends(get_db),
+    user=Depends(manager),
+):
+    try:
+        db_user = await _get_db_user(user.username, db)
+        if db_user.calendar_created:
+            db_user.calendar_created = False
+            await db.commit()
+            await db.refresh(db_user)
+            logger.info(
+                "Set calendar '%s' for '%s' back to private",
+                db_user.calendar_slug,
+                db_user.username,
+            )
+
+        return {
+            "calendar_created": db_user.calendar_created,
+            "calendar_slug": db_user.calendar_slug,
+            "calendar_url": (
+                f"/calendar/{db_user.calendar_slug}"
+                if db_user.calendar_created
+                else None
+            ),
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to make calendar private: %s", exc, exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Failed to make calendar private.",
+        )

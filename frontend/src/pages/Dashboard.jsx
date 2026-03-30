@@ -43,6 +43,7 @@ const Dashboard = () => {
   const [savingBookableDays, setSavingBookableDays] = useState(false);
   const [savingCalendarDetails, setSavingCalendarDetails] = useState(false);
   const [creatingCalendar, setCreatingCalendar] = useState(false);
+  const [makingCalendarPrivate, setMakingCalendarPrivate] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [feedback, setFeedback] = useState({
     capacity: EMPTY_FEEDBACK,
@@ -311,6 +312,24 @@ const Dashboard = () => {
   };
 
 
+  const handleMakeCalendarPrivate = async () => {
+    if (!window.confirm('Set this calendar back to private? Guests will no longer be able to book through your public link.')) return;
+    try {
+      setMakingCalendarPrivate(true);
+      const response = await reservationService.makeCalendarPrivate();
+      authService.setUser({
+        ...currentUser,
+        calendar_created: response.calendar_created,
+        calendar_url: response.calendar_url,
+      });
+    } catch (error) {
+      alert(error?.response?.data?.detail || 'Failed to make calendar private.');
+    } finally {
+      setMakingCalendarPrivate(false);
+    }
+  };
+
+
   if (loading) return <div className="p-8 text-center">Loading owner dashboard...</div>;
 
 
@@ -343,12 +362,13 @@ const Dashboard = () => {
 
           {/* Left column */}
           <div className="flex flex-col gap-4">
-            {!currentUser?.calendar_created && (
-              <CalendarSetupCard
-                onCreateCalendar={handleCreateCalendar}
-                creating={creatingCalendar}
-              />
-            )}
+            <CalendarSetupCard
+              isPrivate={!currentUser?.calendar_created}
+              onCreateCalendar={handleCreateCalendar}
+              onMakePrivate={handleMakeCalendarPrivate}
+              creating={creatingCalendar}
+              makingPrivate={makingCalendarPrivate}
+            />
             <CapacitySettings
               capacity={capacity}
               onChange={(e) => { setCapacity(e.target.value); clearFieldFeedback('capacity'); }}
