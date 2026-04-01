@@ -1,8 +1,16 @@
-import uuid
 import re
+import uuid
 from datetime import datetime
 from typing import List
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 VALID_BOOKABLE_DAYS = {
     "Monday",
@@ -13,6 +21,15 @@ VALID_BOOKABLE_DAYS = {
     "Saturday",
     "Sunday",
 }
+BOOKABLE_DAY_ORDER = (
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+)
 
 
 class ReservationCreate(BaseModel):
@@ -100,6 +117,7 @@ class CalendarAvailabilityResponse(BaseModel):
     slot_capacity: int
     max_weeks: int
     time_slots: List[str]
+    day_time_slots: dict[str, List[str]]
     bookable_days: List[str]
     calendar_description: str | None = None
     calendar_location: str | None = None
@@ -127,11 +145,13 @@ class MaxWeeksUpdate(BaseModel):
 
 
 class TimeSlotsUpdate(BaseModel):
-    time_slots: List[str] = Field(..., min_length=1, max_length=50)
+    time_slots: List[str] | None = Field(default=None, min_length=1, max_length=50)
+    day_time_slots: dict[str, List[str]] | None = Field(
+        default=None, min_length=1, max_length=7
+    )
 
-    @field_validator("time_slots")
     @classmethod
-    def validate_time_slots(cls, value: List[str]) -> List[str]:
+    def _normalize_slots(cls, value: List[str]) -> List[str]:
         normalized: List[str] = []
         seen = set()
 
@@ -151,6 +171,47 @@ class TimeSlotsUpdate(BaseModel):
             raise ValueError("At least one time slot is required")
 
         return normalized
+
+    @field_validator("time_slots")
+    @classmethod
+    def validate_time_slots(cls, value: List[str] | None) -> List[str] | None:
+        if value is None:
+            return None
+        return cls._normalize_slots(value)
+
+    @field_validator("day_time_slots")
+    @classmethod
+    def validate_day_time_slots(
+        cls, value: dict[str, List[str]] | None
+    ) -> dict[str, List[str]] | None:
+        if value is None:
+            return None
+
+        normalized: dict[str, List[str]] = {}
+        for day, slots in value.items():
+            trimmed_day = day.strip()
+            if trimmed_day not in VALID_BOOKABLE_DAYS:
+                raise ValueError("Each day must be a valid weekday name")
+            normalized[trimmed_day] = cls._normalize_slots(slots)
+
+        if not normalized:
+            raise ValueError("At least one weekday schedule is required")
+
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_payload(self):
+        if self.day_time_slots:
+            return self
+        if self.time_slots:
+            self.day_time_slots = {
+                day: self.time_slots.copy() for day in BOOKABLE_DAY_ORDER
+            }
+            return self
+        raise ValueError("At least one time slot is required")
+
+    def get_day_time_slots(self) -> dict[str, List[str]]:
+        return self.day_time_slots or {}
 
 
 class BookableDaysUpdate(BaseModel):

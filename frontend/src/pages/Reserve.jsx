@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
+import moment from 'moment';
 
 import Button from '../components/form/Button';
 import ReservationModal from '../components/ReservationModal';
@@ -18,6 +19,7 @@ const Reserve = () => {
     slotCapacity,
     maxWeeks,
     timeSlots,
+    dayTimeSlots,
     bookableDays,
     calendarDescription,
     calendarLocation,
@@ -46,14 +48,28 @@ const Reserve = () => {
     handleInput,
     handleConfirmReservation,
     showForm,
-  } = useReservationModal(ownerSlug, refreshAvailability, dates, timeSlots, (day) =>
-    getEditableTimeSlots(day, timeSlots)
+  } = useReservationModal(ownerSlug, refreshAvailability, dates, (day) =>
+    getEditableTimeSlots(day, dayTimeSlots)
   );
 
   // Derived data
   const editableDays = dates.filter((day) =>
-    timeSlots.some((time) => !isPastOrToday(day, time))
+    getEditableTimeSlots(day, dayTimeSlots).length > 0
   );
+
+  const getTimeSlotsForDay = (day) => {
+    const weekday = moment(day).format('dddd');
+    return dayTimeSlots?.[weekday] || [];
+  };
+
+  const visibleTimeSlots = dates.reduce((slots, day) => {
+    getTimeSlotsForDay(day).forEach((time) => {
+      if (!slots.includes(time)) {
+        slots.push(time);
+      }
+    });
+    return slots;
+  }, []);
 
   const slotProps = {
     isPastOrToday,
@@ -76,9 +92,6 @@ const Reserve = () => {
       <h2 className="mb-3 text-center text-xl font-bold text-slate-800 sm:text-2xl">
         Reserve time on {ownerSlug}&apos;s calendar
       </h2>
-      <p className="mb-8 text-center text-sm text-slate-500">
-        Share this direct link to let people book this calendar only.
-      </p>
 
       {(calendarDescription || calendarLocation) && (
         <section className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -93,14 +106,6 @@ const Reserve = () => {
           )}
         </section>
       )}
-
-      <ReservationManager
-        ownerSlug={ownerSlug}
-        onReservationChange={refreshAvailability}
-        editableDays={editableDays}
-        getEditableTimeSlots={(day) => getEditableTimeSlots(day, timeSlots)}
-        timeSlots={timeSlots}
-      />
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">
@@ -126,14 +131,22 @@ const Reserve = () => {
 
       <MobileCalendarView
         dates={dates}
-        times={timeSlots}
+        getTimesForDay={getTimeSlotsForDay}
         slotProps={slotProps}
       />
 
       <CalendarTable
         dates={dates}
-        times={timeSlots}
+        times={visibleTimeSlots.length ? visibleTimeSlots : timeSlots}
+        getTimesForDay={getTimeSlotsForDay}
         slotProps={slotProps}
+      />
+
+      <ReservationManager
+        ownerSlug={ownerSlug}
+        onReservationChange={refreshAvailability}
+        editableDays={editableDays}
+        getEditableTimeSlots={(day) => getEditableTimeSlots(day, dayTimeSlots)}
       />
 
       <ReservationModal

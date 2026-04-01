@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.auth.auth import DEFAULT_BOOKABLE_DAYS, DEFAULT_TIME_SLOTS, manager
+from src.auth.auth import (
+    DEFAULT_BOOKABLE_DAYS,
+    DEFAULT_TIME_SLOTS,
+    ALL_BOOKABLE_DAYS,
+    get_default_day_time_slots,
+    manager,
+)
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.user import AppUser
@@ -20,6 +26,7 @@ from src.api.reservations._utils import (
     get_owner_calendar_description,
     get_owner_calendar_location,
     get_owner_bookable_days,
+    get_owner_day_time_slots,
     get_owner_max_weeks,
     get_owner_slot_capacity,
     get_owner_time_slots,
@@ -96,7 +103,10 @@ async def update_max_weeks(
 
 @router.get("/api/dashboard/time-slots")
 async def get_time_slots(user=Depends(manager)):
-    return {"time_slots": get_owner_time_slots(user)}
+    return {
+        "time_slots": get_owner_time_slots(user),
+        "day_time_slots": get_owner_day_time_slots(user),
+    }
 
 
 @router.put("/api/dashboard/time-slots")
@@ -107,10 +117,23 @@ async def update_time_slots(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        db_user.time_slots = json.dumps(payload.time_slots or DEFAULT_TIME_SLOTS)
+        day_time_slots = payload.get_day_time_slots() or get_default_day_time_slots()
+        db_user.day_time_slots = json.dumps(day_time_slots)
+        merged_time_slots: list[str] = []
+        seen = set()
+        for day in ALL_BOOKABLE_DAYS:
+            for slot in day_time_slots.get(day, []):
+                if slot in seen:
+                    continue
+                seen.add(slot)
+                merged_time_slots.append(slot)
+        db_user.time_slots = json.dumps(merged_time_slots or DEFAULT_TIME_SLOTS)
         await db.commit()
         await db.refresh(db_user)
-        return {"time_slots": get_owner_time_slots(db_user)}
+        return {
+            "time_slots": get_owner_time_slots(db_user),
+            "day_time_slots": get_owner_day_time_slots(db_user),
+        }
     except HTTPException:
         raise
     except Exception as exc:

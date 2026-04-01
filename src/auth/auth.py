@@ -9,7 +9,7 @@ from http import HTTPStatus as hs
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_login import LoginManager
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -50,6 +50,10 @@ DEFAULT_BOOKABLE_DAYS = ALL_BOOKABLE_DAYS[:5]
 DEFAULT_MAX_WEEKS = 4
 
 
+def get_default_day_time_slots() -> dict[str, list[str]]:
+    return {day: DEFAULT_TIME_SLOTS.copy() for day in ALL_BOOKABLE_DAYS}
+
+
 class User(BaseModel):
     username: str
     email: EmailStr | None = None
@@ -59,6 +63,9 @@ class User(BaseModel):
     slot_capacity: int = 5
     max_weeks: int = DEFAULT_MAX_WEEKS
     time_slots: list[str] = DEFAULT_TIME_SLOTS.copy()
+    day_time_slots: dict[str, list[str]] = Field(
+        default_factory=get_default_day_time_slots
+    )
     bookable_days: list[str] = DEFAULT_BOOKABLE_DAYS.copy()
     calendar_description: str | None = None
     calendar_location: str | None = None
@@ -80,18 +87,68 @@ def get_user_calendar_location(user) -> str | None:
     return trimmed or None
 
 
-def get_user_time_slots(user) -> list[str]:
-    raw_slots = getattr(user, "time_slots", None)
+def _normalize_time_slots(raw_slots) -> list[str]:
     if isinstance(raw_slots, list) and raw_slots:
-        return raw_slots
+        return [str(slot).strip() for slot in raw_slots if str(slot).strip()]
+    return []
+
+
+def _parse_legacy_time_slots(user) -> list[str]:
+    raw_slots = getattr(user, "time_slots", None)
+    normalized = _normalize_time_slots(raw_slots)
+    if normalized:
+        return normalized
     if isinstance(raw_slots, str):
         try:
             parsed = json.loads(raw_slots)
-            if isinstance(parsed, list) and parsed:
-                return [str(slot) for slot in parsed]
+            normalized = _normalize_time_slots(parsed)
+            if normalized:
+                return normalized
         except json.JSONDecodeError:
             pass
     return DEFAULT_TIME_SLOTS.copy()
+
+
+def get_user_day_time_slots(user) -> dict[str, list[str]]:
+    raw_day_slots = getattr(user, "day_time_slots", None)
+    parsed_day_slots = raw_day_slots
+
+    if isinstance(raw_day_slots, str):
+        try:
+            parsed_day_slots = json.loads(raw_day_slots)
+        except json.JSONDecodeError:
+            parsed_day_slots = None
+
+    if isinstance(parsed_day_slots, dict):
+        normalized: dict[str, list[str]] = {}
+        for day in ALL_BOOKABLE_DAYS:
+            slots = _normalize_time_slots(parsed_day_slots.get(day))
+            if slots:
+                normalized[day] = slots
+        if normalized:
+            return normalized
+
+    legacy_slots = _parse_legacy_time_slots(user)
+    return {day: legacy_slots.copy() for day in ALL_BOOKABLE_DAYS}
+
+
+def get_user_time_slots(user) -> list[str]:
+    day_time_slots = get_user_day_time_slots(user)
+    unique_slots: list[str] = []
+    seen = set()
+
+    for day in ALL_BOOKABLE_DAYS:
+        for slot in day_time_slots.get(day, []):
+            if slot in seen:
+                continue
+            seen.add(slot)
+            unique_slots.append(slot)
+
+    return unique_slots or DEFAULT_TIME_SLOTS.copy()
+
+
+def get_user_time_slots_for_day(user, weekday: str) -> list[str]:
+    return get_user_day_time_slots(user).get(weekday, []).copy()
 
 
 def get_user_bookable_days(user) -> list[str]:
@@ -182,6 +239,7 @@ async def load_user(username: str) -> User | None:
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
             max_weeks=get_user_max_weeks(user),
             time_slots=get_user_time_slots(user),
+            day_time_slots=get_user_day_time_slots(user),
             bookable_days=get_user_bookable_days(user),
             calendar_description=get_user_calendar_description(user),
             calendar_location=get_user_calendar_location(user),
@@ -220,6 +278,7 @@ async def authenticate_user(
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,
         max_weeks=get_user_max_weeks(user_record),
         time_slots=get_user_time_slots(user_record),
+        day_time_slots=get_user_day_time_slots(user_record),
         bookable_days=get_user_bookable_days(user_record),
         calendar_description=get_user_calendar_description(user_record),
         calendar_location=get_user_calendar_location(user_record),

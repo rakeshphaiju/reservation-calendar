@@ -54,6 +54,8 @@ async def send_confirmation_email(
         </table>
         <p>Please keep this reservation key safe. You can use it later to cancel or modify your reservation.</p>
         <p>Thank you for your booking!</p>
+        <br>
+        <p style="font-size: 12px; color: gray;">Please do not reply to this message. The message was sent automatically and replies will not be read.</p>
       </body>
     </html>
     """
@@ -126,8 +128,7 @@ async def send_admin_notification(
           </tr>
         </table>
         <br>
-        <p style="font-size: 12px; color: gray;">Ref ID: {reservation_id}</p>
-        <p style="font-size: 12px; color: gray;">Reservation Key: {reservation_key}</p>
+        <p style="font-size: 12px; color: gray;">Please do not reply to this message. The message was sent automatically and replies will not be read.</p>
       </body>
     </html>
     """
@@ -163,13 +164,11 @@ async def send_cancellation_email(
             <td style="padding: 8px; border: 1px solid #ddd;"><strong>Time</strong></td>
             <td style="padding: 8px; border: 1px solid #ddd;">{time}</td>
           </tr>
-          <tr>
-            <td style="padding: 8px; border: 1px solid #ddd;"><strong>Reservation Key</strong></td>
-            <td style="padding: 8px; border: 1px solid #ddd;">{reservation_key}</td>
-          </tr>
         </table>
         <p>If this was a mistake or you'd like to rebook, please visit our booking page.</p>
         <p>We hope to see you again!</p>
+        <br>
+        <p style="font-size: 12px; color: gray;">Please do not reply to this message. The message was sent automatically and replies will not be read.</p>
       </body>
     </html>
     """
@@ -228,8 +227,7 @@ async def send_admin_cancellation_notification(
           </tr>
         </table>
         <br>
-        <p style="font-size: 12px; color: gray;">Ref ID: {reservation_id}</p>
-        <p style="font-size: 12px; color: gray;">Reservation Key: {reservation_key}</p>
+        <p style="font-size: 12px; color: gray;">Please do not reply to this message. The message was sent automatically and replies will not be read.</p>
       </body>
     </html>
     """

@@ -60,8 +60,11 @@ export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
         return slotStart.isSameOrBefore(moment());
     };
 
-    const getEditableTimeSlots = (day, timeSlots) =>
-        timeSlots.filter((time) => !isPastOrToday(day, time));
+    const getEditableTimeSlots = (day, dayTimeSlots) => {
+        const weekday = moment(day).format('dddd');
+        const timeSlots = dayTimeSlots?.[weekday] || [];
+        return timeSlots.filter((time) => !isPastOrToday(day, time));
+    };
 
     return {
         startDate,

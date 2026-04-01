@@ -76,8 +76,8 @@ export const reservationService = {
     .then(handleResponse)
     .catch(handleError),
 
-  updateTimeSlots: (time_slots) => apiClient
-    .put('/dashboard/time-slots', { time_slots })
+  updateTimeSlots: (day_time_slots) => apiClient
+    .put('/dashboard/time-slots', { day_time_slots })
     .then(handleResponse)
     .catch(handleError),
 

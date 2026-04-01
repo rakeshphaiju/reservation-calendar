@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { reservationService } from '../services/api';
 
-export const useReservationModal = (ownerSlug, onSuccess, dates, timeSlots, getEditableTimeSlots) => {
+export const useReservationModal = (ownerSlug, onSuccess, dates, getEditableTimeSlots) => {
     const [showModal, setShowModal] = useState(false);
     const [modalData, setModalData] = useState({ day: '', time: '' });
     const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });

@@ -138,10 +138,10 @@ export const ReservationManager = ({
     };
 
     return (
-        <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="mb-8 mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="lg:max-w-2xl">
-                    <h3 className="text-lg font-semibold text-slate-900">Modify or delete an existing reservation</h3>
+                    <h3 className="text-lg font-semibold text-slate-900">Modify or delete an existing reservation with {ownerSlug}</h3>
                     <p className="mt-1 text-sm text-slate-600">
                         Enter the reservation key from your confirmation email and email to manage your booking.
                     </p>

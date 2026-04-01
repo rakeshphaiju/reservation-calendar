@@ -34,6 +34,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("testuser", resp.json()["calendar_slug"])
         self.assertIn("max_weeks", resp.json())
         self.assertIn("time_slots", resp.json())
+        self.assertIn("day_time_slots", resp.json())
         self.assertIn("bookable_days", resp.json())
         self.assertIn("calendar_description", resp.json())
         self.assertIn("calendar_location", resp.json())
@@ -75,6 +76,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(resp.json()["calendar_url"])
         self.assertIn("max_weeks", resp.json())
         self.assertIn("time_slots", resp.json())
+        self.assertIn("day_time_slots", resp.json())
         self.assertIn("bookable_days", resp.json())
         self.assertIn("calendar_description", resp.json())
         self.assertIn("calendar_location", resp.json())
@@ -91,6 +93,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(resp.json()["calendar_created"])
         self.assertIn("max_weeks", resp.json())
         self.assertIn("time_slots", resp.json())
+        self.assertIn("day_time_slots", resp.json())
         self.assertIn("bookable_days", resp.json())
         self.assertEqual(
             "Bring any documents you need reviewed.",

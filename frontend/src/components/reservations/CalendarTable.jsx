@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import moment from 'moment';
 import SlotButton from '../SlotButton';
 
-export const CalendarTable = ({ dates, times, slotProps }) => {
+export const CalendarTable = ({ dates, times, getTimesForDay, slotProps }) => {
     return (
         <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
             <table className="min-w-full border-collapse">
@@ -18,21 +18,34 @@ export const CalendarTable = ({ dates, times, slotProps }) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {dates.map((day, index) => (
+                    {dates.map((day, index) => {
+                        const dayTimes = getTimesForDay(day);
+                        return (
                         <tr key={index} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                             <th className="px-4 py-3 text-left text-sm font-medium text-slate-700 whitespace-nowrap">
                                 {moment(day).format('dddd, MMMM D')}
                             </th>
-                            {times.map((time) => (
-                                <td
-                                    key={`${day}-${time}`}
-                                    className={`px-2 py-2 ${slotProps.isFullyBooked(day, time) ? 'bg-red-50' : ''}`}
-                                >
-                                    <SlotButton day={day} time={time} {...slotProps} />
-                                </td>
-                            ))}
+                            {times.map((time) => {
+                                if (!dayTimes.includes(time)) {
+                                    return (
+                                        <td key={`${day}-${time}`} className="px-2 py-2 text-center text-sm text-slate-300">
+                                            -
+                                        </td>
+                                    );
+                                }
+
+                                return (
+                                    <td
+                                        key={`${day}-${time}`}
+                                        className={`px-2 py-2 ${slotProps.isFullyBooked(day, time) ? 'bg-red-50' : ''}`}
+                                    >
+                                        <SlotButton day={day} time={time} {...slotProps} />
+                                    </td>
+                                );
+                            })}
                         </tr>
-                    ))}
+                        );
+                    })}
                 </tbody>
             </table>
         </div>
@@ -42,6 +55,7 @@ export const CalendarTable = ({ dates, times, slotProps }) => {
 CalendarTable.propTypes = {
     dates: PropTypes.arrayOf(PropTypes.string).isRequired,
     times: PropTypes.arrayOf(PropTypes.string).isRequired,
+    getTimesForDay: PropTypes.func.isRequired,
     slotProps: PropTypes.shape({
         isFullyBooked: PropTypes.func.isRequired,
         isPastOrToday: PropTypes.func.isRequired,

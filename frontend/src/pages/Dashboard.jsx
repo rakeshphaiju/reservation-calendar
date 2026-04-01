@@ -24,8 +24,19 @@ const DEFAULT_TIME_SLOTS = [
 ];
 const DEFAULT_BOOKABLE_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const BOOKABLE_DAY_OPTIONS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const DEFAULT_DAY_TIME_SLOTS = BOOKABLE_DAY_OPTIONS.reduce((acc, day) => {
+  acc[day] = [...DEFAULT_TIME_SLOTS];
+  return acc;
+}, {});
 
 const EMPTY_FEEDBACK = { type: '', message: '' };
+
+const normalizeDayTimeSlots = (dayTimeSlots, fallbackTimeSlots = DEFAULT_TIME_SLOTS) =>
+  BOOKABLE_DAY_OPTIONS.reduce((acc, day) => {
+    const nextSlots = dayTimeSlots?.[day]?.length ? dayTimeSlots[day] : fallbackTimeSlots;
+    acc[day] = [...nextSlots];
+    return acc;
+  }, {});
 
 
 const Dashboard = () => {
@@ -33,7 +44,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [capacity, setCapacity] = useState('');
   const [maxWeeks, setMaxWeeks] = useState('');
-  const [timeSlotsText, setTimeSlotsText] = useState('');
+  const [dayTimeSlotsText, setDayTimeSlotsText] = useState(
+    BOOKABLE_DAY_OPTIONS.reduce((acc, day) => ({ ...acc, [day]: DEFAULT_TIME_SLOTS.join('\n') }), {})
+  );
   const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
   const [calendarDescription, setCalendarDescription] = useState('');
   const [calendarLocation, setCalendarLocation] = useState('');
@@ -89,11 +102,15 @@ const Dashboard = () => {
       setReservations(reservationResponse.data);
       setCapacity(String(capacityResponse.slot_capacity));
       setMaxWeeks(String(maxWeeksResponse.max_weeks));
-      setTimeSlotsText(
-        (timeSlotsResponse.time_slots?.length
-          ? timeSlotsResponse.time_slots
-          : DEFAULT_TIME_SLOTS
-        ).join('\n')
+      const normalizedDayTimeSlots = normalizeDayTimeSlots(
+        timeSlotsResponse.day_time_slots,
+        timeSlotsResponse.time_slots?.length ? timeSlotsResponse.time_slots : DEFAULT_TIME_SLOTS
+      );
+      setDayTimeSlotsText(
+        BOOKABLE_DAY_OPTIONS.reduce((acc, day) => ({
+          ...acc,
+          [day]: normalizedDayTimeSlots[day].join('\n'),
+        }), {})
       );
       setBookableDays(
         bookableDaysResponse.bookable_days?.length
@@ -194,19 +211,33 @@ const Dashboard = () => {
 
 
   const handleTimeSlotsSave = async () => {
-    const nextTimeSlots = timeSlotsText
-      .split('\n')
-      .map((slot) => slot.trim())
-      .filter(Boolean);
-    if (!nextTimeSlots.length) {
-      setFieldFeedback('timeSlots', 'error', 'Add at least one time slot before saving.');
+    const nextDayTimeSlots = BOOKABLE_DAY_OPTIONS.reduce((acc, day) => {
+      acc[day] = (dayTimeSlotsText[day] || '')
+        .split('\n')
+        .map((slot) => slot.trim().replace(/\s+/g, ''))
+        .filter(Boolean);
+      return acc;
+    }, {});
+
+    const invalidDay = bookableDays.find((day) => !nextDayTimeSlots[day]?.length);
+    if (invalidDay) {
+      setFieldFeedback('timeSlots', 'error', `Add at least one time slot for ${invalidDay} before saving.`);
       return;
     }
     try {
       setSavingTimeSlots(true);
-      const response = await reservationService.updateTimeSlots(nextTimeSlots);
-      authService.setUser({ ...currentUser, time_slots: response.time_slots });
-      setTimeSlotsText(response.time_slots.join('\n'));
+      const response = await reservationService.updateTimeSlots(nextDayTimeSlots);
+      authService.setUser({
+        ...currentUser,
+        time_slots: response.time_slots,
+        day_time_slots: response.day_time_slots,
+      });
+      setDayTimeSlotsText(
+        BOOKABLE_DAY_OPTIONS.reduce((acc, day) => ({
+          ...acc,
+          [day]: (response.day_time_slots?.[day] || DEFAULT_DAY_TIME_SLOTS[day]).join('\n'),
+        }), {})
+      );
       setFieldFeedback('timeSlots', 'success', 'Time slots updated successfully.');
     } catch (error) {
       setFieldFeedback(
@@ -227,6 +258,10 @@ const Dashboard = () => {
         : [...current, day];
       return BOOKABLE_DAY_OPTIONS.filter((option) => next.includes(option));
     });
+    setDayTimeSlotsText((current) => ({
+      ...current,
+      [day]: current[day] || DEFAULT_TIME_SLOTS.join('\n'),
+    }));
     clearFieldFeedback('bookableDays');
   };
 
@@ -404,8 +439,12 @@ const Dashboard = () => {
               feedback={feedback.calendarDetails}
             />
             <TimeSlotsSettings
-              timeSlotsText={timeSlotsText}
-              onChange={(e) => { setTimeSlotsText(e.target.value); clearFieldFeedback('timeSlots'); }}
+              bookableDays={bookableDays}
+              dayTimeSlotsText={dayTimeSlotsText}
+              onChange={(day, value) => {
+                setDayTimeSlotsText((current) => ({ ...current, [day]: value }));
+                clearFieldFeedback('timeSlots');
+              }}
               onSave={handleTimeSlotsSave}
               saving={savingTimeSlots}
               feedback={feedback.timeSlots}
