@@ -32,6 +32,11 @@ export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
         return prevLastBookableDay.isSameOrBefore(moment(), 'day');
     }, [startDate, bookableDays]);
 
+    // Check if Today button should be disabled
+    const isTodayDisabled = useMemo(() => {
+        return startDate.isSame(moment().startOf('isoWeek'), 'day');
+    }, [startDate]);
+
     // Check if next week button should be disabled
     const isNextWeekDisabled = useMemo(() => {
         const maxDate = moment().add(maxWeeks, 'weeks');
@@ -46,6 +51,10 @@ export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
         if (isPreviousWeekDisabled) return;
         const prevMonday = startDate.clone().subtract(1, 'week').isoWeekday(1);
         setStartDate(prevMonday);
+    };
+
+    const handleToday = () => {
+        setStartDate(moment().startOf('isoWeek'));
     };
 
     const handleNextWeek = () => {
@@ -70,9 +79,11 @@ export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
         startDate,
         dates,
         handlePreviousWeek,
+        handleToday,
         handleNextWeek,
         isPreviousWeekDisabled,
         isNextWeekDisabled,
+        isTodayDisabled,
         isPastOrToday,
         getEditableTimeSlots,
     };

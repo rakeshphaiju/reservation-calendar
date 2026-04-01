@@ -32,9 +32,11 @@ const Reserve = () => {
   const {
     dates,
     handlePreviousWeek,
+    handleToday,
     handleNextWeek,
     isPreviousWeekDisabled,
     isNextWeekDisabled,
+    isTodayDisabled,
     isPastOrToday,
     getEditableTimeSlots,
   } = useWeekNavigation(bookableDays, maxWeeks);
@@ -118,6 +120,13 @@ const Reserve = () => {
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-gray-700 disabled:opacity-10 disabled:cursor-not-allowed"
           >
             Previous Week
+          </Button>
+          <Button
+            onClick={handleToday}
+            disabled={isTodayDisabled}
+            className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 disabled:opacity-10 disabled:cursor-not-allowed"
+          >
+            Today
           </Button>
           <Button
             onClick={handleNextWeek}
