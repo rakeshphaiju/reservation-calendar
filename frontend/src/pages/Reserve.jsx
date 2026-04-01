@@ -4,6 +4,7 @@ import moment from 'moment';
 
 import Button from '../components/form/Button';
 import ReservationModal from '../components/ReservationModal';
+import PoweredByFooter from '../components/PoweredByFooter';
 import { CalendarTable } from '../components/reservations/CalendarTable';
 import { MobileCalendarView } from '../components/reservations/MobileCalendarView';
 import { ReservationManager } from '../components/reservations/ReservationManager';
@@ -92,7 +93,7 @@ const Reserve = () => {
   return (
     <div>
       <h2 className="mb-3 text-center text-xl font-bold text-slate-800 sm:text-2xl">
-        Reserve time on {ownerSlug}&apos;s calendar
+        Reserve your spot on {ownerSlug}&apos;s calendar
       </h2>
 
       {(calendarDescription || calendarLocation) && (
@@ -169,6 +170,11 @@ const Reserve = () => {
         submitLabel="Reserve"
         heading=""
       />
+
+      {/* Powered by Booking Nest footer */}
+      <div className="mt-8">
+        <PoweredByFooter />
+      </div>
     </div>
   );
 };
