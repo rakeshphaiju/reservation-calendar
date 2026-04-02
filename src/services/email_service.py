@@ -73,7 +73,6 @@ async def send_admin_notification(
     customer_name: str,
     customer_email: str,
     customer_phone: str,
-    customer_address: str,
     day: str,
     time: str,
     reservation_id: str,
@@ -121,10 +120,6 @@ async def send_admin_notification(
           <tr>
             <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Phone</strong></td>
             <td style="padding: 8px; border: 1px solid #ddd;">{customer_phone}</td>
-          </tr>
-          <tr>
-            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Address</strong></td>
-            <td style="padding: 8px; border: 1px solid #ddd;">{customer_address}</td>
           </tr>
         </table>
         <br>

@@ -178,7 +178,6 @@ export const ReservationManager = ({
                     <div className="grid gap-2 text-sm text-slate-700 sm:grid-cols-2">
                         <p><span className="font-semibold text-slate-900">Name:</span> {managedReservation.name}</p>
                         <p><span className="font-semibold text-slate-900">Email:</span> {managedReservation.email}</p>
-                        <p><span className="font-semibold text-slate-900">Address:</span> {managedReservation.address}</p>
                         <p><span className="font-semibold text-slate-900">Phone:</span> {managedReservation.phone_number}</p>
                         <p><span className="font-semibold text-slate-900">Date:</span> {managedReservation.day}</p>
                         <p><span className="font-semibold text-slate-900">Time:</span> {managedReservation.time}</p>

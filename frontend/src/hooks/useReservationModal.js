@@ -4,7 +4,7 @@ import { reservationService } from '../services/api';
 export const useReservationModal = (ownerSlug, onSuccess, dates, getEditableTimeSlots) => {
     const [showModal, setShowModal] = useState(false);
     const [modalData, setModalData] = useState({ day: '', time: '' });
-    const [user, setUser] = useState({ name: '', address: '', email: '', phone_number: '' });
+    const [user, setUser] = useState({ name: '', email: '', phone_number: '' });
     const [errors, setErrors] = useState({});
 
     const handleInput = (e) => {
@@ -27,7 +27,7 @@ export const useReservationModal = (ownerSlug, onSuccess, dates, getEditableTime
     };
 
     const showForm = (day, time) => {
-        setUser({ name: '', address: '', email: '', phone_number: '' });
+        setUser({ name: '', email: '', phone_number: '' });
         setErrors({});
         setShowModal(true);
         setModalData({ day, time });
@@ -40,7 +40,7 @@ export const useReservationModal = (ownerSlug, onSuccess, dates, getEditableTime
             await reservationService.create(ownerSlug, newReservation);
             onSuccess();
             setShowModal(false);
-            setUser({ name: '', address: '', email: '', phone_number: '' });
+            setUser({ name: '', email: '', phone_number: '' });
         } catch (err) {
             if (err.response?.status === 409) {
                 setErrors({ general: err.response.data?.detail || 'This slot is already reserved.' });

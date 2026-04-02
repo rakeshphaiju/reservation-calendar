@@ -49,17 +49,6 @@ const ReservationModal = ({
 
                 <div>
                     <Input
-                        title="Address"
-                        name="address"
-                        value={user.address}
-                        placeholder="Enter your address"
-                        handlechange={handleInput}
-                    />
-                    <div className="text-red-500 text-sm mt-1 min-h-[1.25rem]">{errors.address}</div>
-                </div>
-
-                <div>
-                    <Input
                         title="Email"
                         name="email"
                         type="email"
@@ -110,13 +99,11 @@ ReservationModal.propTypes = {
     }).isRequired,
     user: PropTypes.shape({
         name: PropTypes.string,
-        address: PropTypes.string,
         email: PropTypes.string,
         phone_number: PropTypes.string,
     }).isRequired,
     errors: PropTypes.shape({
         name: PropTypes.string,
-        address: PropTypes.string,
         email: PropTypes.string,
         phone_number: PropTypes.string,
         general: PropTypes.string,

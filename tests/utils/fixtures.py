@@ -10,7 +10,6 @@ def make_mock_reservations():
             owner_slug="mock-user",
             name="John Doe",
             email="john@example.com",
-            address="123 Main St",
             phone_number="123456789",
             day="2026-03-20",
             time="16:00-16:30",
@@ -21,7 +20,6 @@ def make_mock_reservations():
             owner_slug="mock-user",
             name="Jane Doe",
             email="jane@example.com",
-            address="456 Side St",
             phone_number="987654321",
             day="2026-03-21",
             time="11:00-11:00",
@@ -33,7 +31,6 @@ def make_mock_reservations():
 RESERVATION_PAYLOAD = {
     "name": "John Cena",
     "email": "john@cena.com",
-    "address": "123 Main St",
     "phone_number": "1234467892",
     "day": "2026-03-20",
     "time": "17:00-18:00",

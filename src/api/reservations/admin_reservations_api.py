@@ -50,16 +50,16 @@ async def get_all_reservations(
         )
 
 
-@router.get("/api/reservations/{reserve_id}", response_model=ReservationResponse)
+@router.get("/api/reservations/{reservation_id}", response_model=ReservationResponse)
 async def get_reservation(
-    reserve_id: uuid.UUID,
+    reservation_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     user=Depends(manager),
 ):
     try:
         result = await db.execute(
             select(Reservation).where(
-                Reservation.id == reserve_id,
+                Reservation.id == reservation_id,
                 Reservation.owner_slug == user.calendar_slug,
             )
         )
@@ -74,7 +74,7 @@ async def get_reservation(
         raise
     except Exception as exc:
         logger.error(
-            "Error retrieving reservation %s: %s", reserve_id, exc, exc_info=True
+            "Error retrieving reservation %s: %s", reservation_id, exc, exc_info=True
         )
         raise HTTPException(
             status_code=hs.HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -82,16 +82,16 @@ async def get_reservation(
         )
 
 
-@router.delete("/api/reservations/{reserve_id}")
+@router.delete("/api/reservations/{reservation_id}")
 async def delete_reservation(
-    reserve_id: uuid.UUID,
+    reservation_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     user=Depends(manager),
 ):
     try:
         result = await db.execute(
             select(Reservation).where(
-                Reservation.id == reserve_id,
+                Reservation.id == reservation_id,
                 Reservation.owner_slug == user.calendar_slug,
             )
         )
@@ -109,7 +109,7 @@ async def delete_reservation(
         raise
     except Exception as exc:
         logger.error(
-            "Error deleting reservation %s: %s", reserve_id, exc, exc_info=True
+            "Error deleting reservation %s: %s", reservation_id, exc, exc_info=True
         )
         await db.rollback()
         raise HTTPException(

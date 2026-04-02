@@ -10,7 +10,6 @@ class Reservation(Base):
     owner_slug = Column(String, nullable=False, index=True)
     name = Column(String, nullable=False)
     email = Column(String, nullable=False)
-    address = Column(String, nullable=False)
     phone_number = Column(String, nullable=False)
     day = Column(String, nullable=False)
     time = Column(String, nullable=False)

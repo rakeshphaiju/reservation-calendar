@@ -138,7 +138,6 @@ const ReservationList = ({ reservations, onDelete }) => {
                         >
                           <div className="space-y-1 text-sm">
                             <p className="font-semibold text-slate-900">{reservation.name}</p>
-                            <p className="text-slate-600">{reservation.address}</p>
                             <p className="text-slate-600">{reservation.email}</p>
                             <p className="text-slate-600">{reservation.phone_number}</p>
                           </div>
@@ -169,10 +168,6 @@ const ReservationList = ({ reservations, onDelete }) => {
                 <div className="space-y-1 text-sm">
                   <p className="text-slate-800">
                     <span className="font-semibold">Full name:</span> {reservation.name}
-                  </p>
-                  <p className="text-slate-600">
-                    <span className="font-semibold text-slate-700">Address:</span>{' '}
-                    {reservation.address}
                   </p>
                   <p className="text-slate-600">
                     <span className="font-semibold text-slate-700">Email:</span>{' '}
@@ -207,7 +202,6 @@ const ReservationList = ({ reservations, onDelete }) => {
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Full name</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Address</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Email</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Phone number</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Date</th>
@@ -222,7 +216,6 @@ const ReservationList = ({ reservations, onDelete }) => {
                     className="border-b border-slate-100 transition-colors hover:bg-slate-50/60"
                   >
                     <td className="px-4 py-3 text-sm text-slate-800">{reservation.name}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{reservation.address}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{reservation.email}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{reservation.phone_number}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{reservation.day}</td>
@@ -251,7 +244,6 @@ ReservationList.propTypes = {
   reservations: PropTypes.arrayOf(PropTypes.shape({
     id: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,
-    address: PropTypes.string.isRequired,
     email: PropTypes.string.isRequired,
     phone_number: PropTypes.string.isRequired,
     day: PropTypes.string.isRequired,

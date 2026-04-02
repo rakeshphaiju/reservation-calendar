@@ -67,7 +67,6 @@ class TestEmailService(BaseApiTest):
             customer_name="John",
             customer_email=RECIPIENT,
             customer_phone="+358401234567",
-            customer_address="Helsinki",
             reservation_id="res-001",
             **BASE_KWARGS,
         )
@@ -85,7 +84,6 @@ class TestEmailService(BaseApiTest):
             customer_name="John",
             customer_email=RECIPIENT,
             customer_phone="+358401234567",
-            customer_address="Helsinki",
             reservation_id="res-001",
             **BASE_KWARGS,
         )
@@ -99,7 +97,6 @@ class TestEmailService(BaseApiTest):
             customer_name="John",
             customer_email=RECIPIENT,
             customer_phone="+358401234567",
-            customer_address="Helsinki",
             reservation_id="res-001",
             is_update=True,
             **BASE_KWARGS,
