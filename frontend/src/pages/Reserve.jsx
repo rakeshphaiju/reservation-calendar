@@ -22,6 +22,7 @@ const Reserve = () => {
     maxWeeks,
     timeSlots,
     dayTimeSlots,
+    dateTimeSlots,
     bookableDays,
     calendarDescription,
     calendarLocation,
@@ -41,7 +42,7 @@ const Reserve = () => {
     isTodayDisabled,
     isPastOrToday,
     getEditableTimeSlots,
-  } = useWeekNavigation(bookableDays, maxWeeks);
+  } = useWeekNavigation(bookableDays, maxWeeks, dateTimeSlots);
 
   const {
     showModal,
@@ -53,15 +54,18 @@ const Reserve = () => {
     handleConfirmReservation,
     showForm,
   } = useReservationModal(ownerSlug, refreshAvailability, dates, (day) =>
-    getEditableTimeSlots(day, dayTimeSlots)
+    getEditableTimeSlots(day, dayTimeSlots, dateTimeSlots)
   );
 
   // Derived data
   const editableDays = dates.filter((day) =>
-    getEditableTimeSlots(day, dayTimeSlots).length > 0
+    getEditableTimeSlots(day, dayTimeSlots, dateTimeSlots).length > 0
   );
 
   const getTimeSlotsForDay = (day) => {
+    if (dateTimeSlots?.[day]?.length) {
+      return dateTimeSlots[day];
+    }
     const weekday = moment(day).format('dddd');
     return dayTimeSlots?.[weekday] || [];
   };
@@ -155,7 +159,7 @@ const Reserve = () => {
         ownerSlug={ownerSlug}
         onReservationChange={refreshAvailability}
         editableDays={editableDays}
-        getEditableTimeSlots={(day) => getEditableTimeSlots(day, dayTimeSlots)}
+        getEditableTimeSlots={(day) => getEditableTimeSlots(day, dayTimeSlots, dateTimeSlots)}
       />
 
       <ReservationModal

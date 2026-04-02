@@ -17,6 +17,7 @@ from src.auth.auth import (
     get_user_calendar_description,
     get_user_calendar_location,
     get_user_bookable_days,
+    get_user_date_time_slots,
     get_user_day_time_slots,
     get_user_max_weeks,
     get_user_time_slots,
@@ -51,6 +52,10 @@ def get_bookable_days(user) -> list[str]:
 
 def get_day_time_slots(user) -> dict[str, list[str]]:
     return get_user_day_time_slots(user)
+
+
+def get_date_time_slots(user) -> dict[str, list[str]]:
+    return get_user_date_time_slots(user)
 
 
 def get_max_weeks(user) -> int:
@@ -110,6 +115,7 @@ async def register_user(
         calendar_created=False,
         time_slots=json.dumps(get_time_slots(None)),
         day_time_slots=json.dumps(get_default_day_time_slots()),
+        date_time_slots=json.dumps(get_date_time_slots(None)),
         bookable_days=json.dumps(get_bookable_days(None) or DEFAULT_BOOKABLE_DAYS),
     )
     db.add(user)
@@ -129,6 +135,7 @@ async def register_user(
         "max_weeks": get_max_weeks(user),
         "time_slots": get_time_slots(user),
         "day_time_slots": get_day_time_slots(user),
+        "date_time_slots": get_date_time_slots(user),
         "bookable_days": get_bookable_days(user),
         "calendar_description": get_calendar_description(user),
         "calendar_location": get_calendar_location(user),
@@ -160,6 +167,7 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
         "max_weeks": get_max_weeks(user),
         "time_slots": get_time_slots(user),
         "day_time_slots": get_day_time_slots(user),
+        "date_time_slots": get_date_time_slots(user),
         "bookable_days": get_bookable_days(user),
         "calendar_description": get_calendar_description(user),
         "calendar_location": get_calendar_location(user),
@@ -180,6 +188,7 @@ async def get_me(user=Depends(manager)):
             "max_weeks": get_max_weeks(user),
             "time_slots": get_time_slots(user),
             "day_time_slots": get_day_time_slots(user),
+            "date_time_slots": get_date_time_slots(user),
             "bookable_days": get_bookable_days(user),
             "calendar_description": get_calendar_description(user),
             "calendar_location": get_calendar_location(user),

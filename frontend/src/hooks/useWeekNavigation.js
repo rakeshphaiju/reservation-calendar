@@ -1,4 +1,3 @@
-// hooks/useWeekNavigation.js
 import { useState, useMemo } from 'react';
 import moment from 'moment';
 
@@ -12,45 +11,59 @@ const WEEKDAY_TO_ISO = {
     Sunday: 7,
 };
 
-export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
+const buildDatesForWeek = (weekStart, bookableDays, dateTimeSlots, maxWeeks) => {
+    const maxDate = moment().add(maxWeeks, 'weeks').endOf('day');
+    const weekEnd = weekStart.clone().endOf('isoWeek');
+    const dates = new Set();
+
+    bookableDays.forEach((day) => {
+        const isoWeekday = WEEKDAY_TO_ISO[day];
+        if (!isoWeekday) return;
+
+        const date = weekStart.clone().isoWeekday(isoWeekday);
+        if (!date.isAfter(maxDate, 'day')) {
+            dates.add(date.format('YYYY-MM-DD'));
+        }
+    });
+
+    Object.keys(dateTimeSlots || {}).forEach((dateKey) => {
+        const date = moment(dateKey, 'YYYY-MM-DD', true);
+        if (!date.isValid()) return;
+        if (date.isBetween(weekStart, weekEnd, 'day', '[]') && !date.isAfter(maxDate, 'day')) {
+            dates.add(dateKey);
+        }
+    });
+
+    return Array.from(dates).sort((left, right) => moment(left).valueOf() - moment(right).valueOf());
+};
+
+export const useWeekNavigation = (bookableDays, maxWeeks = 4, dateTimeSlots = {}) => {
     const [startDate, setStartDate] = useState(moment().startOf('isoWeek'));
 
-    const getUpcomingDates = useMemo(() => {
-        return () => bookableDays.map((day) =>
-            startDate.clone().isoWeekday(WEEKDAY_TO_ISO[day]).format('YYYY-MM-DD')
-        );
-    }, [startDate, bookableDays]);
+    const dates = useMemo(
+        () => buildDatesForWeek(startDate, bookableDays, dateTimeSlots, maxWeeks),
+        [startDate, bookableDays, dateTimeSlots, maxWeeks]
+    );
 
-    const dates = useMemo(() => getUpcomingDates(), [getUpcomingDates]);
-
-    // Check if previous week button should be disabled
     const isPreviousWeekDisabled = useMemo(() => {
-        const prevMonday = startDate.clone().subtract(1, 'week').isoWeekday(1);
-        const prevLastBookableDay = prevMonday.clone().isoWeekday(
-            Math.max(...bookableDays.map((day) => WEEKDAY_TO_ISO[day]))
-        );
-        return prevLastBookableDay.isSameOrBefore(moment(), 'day');
-    }, [startDate, bookableDays]);
+        const prevWeekStart = startDate.clone().subtract(1, 'week').startOf('isoWeek');
+        const prevWeekDates = buildDatesForWeek(prevWeekStart, bookableDays, dateTimeSlots, maxWeeks);
+        return !prevWeekDates.some((day) => moment(day, 'YYYY-MM-DD').isAfter(moment(), 'day'));
+    }, [startDate, bookableDays, dateTimeSlots, maxWeeks]);
 
-    // Check if Today button should be disabled
     const isTodayDisabled = useMemo(() => {
         return startDate.isSame(moment().startOf('isoWeek'), 'day');
     }, [startDate]);
 
-    // Check if next week button should be disabled
     const isNextWeekDisabled = useMemo(() => {
-        const maxDate = moment().add(maxWeeks, 'weeks');
-        const nextMonday = startDate.clone().add(1, 'week').isoWeekday(1);
-        const nextFirstBookableDay = nextMonday.clone().isoWeekday(
-            Math.min(...bookableDays.map((day) => WEEKDAY_TO_ISO[day]))
-        );
-        return nextFirstBookableDay.isAfter(maxDate, 'day');
-    }, [startDate, bookableDays, maxWeeks]);
+        const nextWeekStart = startDate.clone().add(1, 'week').startOf('isoWeek');
+        const nextWeekDates = buildDatesForWeek(nextWeekStart, bookableDays, dateTimeSlots, maxWeeks);
+        return nextWeekDates.length === 0;
+    }, [startDate, bookableDays, dateTimeSlots, maxWeeks]);
 
     const handlePreviousWeek = () => {
         if (isPreviousWeekDisabled) return;
-        const prevMonday = startDate.clone().subtract(1, 'week').isoWeekday(1);
-        setStartDate(prevMonday);
+        setStartDate((current) => current.clone().subtract(1, 'week').startOf('isoWeek'));
     };
 
     const handleToday = () => {
@@ -59,8 +72,7 @@ export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
 
     const handleNextWeek = () => {
         if (isNextWeekDisabled) return;
-        const nextMonday = startDate.clone().add(1, 'week').isoWeekday(1);
-        setStartDate(nextMonday);
+        setStartDate((current) => current.clone().add(1, 'week').startOf('isoWeek'));
     };
 
     const isPastOrToday = (day, time) => {
@@ -69,9 +81,11 @@ export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
         return slotStart.isSameOrBefore(moment());
     };
 
-    const getEditableTimeSlots = (day, dayTimeSlots) => {
+    const getEditableTimeSlots = (day, dayTimeSlots, exactDateTimeSlots = {}) => {
         const weekday = moment(day).format('dddd');
-        const timeSlots = dayTimeSlots?.[weekday] || [];
+        const timeSlots = exactDateTimeSlots?.[day]?.length
+            ? exactDateTimeSlots[day]
+            : (dayTimeSlots?.[weekday] || []);
         return timeSlots.filter((time) => !isPastOrToday(day, time));
     };
 

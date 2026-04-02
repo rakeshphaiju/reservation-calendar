@@ -116,6 +116,7 @@ class CalendarAvailabilityResponse(BaseModel):
     max_weeks: int
     time_slots: List[str]
     day_time_slots: dict[str, List[str]]
+    date_time_slots: dict[str, List[str]]
     bookable_days: List[str]
     calendar_description: str | None = None
     calendar_location: str | None = None
@@ -147,6 +148,7 @@ class TimeSlotsUpdate(BaseModel):
     day_time_slots: dict[str, List[str]] | None = Field(
         default=None, min_length=1, max_length=7
     )
+    date_time_slots: dict[str, List[str]] | None = Field(default=None, max_length=365)
 
     @classmethod
     def _normalize_slots(cls, value: List[str]) -> List[str]:
@@ -197,9 +199,32 @@ class TimeSlotsUpdate(BaseModel):
 
         return normalized
 
+    @field_validator("date_time_slots")
+    @classmethod
+    def validate_date_time_slots(
+        cls, value: dict[str, List[str]] | None
+    ) -> dict[str, List[str]] | None:
+        if value is None:
+            return None
+
+        normalized: dict[str, List[str]] = {}
+        for date_key, slots in value.items():
+            trimmed_date = date_key.strip()
+            try:
+                datetime.strptime(trimmed_date, "%Y-%m-%d")
+            except ValueError as exc:
+                raise ValueError(
+                    "Each specific date must be a valid date in YYYY-MM-DD format"
+                ) from exc
+            normalized[trimmed_date] = cls._normalize_slots(slots)
+
+        return dict(sorted(normalized.items()))
+
     @model_validator(mode="after")
     def validate_payload(self):
         if self.day_time_slots:
+            return self
+        if self.date_time_slots:
             return self
         if self.time_slots:
             self.day_time_slots = {
@@ -211,9 +236,12 @@ class TimeSlotsUpdate(BaseModel):
     def get_day_time_slots(self) -> dict[str, List[str]]:
         return self.day_time_slots or {}
 
+    def get_date_time_slots(self) -> dict[str, List[str]]:
+        return self.date_time_slots or {}
+
 
 class BookableDaysUpdate(BaseModel):
-    bookable_days: List[str] = Field(..., min_length=1, max_length=7)
+    bookable_days: List[str] = Field(..., max_length=7)
 
     @field_validator("bookable_days")
     @classmethod
@@ -229,9 +257,6 @@ class BookableDaysUpdate(BaseModel):
                 continue
             seen.add(trimmed)
             normalized.append(trimmed)
-
-        if not normalized:
-            raise ValueError("At least one bookable day is required")
 
         return normalized
 

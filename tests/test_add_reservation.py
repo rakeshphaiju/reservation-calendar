@@ -314,3 +314,68 @@ class TestAddReservationApi(BaseApiTest):
 
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("09:00-10:00", resp.json()["time"])
+
+    async def test_add_reservation_allows_specific_date_outside_bookable_weekdays(self):
+        specific_date_payload = {
+            **RESERVATION_PAYLOAD,
+            "day": "2026-04-04",
+            "time": "14:00-15:00",
+        }
+
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = make_mock_user(
+            day_time_slots=json.dumps(
+                {
+                    "Monday": ["17:00-18:00"],
+                    "Tuesday": ["17:00-18:00"],
+                    "Wednesday": ["17:00-18:00"],
+                    "Thursday": ["17:00-18:00"],
+                    "Friday": ["17:00-18:00"],
+                    "Saturday": ["17:00-18:00"],
+                    "Sunday": ["17:00-18:00"],
+                }
+            ),
+            date_time_slots=json.dumps({"2026-04-04": ["14:00-15:00"]}),
+            bookable_days=json.dumps(
+                ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+            ),
+        )
+
+        mock_existing_email = MagicMock()
+        mock_existing_email.scalars.return_value.first.return_value = None
+
+        mock_lock_result = MagicMock()
+
+        mock_slot_reservations = MagicMock()
+        mock_slot_reservations.scalar_one.return_value = 0
+
+        mock_db = AsyncMock()
+        mock_db.execute.side_effect = [
+            mock_user_result,
+            mock_lock_result,
+            mock_existing_email,
+            mock_slot_reservations,
+        ]
+        mock_db.add = MagicMock()
+        mock_db.refresh.side_effect = lambda obj: setattr(
+            obj, "id", "3fe6fd7c-1c87-11f1-941d-325096b39f47"
+        )
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        with (
+            patch(
+                "src.api.reservations.reservations_api.send_confirmation_email_task.delay"
+            ),
+            patch(
+                "src.api.reservations.reservations_api.send_admin_notification_task.delay"
+            ),
+        ):
+            resp = await self.client.post(
+                "/api/calendars/mock-user/reservations/add",
+                json=specific_date_payload,
+            )
+
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual("2026-04-04", resp.json()["day"])
+        self.assertEqual("14:00-15:00", resp.json()["time"])

@@ -137,6 +137,7 @@ class TestDashboardApi(BaseApiTest):
                         "17:00-18:00",
                     ],
                 },
+                "date_time_slots": {},
             },
             resp.json(),
         )
@@ -161,13 +162,19 @@ class TestDashboardApi(BaseApiTest):
                     "Friday": ["09:00-10:00", "10:00-11:00"],
                     "Saturday": ["11:00-12:00"],
                     "Sunday": ["11:00-12:00"],
-                }
+                },
+                "date_time_slots": {"2026-04-04": ["14:00-15:00"]},
             },
         )
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual(
             {
-                "time_slots": ["09:00-10:00", "10:00-11:00", "11:00-12:00"],
+                "time_slots": [
+                    "09:00-10:00",
+                    "10:00-11:00",
+                    "11:00-12:00",
+                    "14:00-15:00",
+                ],
                 "day_time_slots": {
                     "Monday": ["09:00-10:00", "10:00-11:00"],
                     "Tuesday": ["09:00-10:00", "10:00-11:00"],
@@ -177,6 +184,7 @@ class TestDashboardApi(BaseApiTest):
                     "Saturday": ["11:00-12:00"],
                     "Sunday": ["11:00-12:00"],
                 },
+                "date_time_slots": {"2026-04-04": ["14:00-15:00"]},
             },
             resp.json(),
         )
@@ -209,6 +217,26 @@ class TestDashboardApi(BaseApiTest):
             {"bookable_days": ["Monday", "Wednesday", "Saturday"]},
             resp.json(),
         )
+        mock_db.commit.assert_awaited_once()
+        mock_db.refresh.assert_awaited_once()
+
+    async def test_update_bookable_days_allows_empty_list(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = make_mock_user(
+            bookable_days="[]"
+        )
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.put(
+            "/api/dashboard/bookable-days",
+            json={"bookable_days": []},
+        )
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual({"bookable_days": []}, resp.json())
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once()
 

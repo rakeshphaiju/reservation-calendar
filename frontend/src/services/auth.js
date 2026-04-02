@@ -20,6 +20,7 @@ const normalizeUser = (data, fallbackUsername = '') => ({
   max_weeks: data.max_weeks,
   time_slots: data.time_slots,
   day_time_slots: data.day_time_slots,
+  date_time_slots: data.date_time_slots,
   bookable_days: data.bookable_days,
   calendar_description: data.calendar_description,
   calendar_location: data.calendar_location,

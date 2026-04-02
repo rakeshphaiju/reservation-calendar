@@ -4,6 +4,7 @@ import json
 import os
 import re
 import secrets
+from datetime import datetime
 from http import HTTPStatus as hs
 
 from fastapi import Depends, HTTPException
@@ -66,6 +67,7 @@ class User(BaseModel):
     day_time_slots: dict[str, list[str]] = Field(
         default_factory=get_default_day_time_slots
     )
+    date_time_slots: dict[str, list[str]] = Field(default_factory=dict)
     bookable_days: list[str] = DEFAULT_BOOKABLE_DAYS.copy()
     calendar_description: str | None = None
     calendar_location: str | None = None
@@ -132,13 +134,49 @@ def get_user_day_time_slots(user) -> dict[str, list[str]]:
     return {day: legacy_slots.copy() for day in ALL_BOOKABLE_DAYS}
 
 
+def get_user_date_time_slots(user) -> dict[str, list[str]]:
+    raw_date_slots = getattr(user, "date_time_slots", None)
+    parsed_date_slots = raw_date_slots
+
+    if isinstance(raw_date_slots, str):
+        try:
+            parsed_date_slots = json.loads(raw_date_slots)
+        except json.JSONDecodeError:
+            parsed_date_slots = None
+
+    if not isinstance(parsed_date_slots, dict):
+        return {}
+
+    normalized: dict[str, list[str]] = {}
+    for date_key, slots in parsed_date_slots.items():
+        trimmed_date = str(date_key).strip()
+        try:
+            datetime.strptime(trimmed_date, "%Y-%m-%d")
+        except ValueError:
+            continue
+
+        normalized_slots = _normalize_time_slots(slots)
+        if normalized_slots:
+            normalized[trimmed_date] = normalized_slots
+
+    return dict(sorted(normalized.items()))
+
+
 def get_user_time_slots(user) -> list[str]:
     day_time_slots = get_user_day_time_slots(user)
+    date_time_slots = get_user_date_time_slots(user)
     unique_slots: list[str] = []
     seen = set()
 
     for day in ALL_BOOKABLE_DAYS:
         for slot in day_time_slots.get(day, []):
+            if slot in seen:
+                continue
+            seen.add(slot)
+            unique_slots.append(slot)
+
+    for date_key in sorted(date_time_slots):
+        for slot in date_time_slots.get(date_key, []):
             if slot in seen:
                 continue
             seen.add(slot)
@@ -151,21 +189,24 @@ def get_user_time_slots_for_day(user, weekday: str) -> list[str]:
     return get_user_day_time_slots(user).get(weekday, []).copy()
 
 
+def get_user_time_slots_for_date(user, day: str) -> list[str]:
+    date_time_slots = get_user_date_time_slots(user)
+    if day in date_time_slots:
+        return date_time_slots[day].copy()
+
+    weekday = datetime.strptime(day, "%Y-%m-%d").strftime("%A")
+    return get_user_time_slots_for_day(user, weekday)
+
+
 def get_user_bookable_days(user) -> list[str]:
     raw_days = getattr(user, "bookable_days", None)
-    if isinstance(raw_days, list) and raw_days:
-        normalized = [str(day) for day in raw_days if str(day) in ALL_BOOKABLE_DAYS]
-        if normalized:
-            return normalized
+    if isinstance(raw_days, list):
+        return [str(day) for day in raw_days if str(day) in ALL_BOOKABLE_DAYS]
     if isinstance(raw_days, str):
         try:
             parsed = json.loads(raw_days)
-            if isinstance(parsed, list) and parsed:
-                normalized = [
-                    str(day) for day in parsed if str(day) in ALL_BOOKABLE_DAYS
-                ]
-                if normalized:
-                    return normalized
+            if isinstance(parsed, list):
+                return [str(day) for day in parsed if str(day) in ALL_BOOKABLE_DAYS]
         except json.JSONDecodeError:
             pass
     return DEFAULT_BOOKABLE_DAYS.copy()
@@ -240,6 +281,7 @@ async def load_user(username: str) -> User | None:
             max_weeks=get_user_max_weeks(user),
             time_slots=get_user_time_slots(user),
             day_time_slots=get_user_day_time_slots(user),
+            date_time_slots=get_user_date_time_slots(user),
             bookable_days=get_user_bookable_days(user),
             calendar_description=get_user_calendar_description(user),
             calendar_location=get_user_calendar_location(user),

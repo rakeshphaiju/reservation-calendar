@@ -38,6 +38,14 @@ const normalizeDayTimeSlots = (dayTimeSlots, fallbackTimeSlots = DEFAULT_TIME_SL
     return acc;
   }, {});
 
+const normalizeSpecificDateSlots = (dateTimeSlots = {}) =>
+  Object.entries(dateTimeSlots)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, slots]) => ({
+      date,
+      slotsText: (slots || []).join('\n'),
+    }));
+
 
 const Dashboard = () => {
   const [reservations, setReservations] = useState([]);
@@ -47,6 +55,7 @@ const Dashboard = () => {
   const [dayTimeSlotsText, setDayTimeSlotsText] = useState(
     BOOKABLE_DAY_OPTIONS.reduce((acc, day) => ({ ...acc, [day]: DEFAULT_TIME_SLOTS.join('\n') }), {})
   );
+  const [specificDateSlots, setSpecificDateSlots] = useState([]);
   const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
   const [calendarDescription, setCalendarDescription] = useState('');
   const [calendarLocation, setCalendarLocation] = useState('');
@@ -112,8 +121,9 @@ const Dashboard = () => {
           [day]: normalizedDayTimeSlots[day].join('\n'),
         }), {})
       );
+      setSpecificDateSlots(normalizeSpecificDateSlots(timeSlotsResponse.date_time_slots));
       setBookableDays(
-        bookableDaysResponse.bookable_days?.length
+        Array.isArray(bookableDaysResponse.bookable_days)
           ? bookableDaysResponse.bookable_days
           : DEFAULT_BOOKABLE_DAYS
       );
@@ -218,19 +228,60 @@ const Dashboard = () => {
         .filter(Boolean);
       return acc;
     }, {});
+    const nextDateTimeSlots = {};
 
     const invalidDay = bookableDays.find((day) => !nextDayTimeSlots[day]?.length);
     if (invalidDay) {
       setFieldFeedback('timeSlots', 'error', `Add at least one time slot for ${invalidDay} before saving.`);
       return;
     }
+
+    for (const entry of specificDateSlots) {
+      const date = (entry.date || '').trim();
+      const slots = (entry.slotsText || '')
+        .split('\n')
+        .map((slot) => slot.trim().replace(/\s+/g, ''))
+        .filter(Boolean);
+
+      if (!date && !slots.length) {
+        continue;
+      }
+
+      if (!date) {
+        setFieldFeedback('timeSlots', 'error', 'Choose a date for each specific-date schedule before saving.');
+        return;
+      }
+
+      if (!slots.length) {
+        setFieldFeedback('timeSlots', 'error', `Add at least one time slot for ${date} before saving.`);
+        return;
+      }
+
+      if (nextDateTimeSlots[date]) {
+        setFieldFeedback('timeSlots', 'error', `Only one specific-date schedule is allowed for ${date}.`);
+        return;
+      }
+
+      nextDateTimeSlots[date] = slots;
+    }
+    const hasSpecificDateSlots = Object.keys(nextDateTimeSlots).length > 0;
+
+    if (!bookableDays.length && !hasSpecificDateSlots) {
+      setFieldFeedback('timeSlots', 'error', 'Add at least one specific date or enable a bookable weekday before saving.');
+      return;
+    }
+
     try {
       setSavingTimeSlots(true);
-      const response = await reservationService.updateTimeSlots(nextDayTimeSlots);
+      const response = await reservationService.updateTimeSlots({
+        day_time_slots: nextDayTimeSlots,
+        date_time_slots: nextDateTimeSlots,
+      });
       authService.setUser({
         ...currentUser,
         time_slots: response.time_slots,
         day_time_slots: response.day_time_slots,
+        date_time_slots: response.date_time_slots,
       });
       setDayTimeSlotsText(
         BOOKABLE_DAY_OPTIONS.reduce((acc, day) => ({
@@ -238,6 +289,7 @@ const Dashboard = () => {
           [day]: (response.day_time_slots?.[day] || DEFAULT_DAY_TIME_SLOTS[day]).join('\n'),
         }), {})
       );
+      setSpecificDateSlots(normalizeSpecificDateSlots(response.date_time_slots));
       setFieldFeedback('timeSlots', 'success', 'Time slots updated successfully.');
     } catch (error) {
       setFieldFeedback(
@@ -266,9 +318,33 @@ const Dashboard = () => {
   };
 
 
+  const handleSpecificDateChange = (index, field, value) => {
+    setSpecificDateSlots((current) => current.map((entry, entryIndex) => (
+      entryIndex === index ? { ...entry, [field]: value } : entry
+    )));
+    clearFieldFeedback('timeSlots');
+  };
+
+
+  const handleAddSpecificDate = () => {
+    setSpecificDateSlots((current) => [...current, { date: '', slotsText: '' }]);
+    clearFieldFeedback('timeSlots');
+  };
+
+
+  const handleRemoveSpecificDate = (index) => {
+    setSpecificDateSlots((current) => current.filter((_, entryIndex) => entryIndex !== index));
+    clearFieldFeedback('timeSlots');
+  };
+
+
   const handleBookableDaysSave = async () => {
-    if (!bookableDays.length) {
-      setFieldFeedback('bookableDays', 'error', 'Choose at least one bookable day before saving.');
+    const hasSpecificDateSlots = specificDateSlots.some(
+      (entry) => (entry.date || '').trim() && (entry.slotsText || '').trim()
+    );
+
+    if (!bookableDays.length && !hasSpecificDateSlots) {
+      setFieldFeedback('bookableDays', 'error', 'Choose a weekday or add at least one specific date before saving.');
       return;
     }
     try {
@@ -441,6 +517,10 @@ const Dashboard = () => {
             <TimeSlotsSettings
               bookableDays={bookableDays}
               dayTimeSlotsText={dayTimeSlotsText}
+              specificDateSlots={specificDateSlots}
+              onSpecificDateChange={handleSpecificDateChange}
+              onAddSpecificDate={handleAddSpecificDate}
+              onRemoveSpecificDate={handleRemoveSpecificDate}
               onChange={(day, value) => {
                 setDayTimeSlotsText((current) => ({ ...current, [day]: value }));
                 clearFieldFeedback('timeSlots');

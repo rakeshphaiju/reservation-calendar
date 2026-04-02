@@ -47,5 +47,6 @@ def make_mock_user(**kwargs):
         calendar_created=True,
         calendar_description=None,
         calendar_location=None,
+        date_time_slots=json.dumps({}),
     )
     return AppUser(**{**defaults, **kwargs})

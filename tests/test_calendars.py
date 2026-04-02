@@ -55,6 +55,7 @@ class TestCalendarsApi(BaseApiTest):
             calendar_slug="mock-user",
             calendar_created=True,
             time_slots=json.dumps(["16:00-16:30", "11:00-11:30"]),
+            date_time_slots=json.dumps({"2026-04-04": ["18:00-19:00"]}),
             bookable_days=json.dumps(["Monday", "Tuesday"]),
             calendar_description="Please arrive five minutes early.",
             calendar_location="Studio B",
@@ -88,6 +89,10 @@ class TestCalendarsApi(BaseApiTest):
                 "Sunday": ["16:00-16:30", "11:00-11:30"],
             },
             resp.json()["day_time_slots"],
+        )
+        self.assertEqual(
+            {"2026-04-04": ["18:00-19:00"]},
+            resp.json()["date_time_slots"],
         )
         self.assertEqual(["Monday", "Tuesday"], resp.json()["bookable_days"])
         self.assertEqual(

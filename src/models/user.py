@@ -22,6 +22,7 @@ class AppUser(Base):
     max_weeks = Column(Integer, nullable=False, default=4, server_default="4")
     time_slots = Column(Text, nullable=False, default="[]", server_default="[]")
     day_time_slots = Column(Text, nullable=False, default="{}", server_default="{}")
+    date_time_slots = Column(Text, nullable=False, default="{}", server_default="{}")
     bookable_days = Column(Text, nullable=False, default="[]", server_default="[]")
     calendar_description = Column(Text, nullable=True)
     calendar_location = Column(String, nullable=True)

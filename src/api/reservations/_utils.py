@@ -13,9 +13,11 @@ from src.auth.auth import (
     get_user_calendar_description,
     get_user_calendar_location,
     get_user_bookable_days,
+    get_user_date_time_slots,
     get_user_day_time_slots,
     get_user_max_weeks,
     get_user_time_slots,
+    get_user_time_slots_for_date,
     get_user_time_slots_for_day,
 )
 from src.models.reservation import Reservation
@@ -45,8 +47,16 @@ def get_owner_day_time_slots(owner: AppUser) -> dict[str, list[str]]:
     return get_user_day_time_slots(owner)
 
 
+def get_owner_date_time_slots(owner: AppUser) -> dict[str, list[str]]:
+    return get_user_date_time_slots(owner)
+
+
 def get_owner_time_slots_for_day(owner: AppUser, weekday: str) -> list[str]:
     return get_user_time_slots_for_day(owner, weekday)
+
+
+def get_owner_time_slots_for_date(owner: AppUser, day: str) -> list[str]:
+    return get_user_time_slots_for_date(owner, day)
 
 
 def get_owner_bookable_days(owner: AppUser) -> list[str]:
@@ -115,9 +125,11 @@ async def ensure_reservation_slot_available(
 ):
     reservation_weekday = datetime.strptime(reservation.day, "%Y-%m-%d").strftime("%A")
     allowed_bookable_days = set(get_owner_bookable_days(owner))
-    allowed_time_slots = set(get_owner_time_slots_for_day(owner, reservation_weekday))
+    date_time_slots = get_owner_date_time_slots(owner)
+    has_date_override = reservation.day in date_time_slots
+    allowed_time_slots = set(get_owner_time_slots_for_date(owner, reservation.day))
 
-    if reservation_weekday not in allowed_bookable_days:
+    if not has_date_override and reservation_weekday not in allowed_bookable_days:
         raise HTTPException(
             status_code=hs.HTTPStatus.BAD_REQUEST,
             detail="This day is not available for this calendar",

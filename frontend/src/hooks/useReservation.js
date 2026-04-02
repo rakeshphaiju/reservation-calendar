@@ -32,12 +32,20 @@ const getNormalizedDayTimeSlots = (dayTimeSlots, fallbackTimeSlots = DEFAULT_TIM
         return acc;
     }, {});
 
-const getMergedTimeSlots = (dayTimeSlots) => {
+const getMergedTimeSlots = (dayTimeSlots, dateTimeSlots = {}) => {
     const merged = [];
     const seen = new Set();
 
     WEEKDAY_OPTIONS.forEach((day) => {
         (dayTimeSlots?.[day] || []).forEach((slot) => {
+            if (seen.has(slot)) return;
+            seen.add(slot);
+            merged.push(slot);
+        });
+    });
+
+    Object.keys(dateTimeSlots).sort().forEach((day) => {
+        (dateTimeSlots?.[day] || []).forEach((slot) => {
             if (seen.has(slot)) return;
             seen.add(slot);
             merged.push(slot);
@@ -54,6 +62,7 @@ export const useReservation = (ownerSlug) => {
     const [maxWeeks, setMaxWeeks] = useState(4);
     const [timeSlots, setTimeSlots] = useState(DEFAULT_TIME_SLOTS);
     const [dayTimeSlots, setDayTimeSlots] = useState(DEFAULT_DAY_TIME_SLOTS);
+    const [dateTimeSlots, setDateTimeSlots] = useState({});
     const [bookableDays, setBookableDays] = useState(DEFAULT_BOOKABLE_DAYS);
     const [calendarExists, setCalendarExists] = useState(true);
     const [calendarDescription, setCalendarDescription] = useState(null);
@@ -68,12 +77,15 @@ export const useReservation = (ownerSlug) => {
                 const nextCapacity = availability.slot_capacity ?? 5;
                 const nextMaxWeeks = availability.max_weeks ?? 4;
                 const fallbackTimeSlots = availability.time_slots?.length ? availability.time_slots : DEFAULT_TIME_SLOTS;
+                const nextDateTimeSlots = availability.date_time_slots || {};
                 const nextDayTimeSlots = getNormalizedDayTimeSlots(
                     availability.day_time_slots,
                     fallbackTimeSlots
                 );
-                const nextTimeSlots = getMergedTimeSlots(nextDayTimeSlots);
-                const nextBookableDays = availability.bookable_days?.length ? availability.bookable_days : DEFAULT_BOOKABLE_DAYS;
+                const nextTimeSlots = getMergedTimeSlots(nextDayTimeSlots, nextDateTimeSlots);
+                const nextBookableDays = Array.isArray(availability.bookable_days)
+                    ? availability.bookable_days
+                    : DEFAULT_BOOKABLE_DAYS;
 
                 availability.slots.forEach(({ day, time, count }) => {
                     if (!counts[day]) counts[day] = {};
@@ -85,6 +97,7 @@ export const useReservation = (ownerSlug) => {
                 setMaxWeeks(nextMaxWeeks);
                 setTimeSlots(nextTimeSlots);
                 setDayTimeSlots(nextDayTimeSlots);
+                setDateTimeSlots(nextDateTimeSlots);
                 setBookableDays(nextBookableDays);
                 setCalendarDescription(availability.calendar_description ?? null);
                 setCalendarLocation(availability.calendar_location ?? null);
@@ -99,6 +112,7 @@ export const useReservation = (ownerSlug) => {
                     setMaxWeeks(4);
                     setTimeSlots(DEFAULT_TIME_SLOTS);
                     setDayTimeSlots(DEFAULT_DAY_TIME_SLOTS);
+                    setDateTimeSlots({});
                     setBookableDays(DEFAULT_BOOKABLE_DAYS);
                     setCalendarDescription(null);
                     setCalendarLocation(null);
@@ -133,6 +147,7 @@ export const useReservation = (ownerSlug) => {
         maxWeeks,
         timeSlots,
         dayTimeSlots,
+        dateTimeSlots,
         bookableDays,
         calendarDescription,
         calendarLocation,

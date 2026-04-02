@@ -15,7 +15,7 @@ export default function BookableDaysSettings({ bookableDays, onToggle, onSave, s
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <label className="block text-sm font-semibold text-slate-800">Bookable days</label>
             <p className="mt-1 text-sm text-slate-500">
-                Choose which weekdays appear on this calendar.
+                Choose which weekdays appear on this calendar. You can leave all weekdays off if you only want to open specific dates.
             </p>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {BOOKABLE_DAY_OPTIONS.map((day) => {

@@ -6,10 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.auth import (
-    DEFAULT_BOOKABLE_DAYS,
     DEFAULT_TIME_SLOTS,
     ALL_BOOKABLE_DAYS,
-    get_default_day_time_slots,
     manager,
 )
 from src.common.db import get_db
@@ -26,6 +24,7 @@ from src.api.reservations._utils import (
     get_owner_calendar_description,
     get_owner_calendar_location,
     get_owner_bookable_days,
+    get_owner_date_time_slots,
     get_owner_day_time_slots,
     get_owner_max_weeks,
     get_owner_slot_capacity,
@@ -106,6 +105,7 @@ async def get_time_slots(user=Depends(manager)):
     return {
         "time_slots": get_owner_time_slots(user),
         "day_time_slots": get_owner_day_time_slots(user),
+        "date_time_slots": get_owner_date_time_slots(user),
     }
 
 
@@ -117,12 +117,26 @@ async def update_time_slots(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        day_time_slots = payload.get_day_time_slots() or get_default_day_time_slots()
+        day_time_slots = payload.get_day_time_slots() or get_owner_day_time_slots(
+            db_user
+        )
+        date_time_slots = (
+            payload.get_date_time_slots()
+            if payload.date_time_slots is not None
+            else get_owner_date_time_slots(db_user)
+        )
         db_user.day_time_slots = json.dumps(day_time_slots)
+        db_user.date_time_slots = json.dumps(date_time_slots)
         merged_time_slots: list[str] = []
         seen = set()
         for day in ALL_BOOKABLE_DAYS:
             for slot in day_time_slots.get(day, []):
+                if slot in seen:
+                    continue
+                seen.add(slot)
+                merged_time_slots.append(slot)
+        for date_key in sorted(date_time_slots):
+            for slot in date_time_slots.get(date_key, []):
                 if slot in seen:
                     continue
                 seen.add(slot)
@@ -133,6 +147,7 @@ async def update_time_slots(
         return {
             "time_slots": get_owner_time_slots(db_user),
             "day_time_slots": get_owner_day_time_slots(db_user),
+            "date_time_slots": get_owner_date_time_slots(db_user),
         }
     except HTTPException:
         raise
@@ -158,9 +173,7 @@ async def update_bookable_days(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        db_user.bookable_days = json.dumps(
-            payload.bookable_days or DEFAULT_BOOKABLE_DAYS
-        )
+        db_user.bookable_days = json.dumps(payload.bookable_days)
         await db.commit()
         await db.refresh(db_user)
         return {"bookable_days": get_owner_bookable_days(db_user)}
