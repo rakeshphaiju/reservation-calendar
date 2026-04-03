@@ -27,6 +27,7 @@ celery = {extras = ["redis"], version = "^5.5.3"}
 python-dateutil = "^2.9.0.post0"
 resend = "^2.26.0"
 pytest-cov = "^7.1.0"
+flower = "^2.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.2"

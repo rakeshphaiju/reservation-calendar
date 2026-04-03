@@ -84,6 +84,23 @@ services:
       redis:
         condition: service_started
 
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A src.tasks.celery_app.celery_app flower
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
+      FLOWER_BASIC_AUTH: ${FLOWER_USER}:${FLOWER_PASSWORD}
+    ports:
+      - "${FLOWER_PORT}:5555"
+    depends_on:
+      - redis
+      - background_task_worker
+
   nginx:
      image: nginx:alpine
      restart: unless-stopped
