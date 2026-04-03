@@ -22,10 +22,10 @@ export default function Home() {
                     Booking Nest
                 </h1>
                 <p className="mt-4 text-xl font-bold text-slate-800 tracking-tight sm:text-xl">
-                    &ldquo;Create your own booking page.&rdquo;
+                    &ldquo;Create your own scheduling calendar.&rdquo;
                 </p>
                 <p className="mt-4 text-lg text-slate-600 max-w-2xl mx-auto">
-                    Manage a separate reservation calendar and share a unique booking link.
+                    Manage a separate scheduling calendar and share a unique scheduling link.
                 </p>
                 <div className="mt-10 flex flex-wrap justify-center gap-4">
                     {currentUser ? (
@@ -50,7 +50,7 @@ export default function Home() {
                             to="/login"
                             className="inline-flex items-center rounded-xl bg-slate-800 px-6 py-3 text-base font-semibold text-white shadow-sm hover:bg-slate-700 transition-colors"
                         >
-                            Get your free booking page
+                            Get your free scheduling calendar
                         </Link>
                     )}
                 </div>
