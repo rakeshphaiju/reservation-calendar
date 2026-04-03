@@ -5,6 +5,7 @@ import moment from 'moment';
 import Button from '../components/form/Button';
 import ReservationModal from '../components/ReservationModal';
 import PoweredByFooter from '../components/PoweredByFooter';
+import CalendarNotFound from '../components/CalendarNotFound';
 import { CalendarTable } from '../components/reservations/CalendarTable';
 import { MobileCalendarView } from '../components/reservations/MobileCalendarView';
 import { ReservationManager } from '../components/reservations/ReservationManager';
@@ -84,9 +85,7 @@ const Reserve = () => {
 
   if (!calendarExists) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-10 text-center text-amber-800">
-        This reservation calendar is not available yet.
-      </div>
+      <CalendarNotFound ownerSlug={ownerSlug} />
     );
   }
 

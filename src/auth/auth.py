@@ -263,10 +263,10 @@ async def authenticate_user(
 
     user_record = result.scalars().first()
     if not user_record or not verify_password(password, user_record.password_hash):
-        logger.warning("Invalid login attempt for user '%s'", username)
+        logger.warning("Invalid login attempt for user '%s'", login_input)
         raise HTTPException(
             status_code=hs.UNAUTHORIZED,
-            detail="Invalid username or password",
+            detail="Invalid username/email or password",
         )
 
     return User(
