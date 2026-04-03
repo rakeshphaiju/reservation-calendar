@@ -27,7 +27,7 @@ from src.auth.auth import (
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
-from src.models.user import AppUser
+from src.models.user import AppUser, UserCalendar
 from src.schemas.user import UserRegistrationRequest
 
 
@@ -106,6 +106,8 @@ async def register_user(
         email=payload.email,
         fullname=payload.fullname,
         password_hash=hash_password(payload.password),
+    )
+    user.calendar = UserCalendar(
         calendar_slug=calendar_slug,
         calendar_created=False,
         time_slots=json.dumps(get_time_slots(None)),

@@ -6,6 +6,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import text
 
 from src.auth.auth import (
@@ -19,7 +20,7 @@ from src.auth.auth import (
     get_user_time_slots_for_day,
 )
 from src.models.reservation import Reservation
-from src.models.user import AppUser
+from src.models.user import AppUser, UserCalendar
 from src.schemas.reservation import ReservationCreate, ReservationUpdate
 
 DEFAULT_SLOT_CAPACITY = 5
@@ -75,8 +76,12 @@ async def acquire_slot_lock(
 
 async def get_calendar_owner(owner_slug: str, db: AsyncSession) -> AppUser:
     result = await db.execute(
-        select(AppUser).where(
-            AppUser.calendar_slug == owner_slug, AppUser.calendar_created.is_(True)
+        select(AppUser)
+        .join(UserCalendar, AppUser.id == UserCalendar.user_id)
+        .options(joinedload(AppUser.calendar))
+        .where(
+            UserCalendar.calendar_slug == owner_slug,
+            UserCalendar.calendar_created.is_(True),
         )
     )
     owner = result.scalars().first()

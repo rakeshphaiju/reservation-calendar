@@ -1,7 +1,7 @@
-from sqlalchemy import Column, DateTime, String, func
+from sqlalchemy import Column, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
 import uuid
-from datetime import datetime, timezone
 
 from src.common.db import Base
 
@@ -17,8 +17,7 @@ class Reservation(Base):
     time = Column(String, nullable=False)
     reservation_key = Column(String, nullable=True, unique=True, index=True)
     created_at = Column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
-        default=datetime.utcnow,
         server_default=func.now(),
     )

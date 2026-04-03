@@ -12,10 +12,11 @@ from fastapi_login import LoginManager
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from src.common.db import get_db, get_db_context
 from src.common.logger import logger
-from src.models.user import AppUser
+from src.models.user import AppUser, UserCalendar
 
 
 SECRET_KEY = os.getenv("SECRET_KEY", "this-is-a-32-byte-test-secret-key!!")
@@ -214,19 +215,46 @@ async def generate_unique_calendar_slug(
 
     while True:
         result = await db.execute(
-            select(AppUser).where(AppUser.calendar_slug == candidate)
+            select(UserCalendar)
+            .options(joinedload(UserCalendar.user))
+            .where(UserCalendar.calendar_slug == candidate)
         )
-        existing_user = result.scalars().first()
+        existing_calendar = result.scalars().first()
+        existing_user = existing_calendar.user if existing_calendar else None
         if not existing_user or existing_user.username == excluded_username:
             return candidate
         suffix += 1
         candidate = f"{base_slug}-{suffix}"
 
 
+async def ensure_user_calendar(user: AppUser, db: AsyncSession) -> UserCalendar:
+    if user.calendar:
+        return user.calendar
+
+    calendar_slug = await generate_unique_calendar_slug(user.username, db)
+    calendar = UserCalendar(
+        calendar_slug=calendar_slug,
+        calendar_created=False,
+        slot_capacity=5,
+        max_weeks=DEFAULT_MAX_WEEKS,
+        time_slots=json.dumps(DEFAULT_TIME_SLOTS),
+        day_time_slots=json.dumps(get_default_day_time_slots()),
+        bookable_days=json.dumps(DEFAULT_BOOKABLE_DAYS),
+    )
+    user.calendar = calendar
+    db.add(calendar)
+    await db.flush()
+    return calendar
+
+
 @manager.user_loader()
 async def load_user(username: str) -> User | None:
     async with get_db_context() as db:
-        result = await db.execute(select(AppUser).where(AppUser.username == username))
+        result = await db.execute(
+            select(AppUser)
+            .options(joinedload(AppUser.calendar))
+            .where(AppUser.username == username)
+        )
         user = result.scalars().first()
         if not user:
             return None
@@ -255,10 +283,16 @@ async def authenticate_user(
 
     is_email = "@" in login_input
     if is_email:
-        result = await db.execute(select(AppUser).where(AppUser.email == login_input))
+        result = await db.execute(
+            select(AppUser)
+            .options(joinedload(AppUser.calendar))
+            .where(AppUser.email == login_input)
+        )
     else:
         result = await db.execute(
-            select(AppUser).where(AppUser.username == login_input)
+            select(AppUser)
+            .options(joinedload(AppUser.calendar))
+            .where(AppUser.username == login_input)
         )
 
     user_record = result.scalars().first()

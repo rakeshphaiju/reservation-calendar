@@ -4,11 +4,12 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
-from src.models.user import AppUser
+from src.models.user import AppUser, UserCalendar
 from src.schemas.reservation import (
     CalendarAvailabilityResponse,
     CalendarOwnerSummary,
@@ -32,7 +33,9 @@ router = APIRouter()
 async def get_calendar_owners(db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(AppUser)
-        .where(AppUser.calendar_created.is_(True))
+        .join(UserCalendar, AppUser.id == UserCalendar.user_id)
+        .options(joinedload(AppUser.calendar))
+        .where(UserCalendar.calendar_created.is_(True))
         .order_by(AppUser.username.asc())
     )
     users = result.scalars().all()

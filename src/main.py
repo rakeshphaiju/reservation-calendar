@@ -36,6 +36,26 @@ async def ensure_schema_columns():
         await conn.execute(
             text(
                 """
+                CREATE TABLE IF NOT EXISTS user_calendars (
+                    id UUID PRIMARY KEY,
+                    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+                    calendar_slug VARCHAR NOT NULL UNIQUE,
+                    calendar_description TEXT,
+                    calendar_location VARCHAR,
+                    slot_capacity INTEGER NOT NULL DEFAULT 5,
+                    max_weeks INTEGER NOT NULL DEFAULT 4,
+                    time_slots TEXT NOT NULL DEFAULT '[]',
+                    day_time_slots TEXT NOT NULL DEFAULT '{}',
+                    bookable_days TEXT NOT NULL DEFAULT '[]',
+                    calendar_created BOOLEAN NOT NULL DEFAULT TRUE,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
                 ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS email VARCHAR
                 """
@@ -46,70 +66,6 @@ async def ensure_schema_columns():
                 """
                 ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS fullname VARCHAR
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS slot_capacity INTEGER NOT NULL DEFAULT 5
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS calendar_created BOOLEAN NOT NULL DEFAULT TRUE
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS max_weeks INTEGER NOT NULL DEFAULT 4
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS time_slots TEXT NOT NULL DEFAULT '[]'
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS day_time_slots TEXT NOT NULL DEFAULT '{}'
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS bookable_days TEXT NOT NULL DEFAULT '[]'
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS calendar_description TEXT
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS calendar_location VARCHAR
                 """
             )
         )
