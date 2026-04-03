@@ -1,7 +1,8 @@
 import uuid
 
-from sqlalchemy import Boolean, Column, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
+from datetime import datetime, timezone
 
 from src.common.db import Base
 
@@ -25,3 +26,9 @@ class AppUser(Base):
     bookable_days = Column(Text, nullable=False, default="[]", server_default="[]")
     calendar_description = Column(Text, nullable=True)
     calendar_location = Column(String, nullable=True)
+    created_at = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.utcnow,
+        server_default=func.now(),
+    )
