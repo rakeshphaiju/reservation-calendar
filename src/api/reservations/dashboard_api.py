@@ -4,11 +4,13 @@ import http as hs
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from src.auth.auth import (
     DEFAULT_BOOKABLE_DAYS,
     DEFAULT_TIME_SLOTS,
     ALL_BOOKABLE_DAYS,
+    ensure_user_calendar,
     get_default_day_time_slots,
     manager,
 )
@@ -36,12 +38,17 @@ router = APIRouter()
 
 
 async def _get_db_user(username: str, db: AsyncSession) -> AppUser:
-    result = await db.execute(select(AppUser).where(AppUser.username == username))
+    result = await db.execute(
+        select(AppUser)
+        .options(joinedload(AppUser.calendar))
+        .where(AppUser.username == username)
+    )
     db_user = result.scalars().first()
     if not db_user:
         raise HTTPException(
             status_code=hs.HTTPStatus.NOT_FOUND, detail="User not found"
         )
+    await ensure_user_calendar(db_user, db)
     return db_user
 
 
@@ -58,10 +65,10 @@ async def update_slot_capacity(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        db_user.slot_capacity = payload.slot_capacity
+        db_user.calendar.slot_capacity = payload.slot_capacity
         await db.commit()
-        await db.refresh(db_user)
-        return {"slot_capacity": db_user.slot_capacity}
+        await db.refresh(db_user.calendar)
+        return {"slot_capacity": db_user.calendar.slot_capacity}
     except HTTPException:
         raise
     except Exception as exc:
@@ -86,10 +93,10 @@ async def update_max_weeks(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        db_user.max_weeks = payload.max_weeks
+        db_user.calendar.max_weeks = payload.max_weeks
         await db.commit()
-        await db.refresh(db_user)
-        return {"max_weeks": db_user.max_weeks}
+        await db.refresh(db_user.calendar)
+        return {"max_weeks": db_user.calendar.max_weeks}
     except HTTPException:
         raise
     except Exception as exc:
@@ -118,7 +125,7 @@ async def update_time_slots(
     try:
         db_user = await _get_db_user(user.username, db)
         day_time_slots = payload.get_day_time_slots() or get_default_day_time_slots()
-        db_user.day_time_slots = json.dumps(day_time_slots)
+        db_user.calendar.day_time_slots = json.dumps(day_time_slots)
         merged_time_slots: list[str] = []
         seen = set()
         for day in ALL_BOOKABLE_DAYS:
@@ -127,9 +134,11 @@ async def update_time_slots(
                     continue
                 seen.add(slot)
                 merged_time_slots.append(slot)
-        db_user.time_slots = json.dumps(merged_time_slots or DEFAULT_TIME_SLOTS)
+        db_user.calendar.time_slots = json.dumps(
+            merged_time_slots or DEFAULT_TIME_SLOTS
+        )
         await db.commit()
-        await db.refresh(db_user)
+        await db.refresh(db_user.calendar)
         return {
             "time_slots": get_owner_time_slots(db_user),
             "day_time_slots": get_owner_day_time_slots(db_user),
@@ -158,11 +167,11 @@ async def update_bookable_days(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        db_user.bookable_days = json.dumps(
+        db_user.calendar.bookable_days = json.dumps(
             payload.bookable_days or DEFAULT_BOOKABLE_DAYS
         )
         await db.commit()
-        await db.refresh(db_user)
+        await db.refresh(db_user.calendar)
         return {"bookable_days": get_owner_bookable_days(db_user)}
     except HTTPException:
         raise
@@ -191,10 +200,10 @@ async def update_calendar_details(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        db_user.calendar_description = payload.calendar_description
-        db_user.calendar_location = payload.calendar_location
+        db_user.calendar.calendar_description = payload.calendar_description
+        db_user.calendar.calendar_location = payload.calendar_location
         await db.commit()
-        await db.refresh(db_user)
+        await db.refresh(db_user.calendar)
         return {
             "calendar_description": get_owner_calendar_description(db_user),
             "calendar_location": get_owner_calendar_location(db_user),
@@ -217,10 +226,10 @@ async def create_calendar(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        if not db_user.calendar_created:
-            db_user.calendar_created = True
+        if not db_user.calendar.calendar_created:
+            db_user.calendar.calendar_created = True
             await db.commit()
-            await db.refresh(db_user)
+            await db.refresh(db_user.calendar)
             logger.info(
                 "Published calendar '%s' for '%s'",
                 db_user.calendar_slug,
@@ -228,7 +237,7 @@ async def create_calendar(
             )
 
         return {
-            "calendar_created": db_user.calendar_created,
+            "calendar_created": db_user.calendar.calendar_created,
             "calendar_slug": db_user.calendar_slug,
             "calendar_url": f"/calendar/{db_user.calendar_slug}",
         }
@@ -250,10 +259,10 @@ async def make_calendar_private(
 ):
     try:
         db_user = await _get_db_user(user.username, db)
-        if db_user.calendar_created:
-            db_user.calendar_created = False
+        if db_user.calendar.calendar_created:
+            db_user.calendar.calendar_created = False
             await db.commit()
-            await db.refresh(db_user)
+            await db.refresh(db_user.calendar)
             logger.info(
                 "Set calendar '%s' for '%s' back to private",
                 db_user.calendar_slug,
@@ -261,11 +270,11 @@ async def make_calendar_private(
             )
 
         return {
-            "calendar_created": db_user.calendar_created,
+            "calendar_created": db_user.calendar.calendar_created,
             "calendar_slug": db_user.calendar_slug,
             "calendar_url": (
                 f"/calendar/{db_user.calendar_slug}"
-                if db_user.calendar_created
+                if db_user.calendar.calendar_created
                 else None
             ),
         }
