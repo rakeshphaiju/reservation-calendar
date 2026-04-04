@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -16,8 +17,9 @@ class AppUser(Base):
     fullname = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True, index=True)
     password_hash = Column(String, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     calendar = relationship(
         "UserCalendar",
         back_populates="user",
@@ -108,6 +110,8 @@ class UserCalendar(Base):
     calendar_created = Column(
         Boolean, nullable=False, default=True, server_default="true"
     )
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
 
     user = relationship("AppUser", back_populates="calendar")

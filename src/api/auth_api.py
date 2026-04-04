@@ -2,7 +2,7 @@ from datetime import timedelta
 from http import HTTPStatus as hs
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response, Form
 from fastapi.responses import RedirectResponse
 from fastapi_login.exceptions import InvalidCredentialsException
 from sqlalchemy import delete, select
@@ -35,6 +35,7 @@ router = APIRouter()
 
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+REMEMBER_ME_EXPIRE_DAYS = 30
 
 
 def get_slot_capacity(user) -> int:
@@ -71,6 +72,25 @@ def build_calendar_url(user) -> str | None:
     return f"/calendar/{user.calendar_slug}"
 
 
+def _build_user_payload(user: AppUser) -> dict:
+    """Return the standard user dict included in every auth response."""
+    return {
+        "username": user.username,
+        "email": user.email,
+        "fullname": user.fullname,
+        "calendar_slug": user.calendar_slug,
+        "calendar_created": user.calendar_created,
+        "slot_capacity": get_slot_capacity(user),
+        "max_weeks": get_max_weeks(user),
+        "time_slots": get_time_slots(user),
+        "day_time_slots": get_day_time_slots(user),
+        "bookable_days": get_bookable_days(user),
+        "calendar_description": get_calendar_description(user),
+        "calendar_location": get_calendar_location(user),
+        "calendar_url": build_calendar_url(user),
+    }
+
+
 @router.get("/api/auth/register")
 async def register_get_redirect():
     """Registration is POST-only; browsers that open this URL get sent to the UI."""
@@ -86,19 +106,13 @@ async def register_user(
         select(AppUser).where(AppUser.username == payload.username)
     )
     if existing_username_result.scalars().first():
-        raise HTTPException(
-            status_code=hs.CONFLICT,
-            detail="Username already exists",
-        )
+        raise HTTPException(status_code=hs.CONFLICT, detail="Username already exists")
 
     existing_email_result = await db.execute(
         select(AppUser).where(AppUser.email == payload.email)
     )
     if existing_email_result.scalars().first():
-        raise HTTPException(
-            status_code=hs.CONFLICT,
-            detail="Email already exists",
-        )
+        raise HTTPException(status_code=hs.CONFLICT, detail="Email already exists")
 
     calendar_slug = await generate_unique_calendar_slug(payload.username, db)
     user = AppUser(
@@ -121,51 +135,50 @@ async def register_user(
         "Created new user '%s' with draft calendar '%s'", user.username, calendar_slug
     )
 
-    return {
-        "username": user.username,
-        "email": user.email,
-        "fullname": user.fullname,
-        "calendar_slug": user.calendar_slug,
-        "calendar_created": user.calendar_created,
-        "slot_capacity": get_slot_capacity(user),
-        "max_weeks": get_max_weeks(user),
-        "time_slots": get_time_slots(user),
-        "day_time_slots": get_day_time_slots(user),
-        "bookable_days": get_bookable_days(user),
-        "calendar_description": get_calendar_description(user),
-        "calendar_location": get_calendar_location(user),
-        "calendar_url": build_calendar_url(user),
-    }
+    return _build_user_payload(user)
 
 
 @router.post(TOKEN_URL)
-async def login(response: Response, user: User = Depends(authenticate_user)):
+async def login(
+    response: Response,
+    remember_me: bool = Form(False),
+    user: User = Depends(authenticate_user),
+):
     try:
+        expires = (
+            timedelta(days=REMEMBER_ME_EXPIRE_DAYS)
+            if remember_me
+            else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        )
+
         access_token = manager.create_access_token(
             data={"sub": user.username},
-            expires=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+            expires=expires,
         )
-        manager.set_cookie(response, access_token)
-        logger.info("User %s logged in", user.username)
+
+        response.set_cookie(
+            key="access-token",
+            value=access_token,
+            httponly=True,
+            samesite="lax",
+            secure=False,
+            path="/",
+            max_age=int(expires.total_seconds()) if remember_me else None,
+        )
+
+        logger.info(
+            "User %s logged in (remember_me=%s, expires_in=%s)",
+            user.username,
+            remember_me,
+            expires,
+        )
     except Exception as exc:
         raise InvalidCredentialsException from exc
 
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "username": user.username,
-        "fullname": user.fullname,
-        "email": user.email,
-        "calendar_slug": user.calendar_slug,
-        "calendar_created": user.calendar_created,
-        "slot_capacity": get_slot_capacity(user),
-        "max_weeks": get_max_weeks(user),
-        "time_slots": get_time_slots(user),
-        "day_time_slots": get_day_time_slots(user),
-        "bookable_days": get_bookable_days(user),
-        "calendar_description": get_calendar_description(user),
-        "calendar_location": get_calendar_location(user),
-        "calendar_url": build_calendar_url(user),
+        **_build_user_payload(user),
     }
 
 
@@ -173,19 +186,7 @@ async def login(response: Response, user: User = Depends(authenticate_user)):
 async def get_me(user=Depends(manager)):
     try:
         return {
-            "username": user.username,
-            "email": user.email,
-            "fullname": user.fullname,
-            "calendar_slug": user.calendar_slug,
-            "calendar_created": user.calendar_created,
-            "slot_capacity": get_slot_capacity(user),
-            "max_weeks": get_max_weeks(user),
-            "time_slots": get_time_slots(user),
-            "day_time_slots": get_day_time_slots(user),
-            "bookable_days": get_bookable_days(user),
-            "calendar_description": get_calendar_description(user),
-            "calendar_location": get_calendar_location(user),
-            "calendar_url": build_calendar_url(user),
+            **_build_user_payload(user),
             "authenticated": True,
         }
     except AttributeError as exc:
@@ -234,10 +235,7 @@ async def delete_account(
         )
         db_user = result.scalars().first()
         if not db_user:
-            raise HTTPException(
-                status_code=hs.NOT_FOUND,
-                detail="User not found",
-            )
+            raise HTTPException(status_code=hs.NOT_FOUND, detail="User not found")
 
         await db.execute(
             delete(Reservation).where(Reservation.owner_slug == db_user.calendar_slug)
