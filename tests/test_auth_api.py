@@ -147,7 +147,6 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(hs.UNAUTHORIZED, resp.status_code)
         self.assertIn("Invalid credentials", resp.json()["detail"])
 
-    
     async def test_admin_login_with_remember_me(self):
         app.dependency_overrides[authenticate_user] = lambda: User(
             username="testuser",
@@ -170,5 +169,6 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertEqual("testuser", resp.json()["calendar_slug"])
 
         set_cookie_headers = resp.headers.get_list("set-cookie")
-        self.assertTrue(any("Max-Age=2592000" in header for header in set_cookie_headers))
-
+        self.assertTrue(
+            any("Max-Age=2592000" in header for header in set_cookie_headers)
+        )
