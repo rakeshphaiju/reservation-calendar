@@ -18,6 +18,7 @@ export default function Login() {
   const [fullname, setFullname] = useState('');
   const [password, setPassword] = useState('');
   const [retypePassword, setRetypePassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -43,7 +44,7 @@ export default function Login() {
         setSuccess('Account created. Sign in and finish your setup in the dashboard to create your calendar.');
         setMode('login');
       } else {
-        await authService.login(loginInput, password);
+        await authService.login(loginInput, password, rememberMe);
         navigate(from, { replace: true });
       }
     } catch (err) {
@@ -74,6 +75,7 @@ export default function Login() {
     setFullname('');
     setPassword('');
     setRetypePassword('');
+    setRememberMe(false);
   };
 
   return (
@@ -156,6 +158,18 @@ export default function Login() {
               <p className="mt-1 text-xs text-emerald-600">Passwords match ✓</p>
             )}
           </div>
+        )}
+
+        {mode === 'login' && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 select-none">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+            />
+            Keep me logged in
+          </label>
         )}
 
         {error && (

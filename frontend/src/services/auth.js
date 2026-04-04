@@ -37,10 +37,11 @@ export const authService = {
     return currentUser;
   },
 
-  login: async (username, password) => {
+  login: async (username, password, rememberMe = false) => {
     const params = new URLSearchParams();
     params.append('username', username);
     params.append('password', password);
+    params.append('remember_me', rememberMe);
 
     const { data } = await apiClient.post('/auth/login', params, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
