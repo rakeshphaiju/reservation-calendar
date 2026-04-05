@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import BookingNestLogo from '/images/Booking-Nest-logo.png';
-import { authService } from '../../services/auth';
+import { authService } from '../../services/authService';
 
 function getInitials(user) {
   if (user?.service_name?.trim()) {
@@ -102,7 +102,7 @@ export default function Navbar() {
             <img
               src={BookingNestLogo}
               alt="Booking Nest"
-              className="h-10 w-auto sm:h-10 md:h-12"
+              className="h-10 w-auto sm:h-10 md:h-13"
             />
           </Link>
 

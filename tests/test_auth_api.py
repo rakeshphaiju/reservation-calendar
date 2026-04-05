@@ -1,7 +1,7 @@
 import unittest
 from http import HTTPStatus as hs
 from httpx import AsyncClient, ASGITransport
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.main import app
 from src.auth.auth import authenticate_user, User, manager
@@ -22,6 +22,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[authenticate_user] = lambda: User(
             email="testuser@example.com",
             service_name="Test User",
+            is_verified=True,
             calendar_slug="testuser",
         )
         resp = await self.client.post(
@@ -38,7 +39,20 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertIn("calendar_description", resp.json())
         self.assertIn("calendar_location", resp.json())
 
-    async def test_register_user(self):
+    @patch("src.api.auth_api.send_verification_email")
+    @patch("src.api.auth_api.set_resend_lock", new_callable=AsyncMock)
+    @patch("src.api.auth_api.create_and_store_otp", new_callable=AsyncMock)
+    @patch("src.api.auth_api.generate_unique_calendar_slug", new_callable=AsyncMock)
+    async def test_register_user(
+        self,
+        mock_generate_unique_calendar_slug,
+        mock_create_and_store_otp,
+        mock_set_resend_lock,
+        mock_send_verification_email,
+    ):
+        existing_username_result = MagicMock()
+        existing_username_result.scalars.return_value.first.return_value = None
+
         existing_email_result = MagicMock()
         existing_email_result.scalars.return_value.first.return_value = None
 
@@ -49,10 +63,15 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         mock_db.add = MagicMock()
         mock_db.execute.side_effect = [
             existing_email_result,
-            unique_slug_result,
         ]
 
-        app.dependency_overrides[get_db] = lambda: mock_db
+        async def override_get_db():
+            return mock_db
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        mock_generate_unique_calendar_slug.return_value = "new-user"
+        mock_create_and_store_otp.return_value = "123456"
 
         resp = await self.client.post(
             "/api/auth/register",
@@ -73,8 +92,15 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertIn("bookable_days", resp.json())
         self.assertIn("calendar_description", resp.json())
         self.assertIn("calendar_location", resp.json())
+
         mock_db.add.assert_called_once()
         mock_db.commit.assert_awaited_once()
+        mock_generate_unique_calendar_slug.assert_awaited_once()
+        mock_create_and_store_otp.assert_awaited_once_with("new-user@example.com")
+        mock_set_resend_lock.assert_awaited_once_with("new-user@example.com")
+        mock_send_verification_email.assert_called_once()
+
+        app.dependency_overrides.clear()
 
     async def test_get_me_authenticated(self):
         mock_logged_in_user(app)
@@ -143,6 +169,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[authenticate_user] = lambda: User(
             email="testuser@example.com",
             service_name="Test User",
+            is_verified=True,
             calendar_slug="testuser",
         )
 

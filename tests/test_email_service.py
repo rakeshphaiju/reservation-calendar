@@ -7,6 +7,7 @@ from src.services.email_service import (
     send_admin_notification,
     send_cancellation_email,
     send_admin_cancellation_notification,
+    send_verification_email,
 )
 
 
@@ -157,3 +158,42 @@ class TestEmailService(BaseApiTest):
         )
 
         mock_send.assert_not_called()
+
+    @patch("src.services.email_service.resend.Emails.send")
+    async def test_verification_email_sent(self, mock_send):
+        await send_verification_email(
+            email="user@example.com",
+            fullname="John Doe",
+            code="123456",
+        )
+
+        mock_send.assert_called_once()
+        payload = mock_send.call_args[0][0]
+        self.assertEqual(payload["to"], "user@example.com")
+        self.assertIn("Your Booking Nest verification code", payload["subject"])
+        self.assertIn("123456", payload["html"])
+        self.assertIn("Hi <strong>John</strong>", payload["html"])
+
+    @patch("src.services.email_service.resend.Emails.send")
+    async def test_verification_with_long_name(self, mock_send):
+        await send_verification_email(
+            email="user@example.com",
+            fullname="John Paul McCartney",
+            code="789012",
+        )
+
+        payload = mock_send.call_args[0][0]
+        self.assertIn("Hi <strong>John</strong>", payload["html"])
+        self.assertIn("789012", payload["html"])
+
+    @patch("src.services.email_service.resend.Emails.send")
+    async def test_verification_failure_is_silent(self, mock_send):
+        mock_send.side_effect = Exception("SMTP timeout")
+
+        await send_verification_email(
+            email="user@example.com",
+            fullname="John Doe",
+            code="123456",
+        )
+
+        mock_send.assert_called_once()

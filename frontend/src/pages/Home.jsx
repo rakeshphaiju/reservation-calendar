@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-import { authService } from '../services/auth';
 import Footer from '../components/header/Footer';
+import { authService } from '../services/authService';
 
 export default function Home() {
     const [currentUser, setCurrentUser] = React.useState(authService.getUser());
@@ -21,11 +21,11 @@ export default function Home() {
                     </h1>
 
                     <p className="text-xl font-bold tracking-tight text-slate-800 sm:text-xl">
-                        &ldquo;Create your own scheduling calendar.&rdquo;
+                        &ldquo;Create your own booking calendar.&rdquo;
                     </p>
 
                     <p className="mx-auto max-w-2xl text-lg text-slate-600">
-                        Manage a separate scheduling calendar and share a unique scheduling link.
+                        Manage a separate booking calendar and share a unique scheduling link.
                     </p>
 
                     <div className="flex flex-wrap justify-center gap-4">
@@ -52,7 +52,7 @@ export default function Home() {
                                 to="/login"
                                 className="inline-flex items-center rounded-xl bg-slate-800 px-6 py-3 text-base font-semibold text-white shadow-sm transition-colors hover:bg-slate-700"
                             >
-                                Get your free scheduling calendar
+                                Get your free booking calendar
                             </Link>
                         )}
                     </div>

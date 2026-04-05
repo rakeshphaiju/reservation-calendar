@@ -10,7 +10,8 @@ import Login from './pages/Login';
 import ReservationListPage from './pages/ReservationListPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
-import { authService } from './services/auth';
+import VerifyEmail from './pages/VerifyEmail';
+import { authService } from './services/authService';
 
 function RequireAuth({ children }) {
   const location = useLocation();
@@ -18,6 +19,7 @@ function RequireAuth({ children }) {
 
   React.useEffect(() => {
     let isMounted = true;
+
     authService
       .init()
       .then((user) => {
@@ -28,13 +30,17 @@ function RequireAuth({ children }) {
         if (!isMounted) return;
         setStatus('unauth');
       });
+
     return () => {
       isMounted = false;
     };
   }, []);
 
   if (status === 'checking') return null;
-  if (status === 'unauth') return <Navigate to="/login" state={{ from: location }} replace />;
+
+  if (status === 'unauth') {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
 
   return children;
 }
@@ -63,6 +69,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
         </Routes>
       </main>
     </div>

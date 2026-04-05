@@ -144,12 +144,18 @@ export const ReservationManager = ({
         return slotStart.isSameOrBefore(moment());
     };
 
+    const formatSlugAsName = (slug) =>
+        slug
+            .replace(/-\d+$/, '')
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase());
+
     return (
         <section className="mb-8 mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 className="text-lg font-semibold text-slate-900">
-                        Manage an existing reservation with {ownerSlug}
+                        Manage an existing reservation with {formatSlugAsName(ownerSlug)}
                     </h3>
                     <p className="mt-1 text-sm text-slate-600">
                         Use your reservation key and booking email to modify or delete a reservation.
