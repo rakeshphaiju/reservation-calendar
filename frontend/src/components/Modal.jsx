@@ -19,7 +19,7 @@ const Modal = (props) => {
       >
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4 rounded-t-2xl">
           <h3 id="modal-title" className="text-lg font-semibold text-slate-800">
-            Enter your info
+            Your info
           </h3>
           <button
             type="button"

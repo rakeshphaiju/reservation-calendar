@@ -16,3 +16,4 @@ venv/
 htmlcov/
 .coverage
 alembic/versions/*.pyc
+.DS_store

@@ -81,11 +81,11 @@ export default function Login() {
   return (
     <div className="max-w-md mx-auto mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="mb-4 text-xl font-semibold text-slate-800 sm:text-2xl">
-        {mode === 'login' ? 'Sign in' : 'Create account'}
+        Welcome to BookingNest
       </h2>
       <p className="mb-6 text-sm text-slate-600">
         {mode === 'login'
-          ? 'Sign in to manage your own reservation calendar.'
+          ? 'Please sign in to manage your calendar.'
           : 'Create a user account first, then customize settings from the dashboard before publishing your calendar.'}
       </p>
 

@@ -49,16 +49,8 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(authService.getUser());
-
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
-
-  const baseLinkClass =
-    'px-3 py-1.5 rounded-lg font-medium text-sm transition-colors sm:px-4 sm:py-2 sm:text-base';
-  const activeClass = 'bg-emerald-200 text-slate-900';
-  const inactiveClass = 'text-slate-200 hover:bg-white/10 hover:text-white';
-
-  const isActive = (path) => location.pathname === path;
 
   useEffect(() => {
     const unsubscribe = authService.subscribe((nextUser) => {
@@ -79,7 +71,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-
   const username = user?.username;
   const initials = getInitials(user);
   const displayName = getDisplayName(user);
@@ -90,104 +81,95 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="text-white shadow-lg">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="py-3 md:flex md:items-center md:justify-between md:h-14 md:py-0">
-          <Link to="/" className="inline-flex items-center">
-            <img
-              src={BookingNestLogo}
-              alt="Booking Nest"
-              className="h-45 w-auto"
-            />
-          </Link>
+    <nav className="relative z-20 w-full">
+      <div className="mx-auto max-w-7xl px-4 pt-2 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-1 py-3 md:flex-row md:items-center md:justify-between md:py-1">
+          <div className="flex items-center justify-between gap-4">
+            <Link to="/" className="inline-flex shrink-0 items-center">
+              <img
+                src={BookingNestLogo}
+                alt="Booking Nest"
+                className="h-10 w-auto sm:h-10 md:h-15"
+              />
+            </Link>
 
-          <div className="mt-3 flex flex-wrap items-center gap-3 md:mt-0">
-            <ul className="flex flex-wrap items-center gap-2 md:gap-1">
-              <li>
-                <Link
-                  to="/"
-                  className={`${baseLinkClass} ${isActive('/') ? activeClass : inactiveClass
-                    }`}
+            {!username && (
+              <Link
+                to="/login"
+                className="rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-400 md:hidden"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
+            {user?.calendar_slug && user?.calendar_created && (
+              <Link
+                to={`/calendar/${user.calendar_slug}`}
+                className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-white/70 hover:text-slate-900"
+              >
+                My Calendar
+              </Link>
+            )}
+
+            {username ? (
+              <div ref={dropdownRef} className="relative">
+                <button
+                  onClick={() => setIsOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white"
                 >
-                  Home
-                </Link>
-              </li>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                    {initials}
+                  </span>
+                  <span className="hidden max-w-[120px] truncate sm:inline">
+                    {displayName}
+                  </span>
+                  <span className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>
+                    ▾
+                  </span>
+                </button>
 
-              {user?.calendar_slug && user?.calendar_created && (
-                <li>
-                  <Link
-                    to={`/calendar/${user.calendar_slug}`}
-                    className={`${baseLinkClass} ${location.pathname === `/calendar/${user.calendar_slug}`
-                      ? activeClass
-                      : inactiveClass
-                      }`}
-                  >
-                    My Calendar
-                  </Link>
-                </li>
-              )}
-            </ul>
-
-            <div className="flex items-center gap-2">
-              {username ? (
-                <div ref={dropdownRef} className="relative">
-                  <button
-                    onClick={() => setIsOpen((prev) => !prev)}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/10 px-2.5 py-2 hover:bg-white/15"
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-300 font-semibold text-slate-900">
-                      {initials}
-                    </span>
-                    <span
-                      className={`text-slate-300 transition-transform ${isOpen ? 'rotate-180' : ''
-                        }`}
-                    >
-                      ▾
-                    </span>
-                  </button>
-
-                  {isOpen && (
-                    <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl">
-                      <div className="border-b border-slate-100 px-4 py-3">
-                        <p className="text-sm font-semibold text-slate-900">
-                          {displayName}
-                        </p>
-                        <p className="text-xs text-slate-500">{username}</p>
-                      </div>
-
-                      <div className="p-2">
-                        <Link
-                          to="/dashboard"
-                          onClick={() => setIsOpen(false)}
-                          className="block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                        >
-                          Dashboard
-                        </Link>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsOpen(false);
-                            handleLogout();
-                          }}
-                          className="mt-1 block w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-600 hover:bg-rose-50"
-                        >
-                          Logout
-                        </button>
-                      </div>
+                {isOpen && (
+                  <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                    <div className="border-b border-slate-100 px-4 py-3">
+                      <p className="text-sm font-semibold text-slate-900">
+                        {displayName}
+                      </p>
+                      <p className="text-xs text-slate-500">{username}</p>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  to="/login"
-                  className={`${baseLinkClass} ${isActive('/login') ? activeClass : inactiveClass
-                    }`}
-                >
-                  Login
-                </Link>
-              )}
-            </div>
+
+                    <div className="p-2">
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setIsOpen(false)}
+                        className="block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                      >
+                        Dashboard
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsOpen(false);
+                          handleLogout();
+                        }}
+                        className="mt-1 block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-600 hover:bg-rose-50"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="hidden rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-400 md:inline-flex"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       </div>
