@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+
+import BookingNestLogo from '/images/Booking-Nest-logo.png';
 import { authService } from '../../services/auth';
 
 function getInitials(user) {
@@ -88,14 +90,15 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-slate-800 text-white shadow-lg">
+    <nav className="text-white shadow-lg">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="py-3 md:flex md:items-center md:justify-between md:h-14 md:py-0">
-          <Link
-            to="/"
-            className="inline-block text-lg font-bold text-white tracking-tight sm:text-xl"
-          >
-            Booking Nest
+          <Link to="/" className="inline-flex items-center">
+            <img
+              src={BookingNestLogo}
+              alt="Booking Nest"
+              className="h-45 w-auto"
+            />
           </Link>
 
           <div className="mt-3 flex flex-wrap items-center gap-3 md:mt-0">

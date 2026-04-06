@@ -129,7 +129,6 @@ async def lifespan(app: FastAPI):
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-            logger.info("DB tables ensured (AUTO_CREATE_TABLES=true).")
         except Exception as e:
             logger.exception("DB init failed during startup: %s", e)
 
@@ -251,5 +250,4 @@ else:
     )
 
 if __name__ == "__main__":
-    logger.info("Start web app using uvicorn")
     uvicorn.run(app, host="0.0.0.0", port=8000)

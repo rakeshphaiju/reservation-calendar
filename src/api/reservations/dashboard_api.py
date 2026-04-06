@@ -230,11 +230,6 @@ async def create_calendar(
             db_user.calendar.calendar_created = True
             await db.commit()
             await db.refresh(db_user.calendar)
-            logger.info(
-                "Published calendar '%s' for '%s'",
-                db_user.calendar_slug,
-                db_user.username,
-            )
 
         return {
             "calendar_created": db_user.calendar.calendar_created,
@@ -263,11 +258,6 @@ async def make_calendar_private(
             db_user.calendar.calendar_created = False
             await db.commit()
             await db.refresh(db_user.calendar)
-            logger.info(
-                "Set calendar '%s' for '%s' back to private",
-                db_user.calendar_slug,
-                db_user.username,
-            )
 
         return {
             "calendar_created": db_user.calendar.calendar_created,

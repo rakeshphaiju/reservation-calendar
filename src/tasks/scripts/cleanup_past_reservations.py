@@ -12,8 +12,6 @@ async def cleanup_past_reservations():
     """
     async with AsyncSessionLocal() as session:
         try:
-            logger.info("Starting async cleanup of past reservations...")
-
             cutoff = datetime.now() - relativedelta(months=1)
 
             result = await session.execute(select(Reservation))
@@ -42,9 +40,7 @@ async def cleanup_past_reservations():
                 )
                 result = await session.execute(delete_stmt)
                 await session.commit()
-                logger.info(f"Deleted {result.rowcount} past reservations")
-            else:
-                logger.info("No past reservations to delete")
+                logger.info("Deleted %s past reservations", result.rowcount)
 
         except Exception as e:
             logger.exception(f"Error during reservation cleanup: {e}")

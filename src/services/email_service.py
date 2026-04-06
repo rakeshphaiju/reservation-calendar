@@ -11,11 +11,9 @@ FROM = f"{MAIL_FROM_NAME} <{MAIL_FROM}>"
 
 
 def _send(*, to: str, subject: str, html: str, context: str) -> None:
-    """Sync Resend call wrapped with logging."""
+    """Sync Resend call; logs only on failure."""
     try:
-        logger.info("Attempting to send %s email to %s", context, to)
         resend.Emails.send({"from": FROM, "to": to, "subject": subject, "html": html})
-        logger.info("Successfully sent %s email to %s", context, to)
     except Exception as e:
         logger.error("Failed to send %s email to %s. Error: %s", context, to, str(e))
 

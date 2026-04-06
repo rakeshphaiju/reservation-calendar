@@ -1,6 +1,5 @@
 import asyncio
 
-from src.common.logger import logger
 from src.services.email_service import (
     send_admin_notification,
     send_admin_cancellation_notification,
@@ -109,5 +108,4 @@ def send_admin_cancellation_notification_task(
 
 @celery_app.task(name="src.tasks.celery_tasks.cleanup_past_reservations_task")
 def cleanup_past_reservations_task():
-    logger.info("Starting Celery cleanup task for past reservations")
     asyncio.run(cleanup_past_reservations())
