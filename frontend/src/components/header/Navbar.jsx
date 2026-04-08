@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import BookingNestLogo from '/images/Booking-Nest-logo.png';
 import { authService } from '../../services/auth';
@@ -46,10 +46,10 @@ function getDisplayName(user) {
 }
 
 export default function Navbar() {
-  const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState(authService.getUser());
   const [isOpen, setIsOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -59,6 +59,21 @@ export default function Navbar() {
     authService.init();
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const timeWithZone = new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'shortOffset',
+  }).format(currentTime);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -80,34 +95,30 @@ export default function Navbar() {
     navigate('/login');
   };
 
+  const pillClass =
+    'inline-flex items-center rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 hover:text-slate-900';
+
   return (
     <nav className="relative z-20 w-full">
-      <div className="mx-auto max-w-7xl px-4 pt-2 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-1 py-3 md:flex-row md:items-center md:justify-between md:py-1">
-          <div className="flex items-center justify-between gap-4">
-            <Link to="/" className="inline-flex shrink-0 items-center">
-              <img
-                src={BookingNestLogo}
-                alt="Booking Nest"
-                className="h-10 w-auto sm:h-10 md:h-15"
-              />
-            </Link>
+      <div className="mx-auto max-w-7xl px-4 pt-0 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between py-2">
+          <Link to="/" className="inline-flex shrink-0 items-center">
+            <img
+              src={BookingNestLogo}
+              alt="Booking Nest"
+              className="h-10 w-auto sm:h-10 md:h-12"
+            />
+          </Link>
 
-            {!username && (
-              <Link
-                to="/login"
-                className="rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-400 md:hidden"
-              >
-                Sign In
-              </Link>
-            )}
-          </div>
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <span className="hidden text-sm font-medium text-slate-500 sm:inline">
+              {timeWithZone}
+            </span>
 
-          <div className="flex flex-wrap items-center justify-start gap-2 md:justify-end">
             {user?.calendar_slug && user?.calendar_created && (
               <Link
                 to={`/calendar/${user.calendar_slug}`}
-                className="rounded-full px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-white/70 hover:text-slate-900"
+                className={`${pillClass} hidden md:inline-flex`}
               >
                 My Calendar
               </Link>
@@ -117,14 +128,16 @@ export default function Navbar() {
               <div ref={dropdownRef} className="relative">
                 <button
                   onClick={() => setIsOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-white"
+                  className={`${pillClass} gap-1 font-medium`}
                 >
                   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
                     {initials}
                   </span>
+
                   <span className="hidden max-w-[120px] truncate sm:inline">
                     {displayName}
                   </span>
+
                   <span className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>
                     ▾
                   </span>
@@ -148,6 +161,16 @@ export default function Navbar() {
                         Dashboard
                       </Link>
 
+                      {user?.calendar_slug && user?.calendar_created && (
+                        <Link
+                          to={`/calendar/${user.calendar_slug}`}
+                          onClick={() => setIsOpen(false)}
+                          className="mt-1 block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 md:hidden"
+                        >
+                          My Calendar
+                        </Link>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => {
@@ -163,10 +186,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <Link
-                to="/login"
-                className="hidden rounded-full bg-indigo-50 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-400 md:inline-flex"
-              >
+              <Link to="/login" className={pillClass}>
                 Sign In
               </Link>
             )}

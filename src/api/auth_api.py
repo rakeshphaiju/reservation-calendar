@@ -131,10 +131,6 @@ async def register_user(
     db.add(user)
     await db.commit()
 
-    logger.info(
-        "Created new user '%s' with draft calendar '%s'", user.username, calendar_slug
-    )
-
     return _build_user_payload(user)
 
 
@@ -164,13 +160,6 @@ async def login(
             secure=False,
             path="/",
             max_age=int(expires.total_seconds()) if remember_me else None,
-        )
-
-        logger.info(
-            "User %s logged in (remember_me=%s, expires_in=%s)",
-            user.username,
-            remember_me,
-            expires,
         )
     except Exception as exc:
         raise InvalidCredentialsException from exc
@@ -213,7 +202,6 @@ async def logout(response: Response, user=Depends(manager)):
             secure=False,
             path="/",
         )
-        logger.info("User %s logged out successfully", user.username)
         return {"message": "Logged out successfully"}
     except Exception as exc:
         logger.error("Unexpected error during logout: %s", exc, exc_info=True)
@@ -249,11 +237,6 @@ async def delete_account(
             samesite="lax",
             secure=False,
             path="/",
-        )
-        logger.info(
-            "Deleted user '%s' and reservations for calendar '%s'",
-            db_user.username,
-            db_user.calendar_slug,
         )
         return {"message": "Account deleted successfully"}
     except HTTPException:

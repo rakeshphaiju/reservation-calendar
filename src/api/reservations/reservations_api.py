@@ -81,13 +81,6 @@ async def add_reservations(
             reservation_key=reservation_key,
         )
 
-        logger.info(
-            "Created reservation %s for calendar '%s' owned by '%s'",
-            db_reservation.id,
-            owner_slug,
-            owner.username,
-        )
-
         return db_reservation
     except IntegrityError as exc:
         logger.warning("Reservation conflict while creating reservation: %s", exc)
@@ -188,13 +181,6 @@ async def update_reservation_by_reservation_key(
             is_update=True,
         )
 
-        logger.info(
-            "Updated reservation %s for calendar '%s' owned by '%s'",
-            db_reservation.id,
-            db_reservation.owner_slug,
-            owner.username,
-        )
-
         return db_reservation
     except IntegrityError as exc:
         logger.warning("Reservation conflict while updating reservation: %s", exc)
@@ -258,13 +244,6 @@ async def delete_reservation_by_reservation_key(
             time=snapshot["time"],
             reservation_id=snapshot["id"],
             reservation_key=reservation_key,
-        )
-
-        logger.info(
-            "Deleted reservation %s for calendar '%s' owned by '%s'",
-            snapshot["id"],
-            snapshot["owner_slug"],
-            owner.username,
         )
 
         return {"message": "Reservation deleted successfully"}
