@@ -130,12 +130,8 @@ export default function Navbar() {
                   onClick={() => setIsOpen((prev) => !prev)}
                   className={`${pillClass} gap-1 font-medium`}
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                  <span className="flex items-center justify-center text-xm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900">
                     {initials}
-                  </span>
-
-                  <span className="hidden max-w-[120px] truncate sm:inline">
-                    {displayName}
                   </span>
 
                   <span className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>
