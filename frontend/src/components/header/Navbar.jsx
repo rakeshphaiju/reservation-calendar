@@ -157,6 +157,14 @@ export default function Navbar() {
                         Dashboard
                       </Link>
 
+                      <Link
+                        to="/reservation-list"
+                        onClick={() => setIsOpen(false)}
+                        className="mt-1 block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                      >
+                        Reservation list
+                      </Link>
+
                       {user?.calendar_slug && user?.calendar_created && (
                         <Link
                           to={`/calendar/${user.calendar_slug}`}
