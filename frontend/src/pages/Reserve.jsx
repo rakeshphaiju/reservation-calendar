@@ -110,9 +110,9 @@ const Reserve = () => {
       )}
 
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-slate-800 sm:text-2xl">
-          Reservation calendar
-        </h2>
+        <p className="text-xs text-slate-600">
+          Click on an available spot to create a new reservation.
+        </p>
         <div className="flex items-center space-x-2">
           <Button
             onClick={handlePreviousWeek}

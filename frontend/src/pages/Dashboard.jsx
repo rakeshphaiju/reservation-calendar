@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
 import { reservationService } from '../services/api';
 import { authService } from '../services/auth';
-import ReservationList from '../components/dashboard/ReservationList';
+
 import CalendarSetupCard from '../components/dashboard/CalendarSetupCard';
 import CapacitySettings from '../components/dashboard/CapacitySettings';
 import MaxWeeksSettings from '../components/dashboard/MaxWeeksSettings';
@@ -149,17 +150,6 @@ const Dashboard = () => {
       upcomingReservations: upcoming,
     };
   }, [groupedReservations, reservations]);
-
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this reservation?')) return;
-    try {
-      await reservationService.delete(id);
-      setReservations((current) => current.filter((r) => r.id !== id));
-    } catch {
-      alert('Failed to delete reservation');
-    }
-  };
 
 
   const handleCapacitySave = async () => {
@@ -462,7 +452,16 @@ const Dashboard = () => {
         upcoming={stats.upcomingReservations}
       />
 
-      <ReservationList reservations={reservations} onDelete={handleDelete} />
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Link
+          to="/reservation-list"
+          className="inline-flex items-center rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700"
+        >
+          View all reservations
+        </Link>
+      </div>
+
+      {/* <ReservationList reservations={reservations} onDelete={handleDelete} /> */}
     </div>
   );
 };
