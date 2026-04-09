@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Reserve from './pages/Reserve';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
+import ReservationListPage from './pages/ReservationListPage';
 import { authService } from './services/auth';
 
 function RequireAuth({ children }) {
@@ -48,7 +49,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/calendar/:ownerSlug" element={<Reserve />} />
-          <Route path="/reservations" element={<Navigate to="/" replace />} />
           <Route
             path="/dashboard"
             element={
@@ -57,6 +57,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route path="/reservations" element={<RequireAuth><ReservationListPage /></RequireAuth>} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </main>
