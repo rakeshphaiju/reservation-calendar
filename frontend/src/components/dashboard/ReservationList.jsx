@@ -1,3 +1,4 @@
+// src/components/dashboard/ReservationList.jsx
 import React, { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import Button from '../form/Button';
@@ -7,10 +8,29 @@ const VIEW_OPTIONS = [
   { id: 'calendar', label: 'Calendar view' },
 ];
 
+const FILTER_OPTIONS = [
+  { id: 'all', label: 'All' },
+  { id: 'today', label: 'Today' },
+];
+
+const getTodayKey = () => {
+  const now = new Date();
+  return [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+};
+
 const sortReservations = (left, right) => {
-  const dayCompare = left.day.localeCompare(right.day);
+  const leftDay = left?.day ?? '';
+  const rightDay = right?.day ?? '';
+  const leftTime = left?.time ?? '';
+  const rightTime = right?.time ?? '';
+
+  const dayCompare = leftDay.localeCompare(rightDay);
   if (dayCompare !== 0) return dayCompare;
-  return left.time.localeCompare(right.time);
+  return leftTime.localeCompare(rightTime);
 };
 
 const formatReservationDay = (day) => {
@@ -25,18 +45,29 @@ const formatReservationDay = (day) => {
   }).format(parsed);
 };
 
-const ReservationList = ({ reservations, onDelete }) => {
+const ReservationList = ({ reservations = [], onDelete }) => {
   const [viewMode, setViewMode] = useState('list');
+  const [filterMode, setFilterMode] = useState('all');
+
+  const safeReservations = Array.isArray(reservations) ? reservations : [];
+  const todayKey = useMemo(() => getTodayKey(), []);
 
   const sortedReservations = useMemo(
-    () => [...reservations].sort(sortReservations),
-    [reservations]
+    () => [...safeReservations].sort(sortReservations),
+    [safeReservations]
   );
+
+  const filteredReservations = useMemo(() => {
+    if (filterMode === 'today') {
+      return sortedReservations.filter((reservation) => reservation.day === todayKey);
+    }
+    return sortedReservations;
+  }, [sortedReservations, filterMode, todayKey]);
 
   const reservationsByDay = useMemo(() => {
     const groups = {};
 
-    sortedReservations.forEach((reservation) => {
+    filteredReservations.forEach((reservation) => {
       if (!groups[reservation.day]) {
         groups[reservation.day] = {};
       }
@@ -57,18 +88,22 @@ const ReservationList = ({ reservations, onDelete }) => {
           items,
         })),
     }));
-  }, [sortedReservations]);
+  }, [filteredReservations]);
+
+  const emptyMessage =
+    filterMode === 'today'
+      ? 'No reservations for today.'
+      : 'No reservations yet.';
+
+  const headingText =
+    filterMode === 'today'
+      ? "Today's Reservations"
+      : 'All Reservations';
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h3 className="text-xl font-bold text-slate-900">All Reservations</h3>
-          <p className="mt-1 text-sm text-slate-500">
-            Review bookings in a table or grouped by day and time.
-          </p>
-        </div>
-
+      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+        <h2 className="text-xl font-bold text-slate-900">{headingText}</h2>
         <div className="flex flex-wrap items-center gap-3">
           <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
             {VIEW_OPTIONS.map((option) => {
@@ -89,15 +124,34 @@ const ReservationList = ({ reservations, onDelete }) => {
             })}
           </div>
 
+          <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-1">
+            {FILTER_OPTIONS.map((option) => {
+              const active = filterMode === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setFilterMode(option.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${active
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+
           <div className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600">
-            {reservations.length} booked
+            {filteredReservations.length} booked
           </div>
         </div>
       </div>
 
-      {reservations.length === 0 ? (
+      {filteredReservations.length === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-12 text-center text-slate-500">
-          No reservations yet.
+          {emptyMessage}
         </div>
       ) : viewMode === 'calendar' ? (
         <div className="grid gap-4 xl:grid-cols-2">
@@ -110,9 +164,9 @@ const ReservationList = ({ reservations, onDelete }) => {
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">
                   {day}
                 </p>
-                <h4 className="mt-1 text-lg font-bold text-slate-900">
+                <h3 className="mt-1 text-lg font-bold text-slate-900">
                   {formatReservationDay(day)}
-                </h4>
+                </h3>
               </div>
 
               <div className="mt-4 space-y-4">
@@ -141,6 +195,7 @@ const ReservationList = ({ reservations, onDelete }) => {
                             <p className="text-slate-600">{reservation.email}</p>
                             <p className="text-slate-600">{reservation.phone_number}</p>
                           </div>
+
                           <Button
                             variant="danger"
                             onClick={() => onDelete(reservation.id)}
@@ -160,7 +215,7 @@ const ReservationList = ({ reservations, onDelete }) => {
       ) : (
         <>
           <div className="space-y-4 md:hidden">
-            {sortedReservations.map((reservation) => (
+            {filteredReservations.map((reservation) => (
               <article
                 key={reservation.id}
                 className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
@@ -186,6 +241,7 @@ const ReservationList = ({ reservations, onDelete }) => {
                     {reservation.time}
                   </p>
                 </div>
+
                 <Button
                   variant="danger"
                   onClick={() => onDelete(reservation.id)}
@@ -210,7 +266,7 @@ const ReservationList = ({ reservations, onDelete }) => {
                 </tr>
               </thead>
               <tbody>
-                {sortedReservations.map((reservation) => (
+                {filteredReservations.map((reservation) => (
                   <tr
                     key={reservation.id}
                     className="border-b border-slate-100 transition-colors hover:bg-slate-50/60"
@@ -241,14 +297,16 @@ const ReservationList = ({ reservations, onDelete }) => {
 };
 
 ReservationList.propTypes = {
-  reservations: PropTypes.arrayOf(PropTypes.shape({
-    id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
-    email: PropTypes.string.isRequired,
-    phone_number: PropTypes.string.isRequired,
-    day: PropTypes.string.isRequired,
-    time: PropTypes.string.isRequired,
-  })).isRequired,
+  reservations: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      name: PropTypes.string.isRequired,
+      email: PropTypes.string.isRequired,
+      phone_number: PropTypes.string.isRequired,
+      day: PropTypes.string.isRequired,
+      time: PropTypes.string.isRequired,
+    })
+  ),
   onDelete: PropTypes.func.isRequired,
 };
 

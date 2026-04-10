@@ -158,11 +158,11 @@ export default function Navbar() {
                       </Link>
 
                       <Link
-                        to="/reservation-list"
+                        to="/reservations"
                         onClick={() => setIsOpen(false)}
                         className="mt-1 block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                       >
-                        Reservation list
+                        All Reservations
                       </Link>
 
                       {user?.calendar_slug && user?.calendar_created && (

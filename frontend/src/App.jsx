@@ -49,7 +49,6 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/calendar/:ownerSlug" element={<Reserve />} />
-          <Route path="/reservations" element={<Navigate to="/" replace />} />
           <Route
             path="/dashboard"
             element={
@@ -58,7 +57,7 @@ export default function App() {
               </RequireAuth>
             }
           />
-          <Route path="/reservation-list" element={<RequireAuth><ReservationListPage /></RequireAuth>} />
+          <Route path="/reservations" element={<RequireAuth><ReservationListPage /></RequireAuth>} />
           <Route path="/login" element={<Login />} />
         </Routes>
       </main>
