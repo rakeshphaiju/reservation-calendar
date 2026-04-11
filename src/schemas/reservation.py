@@ -12,6 +12,8 @@ from pydantic import (
     model_validator,
 )
 
+from src.auth.auth import sort_time_slots
+
 VALID_BOOKABLE_DAYS = {
     "Monday",
     "Tuesday",
@@ -168,7 +170,7 @@ class TimeSlotsUpdate(BaseModel):
         if not normalized:
             raise ValueError("At least one time slot is required")
 
-        return normalized
+        return sort_time_slots(normalized)
 
     @field_validator("time_slots")
     @classmethod

@@ -76,16 +76,16 @@ class TestCalendarsApi(BaseApiTest):
         self.assertEqual("mock-user", resp.json()["owner_slug"])
         self.assertEqual(5, resp.json()["slot_capacity"])
         self.assertEqual(4, resp.json()["max_weeks"])
-        self.assertEqual(["16:00-16:30", "11:00-11:30"], resp.json()["time_slots"])
+        self.assertEqual(["11:00-11:30", "16:00-16:30"], resp.json()["time_slots"])
         self.assertEqual(
             {
-                "Monday": ["16:00-16:30", "11:00-11:30"],
-                "Tuesday": ["16:00-16:30", "11:00-11:30"],
-                "Wednesday": ["16:00-16:30", "11:00-11:30"],
-                "Thursday": ["16:00-16:30", "11:00-11:30"],
-                "Friday": ["16:00-16:30", "11:00-11:30"],
-                "Saturday": ["16:00-16:30", "11:00-11:30"],
-                "Sunday": ["16:00-16:30", "11:00-11:30"],
+                "Monday": ["11:00-11:30", "16:00-16:30"],
+                "Tuesday": ["11:00-11:30", "16:00-16:30"],
+                "Wednesday": ["11:00-11:30", "16:00-16:30"],
+                "Thursday": ["11:00-11:30", "16:00-16:30"],
+                "Friday": ["11:00-11:30", "16:00-16:30"],
+                "Saturday": ["11:00-11:30", "16:00-16:30"],
+                "Sunday": ["11:00-11:30", "16:00-16:30"],
             },
             resp.json()["day_time_slots"],
         )

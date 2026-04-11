@@ -51,6 +51,10 @@ DEFAULT_BOOKABLE_DAYS = ALL_BOOKABLE_DAYS[:5]
 DEFAULT_MAX_WEEKS = 4
 
 
+def sort_time_slots(slots: list[str]) -> list[str]:
+    return sorted(slots, key=lambda slot: slot.split("-", 1)[0])
+
+
 def get_default_day_time_slots() -> dict[str, list[str]]:
     return {day: DEFAULT_TIME_SLOTS.copy() for day in ALL_BOOKABLE_DAYS}
 
@@ -89,7 +93,8 @@ def get_user_calendar_location(user) -> str | None:
 
 def _normalize_time_slots(raw_slots) -> list[str]:
     if isinstance(raw_slots, list) and raw_slots:
-        return [str(slot).strip() for slot in raw_slots if str(slot).strip()]
+        cleaned = [str(slot).strip() for slot in raw_slots if str(slot).strip()]
+        return sort_time_slots(cleaned)
     return []
 
 
@@ -144,7 +149,7 @@ def get_user_time_slots(user) -> list[str]:
             seen.add(slot)
             unique_slots.append(slot)
 
-    return unique_slots or DEFAULT_TIME_SLOTS.copy()
+    return sort_time_slots(unique_slots) or DEFAULT_TIME_SLOTS.copy()
 
 
 def get_user_time_slots_for_day(user, weekday: str) -> list[str]:

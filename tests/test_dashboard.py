@@ -183,6 +183,39 @@ class TestDashboardApi(BaseApiTest):
         mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once()
 
+    async def test_update_time_slots_sorts_merged_and_daily_slots(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = make_mock_user()
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = mock_user_result
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.put(
+            "/api/dashboard/time-slots",
+            json={
+                "day_time_slots": {
+                    "Monday": ["11:00-12:00", "12:00-13:00"],
+                    "Tuesday": ["10:00-11:00", "11:00-12:00"],
+                    "Wednesday": ["12:00-13:00"],
+                    "Thursday": ["12:00-13:00"],
+                    "Friday": ["12:00-13:00"],
+                    "Saturday": ["12:00-13:00"],
+                    "Sunday": ["12:00-13:00"],
+                }
+            },
+        )
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            ["10:00-11:00", "11:00-12:00", "12:00-13:00"],
+            resp.json()["time_slots"],
+        )
+        self.assertEqual(
+            ["10:00-11:00", "11:00-12:00"],
+            resp.json()["day_time_slots"]["Tuesday"],
+        )
+
     async def test_get_bookable_days(self):
         resp = await self.client.get("/api/dashboard/bookable-days")
         self.assertEqual(hs.OK, resp.status_code)

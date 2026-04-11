@@ -40,7 +40,7 @@ export default function Login() {
     try {
       if (mode === 'register') {
         await authService.register(email.trim(), serviceName.trim(), password);
-        setSuccess('Account created. Sign in and finish your setup in the dashboard to create your calendar.');
+        setSuccess('Account created. Sign in and finish your setup in the dashboard to create your booking calendar.');
         setMode('login');
       } else {
         await authService.login(email.trim(), password, rememberMe);
@@ -82,8 +82,8 @@ export default function Login() {
       </h2>
       <p className="mb-6 text-sm text-slate-600">
         {mode === 'login'
-          ? 'Please sign in to manage your calendar.'
-          : 'Create a user account first, then customize settings from the dashboard before publishing your calendar.'}
+          ? 'Please sign in to manage your booking calendar.'
+          : 'Create a user account first, then customize settings from the dashboard before publishing your booking calendar.'}
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -98,6 +98,20 @@ export default function Login() {
               required
               placeholder=""
             />
+            {serviceName && (
+              <p className="mt-1.5 text-sm text-gray-500">
+                Your booking page will be available at{" "}
+                <span className="font-medium text-gray-700">
+                  www.bookingnest.me/calendar/{serviceName.toLowerCase().trim().replace(/\s+/g, "-")}
+                </span>
+              </p>
+            )}
+            {!serviceName && (
+              <p className="mt-1.5 text-sm text-gray-500">
+                The service name will be used to create your booking URL, e.g.{" "}
+                <span className="font-medium text-gray-700">www.bookingnest.me/calendar/john-fitness</span>
+              </p>
+            )}
           </div>
         )}
 
@@ -175,7 +189,7 @@ export default function Login() {
         className="mt-4 w-full text-sm font-medium"
       >
         {mode === 'login'
-          ? 'Need a new calendar? Create an account'
+          ? 'Need a new booking calendar? Create an account'
           : 'Already have an account? Sign in'}
       </Button>
     </div>

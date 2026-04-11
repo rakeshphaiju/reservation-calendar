@@ -12,6 +12,7 @@ import { ReservationManager } from '../components/reservations/ReservationManage
 import { useReservation } from '../hooks/useReservation';
 import { useWeekNavigation } from '../hooks/useWeekNavigation';
 import { useReservationModal } from '../hooks/useReservationModal';
+import { sortTimeSlots } from '../utils/timeSlots';
 
 const Reserve = () => {
   const { ownerSlug } = useParams();
@@ -74,6 +75,8 @@ const Reserve = () => {
     });
     return slots;
   }, []);
+
+  const sortedVisibleTimeSlots = sortTimeSlots(visibleTimeSlots);
 
   const slotProps = {
     isPastOrToday,
@@ -146,7 +149,7 @@ const Reserve = () => {
 
       <CalendarTable
         dates={dates}
-        times={visibleTimeSlots.length ? visibleTimeSlots : timeSlots}
+        times={sortedVisibleTimeSlots.length ? sortedVisibleTimeSlots : timeSlots}
         getTimesForDay={getTimeSlotsForDay}
         slotProps={slotProps}
       />

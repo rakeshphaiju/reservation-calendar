@@ -13,6 +13,7 @@ import CalendarDetailsSettings from '../components/dashboard/CalendarDetailsSett
 import DashboardStats from '../components/dashboard/DashboardStats';
 import DeleteAccountSection from '../components/dashboard/DeleteAccountSection';
 import Footer from '../components/header/Footer';
+import { sortTimeSlots } from '../utils/timeSlots';
 
 
 const DEFAULT_TIME_SLOTS = [
@@ -36,7 +37,7 @@ const EMPTY_FEEDBACK = { type: '', message: '' };
 const normalizeDayTimeSlots = (dayTimeSlots, fallbackTimeSlots = DEFAULT_TIME_SLOTS) =>
   BOOKABLE_DAY_OPTIONS.reduce((acc, day) => {
     const nextSlots = dayTimeSlots?.[day]?.length ? dayTimeSlots[day] : fallbackTimeSlots;
-    acc[day] = [...nextSlots];
+    acc[day] = sortTimeSlots(nextSlots);
     return acc;
   }, {});
 
@@ -207,6 +208,7 @@ const Dashboard = () => {
         .split('\n')
         .map((slot) => slot.trim().replace(/\s+/g, ''))
         .filter(Boolean);
+      acc[day] = sortTimeSlots(acc[day]);
       return acc;
     }, {});
 
@@ -374,7 +376,7 @@ const Dashboard = () => {
           {currentUser?.calendar_slug && currentUser?.calendar_created ? (
             <p className="mt-3 text-sm text-slate-600">
               Public booking link:{' '}
-              <span className="font-semibold">/calendar/{currentUser.calendar_slug}</span>
+              <span className="font-semibold">www.bookingnest.me/calendar/{currentUser.calendar_slug}</span>
             </p>
           ) : (
             <p className="mt-3 text-sm text-amber-700">
