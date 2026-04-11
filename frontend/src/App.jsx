@@ -8,6 +8,8 @@ import Reserve from './pages/Reserve';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import ReservationListPage from './pages/ReservationListPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
 import { authService } from './services/auth';
 
 function RequireAuth({ children }) {
@@ -59,6 +61,8 @@ export default function App() {
           />
           <Route path="/reservations" element={<RequireAuth><ReservationListPage /></RequireAuth>} />
           <Route path="/login" element={<Login />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
         </Routes>
       </main>
     </div>

@@ -183,8 +183,8 @@ export default function Login() {
           </div>
         )}
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
+        <Button type="submit" variant='login' className="w-full h-10" disabled={loading}>
+          <p className='text-sm'>{loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}</p>
         </Button>
       </form>
 
