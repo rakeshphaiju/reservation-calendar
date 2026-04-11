@@ -4,6 +4,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import Button from '../components/form/Button';
 import Input from '../components/form/Input';
 import PasswordInput from '../components/form/PasswordInput';
+import Checkbox from '../components/form/Checkbox';
 import { authService } from '../services/auth';
 
 
@@ -143,15 +144,12 @@ export default function Login() {
         )}
 
         {mode === 'login' && (
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 select-none">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-            />
-            Keep me logged in
-          </label>
+          <Checkbox
+            name="rememberMe"
+            label="Keep me logged in"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+          />
         )}
 
         {error && (
@@ -165,8 +163,8 @@ export default function Login() {
           </div>
         )}
 
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}
+        <Button type="submit" variant='login' className="w-full h-10" disabled={loading}>
+          <p className='text-sm'>{loading ? 'Please wait...' : mode === 'login' ? 'Sign in' : 'Create account'}</p>
         </Button>
       </form>
 

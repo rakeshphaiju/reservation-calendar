@@ -211,9 +211,7 @@ async def delete_account(
     user=Depends(manager),
 ):
     try:
-        result = await db.execute(
-            select(AppUser).where(AppUser.email == user.email)
-        )
+        result = await db.execute(select(AppUser).where(AppUser.email == user.email))
         db_user = result.scalars().first()
         if not db_user:
             raise HTTPException(status_code=hs.NOT_FOUND, detail="User not found")

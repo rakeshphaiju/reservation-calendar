@@ -3,14 +3,14 @@ import PropTypes from 'prop-types';
 import Button from './form/Button';
 
 const SlotButton = ({
-  day,
-  time,
-  mobile = false,
-  isPastOrToday,
-  isFullyBooked,
-  getSpotsLeft,
-  showForm,
-  slotCapacity,
+    day,
+    time,
+    mobile = false,
+    isPastOrToday,
+    isFullyBooked,
+    getSpotsLeft,
+    showForm,
+    slotCapacity,
 }) => {
     const past = isPastOrToday(day, time);
     const fullyBooked = isFullyBooked(day, time);

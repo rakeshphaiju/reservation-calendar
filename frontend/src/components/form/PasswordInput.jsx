@@ -24,7 +24,7 @@ const PasswordInput = ({ name, title, value, onChange, placeholder, required }) 
 
     return (
         <div className="space-y-0.5">
-            <label htmlFor={name} className="block text-sm font-medium text-slate-700 mb-0.5">
+            <label htmlFor={name} className="block text-sm font-extrabold text-slate-700 mb-0.5">
                 {title}
             </label>
             <div className="relative">

@@ -16,6 +16,7 @@ const Button = ({
     const variants = {
         primary: 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98]',
         secondary: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
+        login: 'bg-blue-500 text-white hover:bg-blue-400 active:scale-[0.98]',
         danger: 'bg-red-600 text-white hover:bg-red-500 active:scale-[0.98]',
         ghost: 'bg-transparent text-emerald-600 hover:text-emerald-700',
         disabled: 'cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200',

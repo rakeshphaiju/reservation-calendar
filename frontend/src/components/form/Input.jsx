@@ -16,7 +16,7 @@ const Input = (props) => {
     <div className="space-y-0.5">
       <label
         htmlFor={name}
-        className="block text-sm font-medium text-slate-700 mb-0.5"
+        className="block text-sm font-extrabold text-slate-700 mb-0.5"
       >
         {title}
       </label>

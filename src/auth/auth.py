@@ -256,9 +256,7 @@ async def load_user(identifier: str) -> User | None:
         result = await db.execute(
             select(AppUser)
             .options(joinedload(AppUser.calendar))
-            .where(
-                or_(AppUser.email == identifier, AppUser.username == identifier)
-            )
+            .where(or_(AppUser.email == identifier, AppUser.username == identifier))
         )
         user = result.scalars().first()
         if not user:

@@ -13,7 +13,7 @@ export default function Home() {
     }, []);
 
     return (
-        <div className="flex min-h-screen flex-col">
+        <div className="flex min-h-[calc(100svh-6rem)] w-full flex-col">
             <main className="flex flex-1 items-center justify-center px-4">
                 <section className="space-y-8 py-4 text-center">
                     <h1 className="text-4xl font-bold tracking-tight text-slate-800 sm:text-5xl">
