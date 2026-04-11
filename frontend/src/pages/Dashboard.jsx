@@ -369,7 +369,7 @@ const Dashboard = () => {
             Owner Dashboard
           </p>
           <h2 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">
-            Manage {currentUser?.username}&apos;s calendar
+            Manage {currentUser?.service_name || 'your'} calendar
           </h2>
           {currentUser?.calendar_slug && currentUser?.calendar_created ? (
             <p className="mt-3 text-sm text-slate-600">

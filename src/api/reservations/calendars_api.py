@@ -36,11 +36,13 @@ async def get_calendar_owners(db: AsyncSession = Depends(get_db)):
         .join(UserCalendar, AppUser.id == UserCalendar.user_id)
         .options(joinedload(AppUser.calendar))
         .where(UserCalendar.calendar_created.is_(True))
-        .order_by(AppUser.username.asc())
+        .order_by(AppUser.service_name.asc())
     )
     users = result.scalars().all()
     return [
-        CalendarOwnerSummary(username=user.username, calendar_slug=user.calendar_slug)
+        CalendarOwnerSummary(
+            service_name=user.service_name, calendar_slug=user.calendar_slug
+        )
         for user in users
     ]
 

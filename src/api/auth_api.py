@@ -75,9 +75,8 @@ def build_calendar_url(user) -> str | None:
 def _build_user_payload(user: AppUser) -> dict:
     """Return the standard user dict included in every auth response."""
     return {
-        "username": user.username,
         "email": user.email,
-        "fullname": user.fullname,
+        "service_name": user.service_name,
         "calendar_slug": user.calendar_slug,
         "calendar_created": user.calendar_created,
         "slot_capacity": get_slot_capacity(user),
@@ -102,23 +101,17 @@ async def register_user(
     payload: UserRegistrationRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    existing_username_result = await db.execute(
-        select(AppUser).where(AppUser.username == payload.username)
-    )
-    if existing_username_result.scalars().first():
-        raise HTTPException(status_code=hs.CONFLICT, detail="Username already exists")
-
     existing_email_result = await db.execute(
         select(AppUser).where(AppUser.email == payload.email)
     )
     if existing_email_result.scalars().first():
         raise HTTPException(status_code=hs.CONFLICT, detail="Email already exists")
 
-    calendar_slug = await generate_unique_calendar_slug(payload.username, db)
+    calendar_slug = await generate_unique_calendar_slug(payload.service_name, db)
     user = AppUser(
-        username=payload.username,
+        username=payload.email,
         email=payload.email,
-        fullname=payload.fullname,
+        service_name=payload.service_name,
         password_hash=hash_password(payload.password),
     )
     user.calendar = UserCalendar(
@@ -148,7 +141,7 @@ async def login(
         )
 
         access_token = manager.create_access_token(
-            data={"sub": user.username},
+            data={"sub": user.email},
             expires=expires,
         )
 
@@ -219,7 +212,7 @@ async def delete_account(
 ):
     try:
         result = await db.execute(
-            select(AppUser).where(AppUser.username == user.username)
+            select(AppUser).where(AppUser.email == user.email)
         )
         db_user = result.scalars().first()
         if not db_user:

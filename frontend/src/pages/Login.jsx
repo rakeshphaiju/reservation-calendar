@@ -12,10 +12,8 @@ export default function Login() {
   const [mode, setMode] = useState(() =>
     searchParams.get('register') === '1' ? 'register' : 'login'
   );
-  const [loginInput, setLoginInput] = useState('');
-  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [fullname, setFullname] = useState('');
+  const [serviceName, setServiceName] = useState('');
   const [password, setPassword] = useState('');
   const [retypePassword, setRetypePassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -40,19 +38,19 @@ export default function Login() {
     setLoading(true);
     try {
       if (mode === 'register') {
-        await authService.register(username.trim(), email, fullname, password);
+        await authService.register(email.trim(), serviceName.trim(), password);
         setSuccess('Account created. Sign in and finish your setup in the dashboard to create your calendar.');
         setMode('login');
       } else {
-        await authService.login(loginInput, password, rememberMe);
+        await authService.login(email.trim(), password, rememberMe);
         navigate(from, { replace: true });
       }
     } catch (err) {
       const status = err?.response?.status;
       if (status === 401) {
-        setError('Invalid username or password.');
+        setError('Invalid email or password.');
       } else if (status === 409) {
-        setError(err?.response?.data?.detail || 'That username or email is already taken.');
+        setError(err?.response?.data?.detail || 'That email is already registered.');
       } else if (status === 422) {
         setError('Please check your input and try again.');
       } else if (status >= 500) {
@@ -69,10 +67,8 @@ export default function Login() {
     setMode(mode === 'login' ? 'register' : 'login');
     setError('');
     setSuccess('');
-    setLoginInput('');
-    setUsername('');
     setEmail('');
-    setFullname('');
+    setServiceName('');
     setPassword('');
     setRetypePassword('');
     setRememberMe(false);
@@ -90,46 +86,32 @@ export default function Login() {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {mode === 'register' && (
+          <div>
+            <Input
+              name="serviceName"
+              type="text"
+              title="Service name"
+              value={serviceName}
+              onChange={(e) => setServiceName(e.target.value)}
+              required
+              placeholder=""
+            />
+          </div>
+        )}
+
         <div>
           <Input
-            name="username"
-            title={mode === 'login' ? "Username or Email" : "Username"}
-            value={mode === 'login' ? loginInput : username}
-            onChange={(e) =>
-              mode === 'login' ? setLoginInput(e.target.value) : setUsername(e.target.value)
-            }
+            name="email"
+            type="email"
+            title="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             required
             placeholder=""
+            autoComplete="email"
           />
         </div>
-
-
-        {mode === 'register' && (
-          <div>
-            <Input
-              name="fullname"
-              type="text"
-              title="Full name"
-              value={fullname}
-              onChange={(e) => setFullname(e.target.value)}
-              required
-              placeholder=""
-            />
-          </div>
-        )}
-
-        {mode === 'register' && (
-          <div>
-            <Input
-              name="email"
-              title="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              placeholder=""
-            />
-          </div>
-        )}
 
         <div>
           <PasswordInput

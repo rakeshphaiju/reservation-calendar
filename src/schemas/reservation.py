@@ -130,7 +130,7 @@ class PaginatedReservations(BaseModel):
 
 
 class CalendarOwnerSummary(BaseModel):
-    username: str
+    service_name: str
     calendar_slug: str
 
 

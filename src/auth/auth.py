@@ -10,7 +10,7 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_login import LoginManager
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -56,9 +56,8 @@ def get_default_day_time_slots() -> dict[str, list[str]]:
 
 
 class User(BaseModel):
-    username: str
-    email: EmailStr | None = None
-    fullname: str
+    email: EmailStr
+    service_name: str
     calendar_slug: str
     calendar_created: bool = True
     slot_capacity: int = 5
@@ -207,9 +206,9 @@ def _slugify(value: str) -> str:
 
 
 async def generate_unique_calendar_slug(
-    username: str, db: AsyncSession, *, excluded_username: str | None = None
+    slug_source: str, db: AsyncSession, *, excluded_email: str | None = None
 ) -> str:
-    base_slug = _slugify(username)
+    base_slug = _slugify(slug_source)
     candidate = base_slug
     suffix = 1
 
@@ -221,7 +220,9 @@ async def generate_unique_calendar_slug(
         )
         existing_calendar = result.scalars().first()
         existing_user = existing_calendar.user if existing_calendar else None
-        if not existing_user or existing_user.username == excluded_username:
+        if not existing_user or (
+            excluded_email and existing_user.email == excluded_email
+        ):
             return candidate
         suffix += 1
         candidate = f"{base_slug}-{suffix}"
@@ -231,7 +232,9 @@ async def ensure_user_calendar(user: AppUser, db: AsyncSession) -> UserCalendar:
     if user.calendar:
         return user.calendar
 
-    calendar_slug = await generate_unique_calendar_slug(user.username, db)
+    calendar_slug = await generate_unique_calendar_slug(
+        user.service_name, db, excluded_email=user.email
+    )
     calendar = UserCalendar(
         calendar_slug=calendar_slug,
         calendar_created=False,
@@ -248,20 +251,21 @@ async def ensure_user_calendar(user: AppUser, db: AsyncSession) -> UserCalendar:
 
 
 @manager.user_loader()
-async def load_user(username: str) -> User | None:
+async def load_user(identifier: str) -> User | None:
     async with get_db_context() as db:
         result = await db.execute(
             select(AppUser)
             .options(joinedload(AppUser.calendar))
-            .where(AppUser.username == username)
+            .where(
+                or_(AppUser.email == identifier, AppUser.username == identifier)
+            )
         )
         user = result.scalars().first()
         if not user:
             return None
         return User(
-            username=user.username,
             email=user.email,
-            fullname=user.fullname,
+            service_name=user.service_name,
             calendar_slug=user.calendar_slug,
             calendar_created=getattr(user, "calendar_created", True),
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
@@ -278,35 +282,33 @@ async def authenticate_user(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    login_input = form_data.username
+    login_input = (form_data.username or "").strip()
     password = form_data.password
 
-    is_email = "@" in login_input
-    if is_email:
-        result = await db.execute(
-            select(AppUser)
-            .options(joinedload(AppUser.calendar))
-            .where(AppUser.email == login_input)
+    if "@" not in login_input:
+        logger.warning("Login rejected: non-email identifier")
+        raise HTTPException(
+            status_code=hs.UNAUTHORIZED,
+            detail="Sign in with your email address and password.",
         )
-    else:
-        result = await db.execute(
-            select(AppUser)
-            .options(joinedload(AppUser.calendar))
-            .where(AppUser.username == login_input)
-        )
+
+    result = await db.execute(
+        select(AppUser)
+        .options(joinedload(AppUser.calendar))
+        .where(AppUser.email == login_input)
+    )
 
     user_record = result.scalars().first()
     if not user_record or not verify_password(password, user_record.password_hash):
         logger.warning("Invalid login attempt for user '%s'", login_input)
         raise HTTPException(
             status_code=hs.UNAUTHORIZED,
-            detail="Invalid username/email or password",
+            detail="Invalid email or password.",
         )
 
     return User(
-        username=user_record.username,
         email=user_record.email,
-        fullname=user_record.fullname,
+        service_name=user_record.service_name,
         calendar_slug=user_record.calendar_slug,
         calendar_created=getattr(user_record, "calendar_created", True),
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,

@@ -67,7 +67,7 @@ async def add_reservations(
             day=reservation.day,
             time=reservation.time,
             reservation_key=reservation_key,
-            calender_owner=owner.fullname,
+            calender_owner=owner.service_name,
         )
 
         send_admin_notification_task.delay(
@@ -166,7 +166,7 @@ async def update_reservation_by_reservation_key(
             time=db_reservation.time,
             reservation_key=reservation_key,
             is_update=True,
-            calender_owner=owner.fullname,
+            calender_owner=owner.service_name,
         )
 
         send_admin_notification_task.delay(
@@ -233,7 +233,7 @@ async def delete_reservation_by_reservation_key(
             day=snapshot["day"],
             time=snapshot["time"],
             reservation_key=reservation_key,
-            calender_owner=owner.fullname,
+            calender_owner=owner.service_name,
         )
 
         send_admin_cancellation_notification_task.delay(

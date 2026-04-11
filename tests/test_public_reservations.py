@@ -136,7 +136,7 @@ class TestPublicReservationsApi(BaseApiTest):
         reservation = self.mock_reservations[0]
 
         mock_owner = MagicMock()
-        mock_owner.fullname = "Mock Name"
+        mock_owner.service_name = "Mock Name"
         mock_owner.email = "owner@example.com"
         mock_owner.username = "owner"
         mock_get_calendar_owner.return_value = mock_owner

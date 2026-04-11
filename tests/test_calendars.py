@@ -15,7 +15,7 @@ class TestCalendarsApi(BaseApiTest):
             AppUser(
                 username="alice",
                 email="alice@example.com",
-                fullname="Alice Example",
+                service_name="Alice Example",
                 password_hash="hash",
                 calendar_slug="alice",
                 calendar_created=True,
@@ -23,7 +23,7 @@ class TestCalendarsApi(BaseApiTest):
             AppUser(
                 username="bob",
                 email="bob@example.com",
-                fullname="Bob Example",
+                service_name="Bob Example",
                 password_hash="hash",
                 calendar_slug="bob",
                 calendar_created=True,
@@ -39,8 +39,8 @@ class TestCalendarsApi(BaseApiTest):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual(
             [
-                {"username": "alice", "calendar_slug": "alice"},
-                {"username": "bob", "calendar_slug": "bob"},
+                {"service_name": "Alice Example", "calendar_slug": "alice"},
+                {"service_name": "Bob Example", "calendar_slug": "bob"},
             ],
             resp.json(),
         )
@@ -50,7 +50,7 @@ class TestCalendarsApi(BaseApiTest):
         mock_user_result.scalars.return_value.first.return_value = AppUser(
             username="mock-user",
             email="owner@example.com",
-            fullname="Mock User",
+            service_name="Mock User",
             password_hash="hash",
             calendar_slug="mock-user",
             calendar_created=True,

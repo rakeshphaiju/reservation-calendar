@@ -5,8 +5,8 @@ import BookingNestLogo from '/images/Booking-Nest-logo.png';
 import { authService } from '../../services/auth';
 
 function getInitials(user) {
-  if (user?.fullname?.trim()) {
-    const [firstName, ...rest] = user.fullname.trim().split(' ');
+  if (user?.service_name?.trim()) {
+    const [firstName, ...rest] = user.service_name.trim().split(' ');
     const lastName = rest.join(' ');
 
     if (firstName && lastName) {
@@ -18,16 +18,12 @@ function getInitials(user) {
     }
   }
 
-  const usernameParts = user?.username
-    ?.trim()
-    ?.split(/[\s._-]+/)
-    .filter(Boolean);
-
-  if (usernameParts?.length >= 2) {
-    return `${usernameParts[0][0]}${usernameParts[1][0]}`.toUpperCase();
+  const emailLocal = user?.email?.split('@')[0]?.trim();
+  if (emailLocal && emailLocal.length >= 2) {
+    return emailLocal.slice(0, 2).toUpperCase();
   }
 
-  return user?.username?.slice(0, 2).toUpperCase() || 'U';
+  return user?.email?.slice(0, 2).toUpperCase() || 'U';
 }
 
 function getDisplayName(user) {
@@ -42,7 +38,7 @@ function getDisplayName(user) {
     return firstName;
   }
 
-  return user?.fullname || 'User';
+  return user?.service_name || 'User';
 }
 
 export default function Navbar() {
@@ -86,7 +82,7 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const username = user?.username;
+  const accountEmail = user?.email;
   const initials = getInitials(user);
   const displayName = getDisplayName(user);
 
@@ -124,7 +120,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            {username ? (
+            {accountEmail ? (
               <div ref={dropdownRef} className="relative">
                 <button
                   onClick={() => setIsOpen((prev) => !prev)}
@@ -145,7 +141,7 @@ export default function Navbar() {
                       <p className="text-sm font-semibold text-slate-900">
                         {displayName}
                       </p>
-                      <p className="text-xs text-slate-500">{username}</p>
+                      <p className="text-xs text-slate-500">{accountEmail}</p>
                     </div>
 
                     <div className="p-2">

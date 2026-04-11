@@ -37,11 +37,11 @@ from src.api.reservations._utils import (
 router = APIRouter()
 
 
-async def _get_db_user(username: str, db: AsyncSession) -> AppUser:
+async def _get_db_user(email: str, db: AsyncSession) -> AppUser:
     result = await db.execute(
         select(AppUser)
         .options(joinedload(AppUser.calendar))
-        .where(AppUser.username == username)
+        .where(AppUser.email == email)
     )
     db_user = result.scalars().first()
     if not db_user:
@@ -64,7 +64,7 @@ async def update_slot_capacity(
     user=Depends(manager),
 ):
     try:
-        db_user = await _get_db_user(user.username, db)
+        db_user = await _get_db_user(user.email, db)
         db_user.calendar.slot_capacity = payload.slot_capacity
         await db.commit()
         await db.refresh(db_user.calendar)
@@ -92,7 +92,7 @@ async def update_max_weeks(
     user=Depends(manager),
 ):
     try:
-        db_user = await _get_db_user(user.username, db)
+        db_user = await _get_db_user(user.email, db)
         db_user.calendar.max_weeks = payload.max_weeks
         await db.commit()
         await db.refresh(db_user.calendar)
@@ -123,7 +123,7 @@ async def update_time_slots(
     user=Depends(manager),
 ):
     try:
-        db_user = await _get_db_user(user.username, db)
+        db_user = await _get_db_user(user.email, db)
         day_time_slots = payload.get_day_time_slots() or get_default_day_time_slots()
         db_user.calendar.day_time_slots = json.dumps(day_time_slots)
         merged_time_slots: list[str] = []
@@ -166,7 +166,7 @@ async def update_bookable_days(
     user=Depends(manager),
 ):
     try:
-        db_user = await _get_db_user(user.username, db)
+        db_user = await _get_db_user(user.email, db)
         db_user.calendar.bookable_days = json.dumps(
             payload.bookable_days or DEFAULT_BOOKABLE_DAYS
         )
@@ -199,7 +199,7 @@ async def update_calendar_details(
     user=Depends(manager),
 ):
     try:
-        db_user = await _get_db_user(user.username, db)
+        db_user = await _get_db_user(user.email, db)
         db_user.calendar.calendar_description = payload.calendar_description
         db_user.calendar.calendar_location = payload.calendar_location
         await db.commit()
@@ -225,7 +225,7 @@ async def create_calendar(
     user=Depends(manager),
 ):
     try:
-        db_user = await _get_db_user(user.username, db)
+        db_user = await _get_db_user(user.email, db)
         if not db_user.calendar.calendar_created:
             db_user.calendar.calendar_created = True
             await db.commit()
@@ -253,7 +253,7 @@ async def make_calendar_private(
     user=Depends(manager),
 ):
     try:
-        db_user = await _get_db_user(user.username, db)
+        db_user = await _get_db_user(user.email, db)
         if db_user.calendar.calendar_created:
             db_user.calendar.calendar_created = False
             await db.commit()

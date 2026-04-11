@@ -4,9 +4,8 @@ from src.auth.auth import manager, User
 def mock_logged_in_user(app):
     def _get_logged_in_user():
         return User(
-            username="mock-user",
             email="mock-user@example.com",
-            fullname="Mock User",
+            service_name="Mock User",
             calendar_slug="mock-user",
             calendar_created=True,
             max_weeks=4,

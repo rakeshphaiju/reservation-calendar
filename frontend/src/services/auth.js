@@ -7,10 +7,9 @@ const notify = () => {
   listeners.forEach((listener) => listener(currentUser));
 };
 
-const normalizeUser = (data, fallbackUsername = '') => ({
-  username: data.username || fallbackUsername,
-  email: data.email,
-  fullname: data.fullname,
+const normalizeUser = (data, fallbackEmail = '') => ({
+  email: data.email || fallbackEmail,
+  service_name: data.service_name,
   first_name: data.first_name || data.firstname || '',
   last_name: data.last_name || data.lastname || '',
   calendar_slug: data.calendar_slug,
@@ -37,9 +36,9 @@ export const authService = {
     return currentUser;
   },
 
-  login: async (username, password, rememberMe = false) => {
+  login: async (email, password, rememberMe = false) => {
     const params = new URLSearchParams();
-    params.append('username', username);
+    params.append('username', email);
     params.append('password', password);
     params.append('remember_me', rememberMe);
 
@@ -47,14 +46,18 @@ export const authService = {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
-    currentUser = normalizeUser(data, username);
+    currentUser = normalizeUser(data, email);
     notify();
 
     return currentUser;
   },
 
-  register: async (username, email, fullname, password) => {
-    const { data } = await apiClient.post('/auth/register', { username, email, fullname, password });
+  register: async (email, serviceName, password) => {
+    const { data } = await apiClient.post('/auth/register', {
+      email,
+      service_name: serviceName,
+      password,
+    });
     currentUser = null;
     notify();
 

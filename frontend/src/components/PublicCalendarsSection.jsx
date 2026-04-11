@@ -24,7 +24,7 @@ export default function PublicCalendarsSection({ calendars }) {
                             to={`/calendar/${calendar.calendar_slug}`}
                             className="rounded-xl border border-slate-200 px-4 py-4 transition-colors hover:border-emerald-300 hover:bg-emerald-50"
                         >
-                            <div className="font-semibold text-slate-800">{calendar.username}</div>
+                            <div className="font-semibold text-slate-800">{calendar.service_name}</div>
                             <div className="mt-1 text-sm text-slate-500">
                                 /calendar/{calendar.calendar_slug}
                             </div>

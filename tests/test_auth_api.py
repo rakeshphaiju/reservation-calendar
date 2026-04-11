@@ -20,14 +20,13 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
 
     async def test_admin_login(self):
         app.dependency_overrides[authenticate_user] = lambda: User(
-            username="testuser",
             email="testuser@example.com",
-            fullname="Test User",
+            service_name="Test User",
             calendar_slug="testuser",
         )
         resp = await self.client.post(
             "/api/auth/login",
-            data={"username": "testuser", "password": "testpass"},
+            data={"username": "testuser@example.com", "password": "testpass"},
         )
         self.assertEqual(hs.OK, resp.status_code)
         self.assertIn("access-token", resp.cookies)
@@ -40,9 +39,6 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertIn("calendar_location", resp.json())
 
     async def test_register_user(self):
-        existing_username_result = MagicMock()
-        existing_username_result.scalars.return_value.first.return_value = None
-
         existing_email_result = MagicMock()
         existing_email_result.scalars.return_value.first.return_value = None
 
@@ -52,7 +48,6 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         mock_db = AsyncMock()
         mock_db.add = MagicMock()
         mock_db.execute.side_effect = [
-            existing_username_result,
             existing_email_result,
             unique_slug_result,
         ]
@@ -62,14 +57,12 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         resp = await self.client.post(
             "/api/auth/register",
             json={
-                "username": "new-user",
                 "email": "new-user@example.com",
-                "fullname": "New User",
+                "service_name": "New User",
                 "password": "strongpass123",
             },
         )
         self.assertEqual(hs.OK, resp.status_code)
-        self.assertEqual("new-user", resp.json()["username"])
         self.assertEqual("new-user@example.com", resp.json()["email"])
         self.assertEqual("new-user", resp.json()["calendar_slug"])
         self.assertFalse(resp.json()["calendar_created"])
@@ -87,7 +80,6 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         mock_logged_in_user(app)
         resp = await self.client.get("/api/auth/me")
         self.assertEqual(hs.OK, resp.status_code)
-        self.assertEqual("mock-user", resp.json()["username"])
         self.assertEqual("mock-user@example.com", resp.json()["email"])
         self.assertEqual("mock-user", resp.json()["calendar_slug"])
         self.assertTrue(resp.json()["calendar_created"])
@@ -111,7 +103,7 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
     async def test_delete_account_success(self):
         mock_user_result = MagicMock()
         mock_user = MagicMock()
-        mock_user.username = "mock-user"
+        mock_user.email = "mock-user@example.com"
         mock_user.calendar_slug = "mock-user"
         mock_user_result.scalars.return_value.first.return_value = mock_user
 
@@ -149,16 +141,15 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
 
     async def test_admin_login_with_remember_me(self):
         app.dependency_overrides[authenticate_user] = lambda: User(
-            username="testuser",
             email="testuser@example.com",
-            fullname="Test User",
+            service_name="Test User",
             calendar_slug="testuser",
         )
 
         resp = await self.client.post(
             "/api/auth/login",
             data={
-                "username": "testuser",
+                "username": "testuser@example.com",
                 "password": "testpass",
                 "remember_me": "true",
             },
