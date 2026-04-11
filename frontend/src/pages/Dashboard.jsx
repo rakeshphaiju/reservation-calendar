@@ -12,6 +12,7 @@ import TimeSlotsSettings from '../components/dashboard/TimeSlotsSettings';
 import CalendarDetailsSettings from '../components/dashboard/CalendarDetailsSettings';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import DeleteAccountSection from '../components/dashboard/DeleteAccountSection';
+import Footer from '../components/header/Footer';
 
 
 const DEFAULT_TIME_SLOTS = [
@@ -462,6 +463,7 @@ const Dashboard = () => {
       </div>
 
       {/* <ReservationList reservations={reservations} onDelete={handleDelete} /> */}
+      <Footer />
     </div>
   );
 };

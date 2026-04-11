@@ -1,6 +1,6 @@
-// src/pages/ReservationListPage.jsx
 import React, { useEffect, useState } from 'react';
 import ReservationList from '../components/dashboard/ReservationList';
+import Footer from '../components/header/Footer';
 import { reservationService } from '../services/api';
 
 export default function ReservationListPage() {
@@ -62,6 +62,7 @@ export default function ReservationListPage() {
                     onDelete={handleDelete}
                 />
             )}
+            <Footer />
         </div >
     );
 }
