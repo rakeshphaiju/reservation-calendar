@@ -13,6 +13,7 @@ from src.auth.auth import (
     ensure_user_calendar,
     get_default_day_time_slots,
     manager,
+    sort_time_slots,
 )
 from src.common.db import get_db
 from src.common.logger import logger
@@ -135,7 +136,7 @@ async def update_time_slots(
                 seen.add(slot)
                 merged_time_slots.append(slot)
         db_user.calendar.time_slots = json.dumps(
-            merged_time_slots or DEFAULT_TIME_SLOTS
+            sort_time_slots(merged_time_slots) or DEFAULT_TIME_SLOTS
         )
         await db.commit()
         await db.refresh(db_user.calendar)

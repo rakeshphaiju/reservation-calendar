@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { reservationService } from '../services/api';
+import { sortTimeSlots } from '../utils/timeSlots';
 
 const DEFAULT_TIME_SLOTS = [
     '10:00-11:00',
@@ -28,7 +29,7 @@ const DEFAULT_DAY_TIME_SLOTS = WEEKDAY_OPTIONS.reduce((acc, day) => {
 const getNormalizedDayTimeSlots = (dayTimeSlots, fallbackTimeSlots = DEFAULT_TIME_SLOTS) =>
     WEEKDAY_OPTIONS.reduce((acc, day) => {
         const nextSlots = dayTimeSlots?.[day]?.length ? dayTimeSlots[day] : fallbackTimeSlots;
-        acc[day] = [...nextSlots];
+        acc[day] = sortTimeSlots(nextSlots);
         return acc;
     }, {});
 
@@ -44,7 +45,7 @@ const getMergedTimeSlots = (dayTimeSlots) => {
         });
     });
 
-    return merged.length ? merged : DEFAULT_TIME_SLOTS;
+    return merged.length ? sortTimeSlots(merged) : DEFAULT_TIME_SLOTS;
 };
 
 export const useReservation = (ownerSlug) => {
