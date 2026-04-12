@@ -6,6 +6,7 @@ def mock_logged_in_user(app):
         return User(
             email="mock-user@example.com",
             service_name="Mock User",
+            is_verified=True,
             calendar_slug="mock-user",
             calendar_created=True,
             max_weeks=4,

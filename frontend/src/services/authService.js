@@ -22,6 +22,7 @@ const normalizeUser = (data, fallbackEmail = '') => ({
   bookable_days: data.bookable_days,
   calendar_description: data.calendar_description,
   calendar_location: data.calendar_location,
+  is_verified: data.is_verified ?? false,
 });
 
 export const authService = {
@@ -60,7 +61,16 @@ export const authService = {
     });
     currentUser = null;
     notify();
+    return data;
+  },
 
+  verifyEmail: async (email, code) => {
+    const { data } = await apiClient.post('/auth/verify-email', { email, code });
+    return data;
+  },
+
+  resendVerification: async (email) => {
+    const { data } = await apiClient.post('/auth/resend-verify', { email });
     return data;
   },
 

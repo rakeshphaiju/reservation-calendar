@@ -24,15 +24,24 @@ from src.auth.auth import (
     hash_password,
     manager,
 )
+from src.auth.email_verification import (
+    can_resend,
+    create_and_store_otp,
+    set_resend_lock,
+    verify_otp,
+)
+from src.services.email_service import send_verification_email
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
 from src.models.user import AppUser, UserCalendar
-from src.schemas.user import UserRegistrationRequest
-
+from src.schemas.user import (
+    UserRegistrationRequest,
+    VerifyEmailRequest,
+    ResendVerificationRequest,
+)
 
 router = APIRouter()
-
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REMEMBER_ME_EXPIRE_DAYS = 30
@@ -73,7 +82,6 @@ def build_calendar_url(user) -> str | None:
 
 
 def _build_user_payload(user: AppUser) -> dict:
-    """Return the standard user dict included in every auth response."""
     return {
         "email": user.email,
         "service_name": user.service_name,
@@ -87,12 +95,12 @@ def _build_user_payload(user: AppUser) -> dict:
         "calendar_description": get_calendar_description(user),
         "calendar_location": get_calendar_location(user),
         "calendar_url": build_calendar_url(user),
+        "is_verified": getattr(user, "is_verified", False),
     }
 
 
 @router.get("/api/auth/register")
 async def register_get_redirect():
-    """Registration is POST-only; browsers that open this URL get sent to the UI."""
     return RedirectResponse(url="/login?register=1", status_code=307)
 
 
@@ -113,6 +121,7 @@ async def register_user(
         email=payload.email,
         service_name=payload.service_name,
         password_hash=hash_password(payload.password),
+        is_verified=False,
     )
     user.calendar = UserCalendar(
         calendar_slug=calendar_slug,
@@ -121,10 +130,90 @@ async def register_user(
         day_time_slots=json.dumps(get_default_day_time_slots()),
         bookable_days=json.dumps(get_bookable_days(None) or DEFAULT_BOOKABLE_DAYS),
     )
+
     db.add(user)
     await db.commit()
 
-    return _build_user_payload(user)
+    try:
+        code = await create_and_store_otp(payload.email)
+        await set_resend_lock(payload.email)
+        await send_verification_email(payload.email, payload.service_name, code)
+    except Exception as exc:
+        logger.error("Failed to send OTP email to %s: %s", payload.email, exc)
+
+    logger.info(
+        "Registered user '%s' (unverified), calendar '%s'",
+        user.username,
+        calendar_slug,
+    )
+
+    return {
+        **_build_user_payload(user),
+        "is_verified": False,
+        "message": "Account created. Please check your email for a 6-digit verification code.",
+    }
+
+
+@router.post("/api/auth/verify-email")
+async def verify_email(
+    payload: VerifyEmailRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(AppUser).where(AppUser.email == payload.email))
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(status_code=hs.NOT_FOUND, detail="User not found")
+
+    if getattr(user, "is_verified", False):
+        return {"message": "Email already verified. You can sign in."}
+
+    if not await verify_otp(payload.email, payload.code):
+        raise HTTPException(
+            status_code=hs.UNPROCESSABLE_ENTITY,
+            detail="Invalid or expired verification code.",
+        )
+
+    user.is_verified = True
+    await db.commit()
+
+    logger.info("User '%s' verified their email", user.username)
+    return {"message": "Email verified successfully. You can now sign in."}
+
+
+@router.post("/api/auth/resend-verify")
+async def resend_verification(
+    payload: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(AppUser).where(AppUser.email == payload.email))
+    user = result.scalars().first()
+
+    if not user or getattr(user, "is_verified", False):
+        return {
+            "message": "If that email exists and is unverified, a new code has been sent."
+        }
+
+    if not await can_resend(payload.email):
+        raise HTTPException(
+            status_code=hs.TOO_MANY_REQUESTS,
+            detail="Please wait before requesting a new code.",
+        )
+
+    try:
+        code = await create_and_store_otp(payload.email)
+        await set_resend_lock(payload.email)
+        await send_verification_email(payload.email, user.service_name, code)
+    except Exception as exc:
+        logger.error("Failed to resend OTP to %s: %s", payload.email, exc)
+        raise HTTPException(
+            status_code=hs.INTERNAL_SERVER_ERROR,
+            detail="Failed to send email.",
+        )
+
+    return {
+        "message": "If that email exists and is unverified, a new code has been sent."
+    }
 
 
 @router.post(TOKEN_URL)
@@ -133,18 +222,22 @@ async def login(
     remember_me: bool = Form(False),
     user: User = Depends(authenticate_user),
 ):
+    if not getattr(user, "is_verified", False):
+        raise HTTPException(
+            status_code=hs.FORBIDDEN,
+            detail="Please verify your email before signing in.",
+        )
+
     try:
         expires = (
             timedelta(days=REMEMBER_ME_EXPIRE_DAYS)
             if remember_me
             else timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
-
         access_token = manager.create_access_token(
             data={"sub": user.email},
             expires=expires,
         )
-
         response.set_cookie(
             key="access-token",
             value=access_token,
@@ -166,6 +259,12 @@ async def login(
 
 @router.get("/api/auth/me")
 async def get_me(user=Depends(manager)):
+    if not getattr(user, "is_verified", False):
+        raise HTTPException(
+            status_code=hs.FORBIDDEN,
+            detail="Please verify your email before signing in.",
+        )
+
     try:
         return {
             **_build_user_payload(user),

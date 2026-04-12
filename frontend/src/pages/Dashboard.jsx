@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCopy, faCheck } from '@fortawesome/free-solid-svg-icons';
 
 import { reservationService } from '../services/api';
-import { authService } from '../services/auth';
+import { authService } from '../services/authService';
 
 import CalendarSetupCard from '../components/dashboard/CalendarSetupCard';
 import CapacitySettings from '../components/dashboard/CapacitySettings';
@@ -61,6 +63,7 @@ const Dashboard = () => {
   const [creatingCalendar, setCreatingCalendar] = useState(false);
   const [makingCalendarPrivate, setMakingCalendarPrivate] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState({
     capacity: EMPTY_FEEDBACK,
     maxWeeks: EMPTY_FEEDBACK,
@@ -167,11 +170,7 @@ const Dashboard = () => {
       setCapacity(String(response.slot_capacity));
       setFieldFeedback('capacity', 'success', 'Slot capacity updated successfully.');
     } catch (error) {
-      setFieldFeedback(
-        'capacity',
-        'error',
-        error?.response?.data?.detail || 'Failed to update slot capacity.'
-      );
+      setFieldFeedback('capacity', 'error', error?.response?.data?.detail || 'Failed to update slot capacity.');
     } finally {
       setSavingCapacity(false);
     }
@@ -191,11 +190,7 @@ const Dashboard = () => {
       setMaxWeeks(String(response.max_weeks));
       setFieldFeedback('maxWeeks', 'success', 'Booking window updated successfully.');
     } catch (error) {
-      setFieldFeedback(
-        'maxWeeks',
-        'error',
-        error?.response?.data?.detail || 'Failed to update booking window.'
-      );
+      setFieldFeedback('maxWeeks', 'error', error?.response?.data?.detail || 'Failed to update booking window.');
     } finally {
       setSavingMaxWeeks(false);
     }
@@ -233,11 +228,7 @@ const Dashboard = () => {
       );
       setFieldFeedback('timeSlots', 'success', 'Time slots updated successfully.');
     } catch (error) {
-      setFieldFeedback(
-        'timeSlots',
-        'error',
-        error?.response?.data?.detail || 'Failed to update time slots.'
-      );
+      setFieldFeedback('timeSlots', 'error', error?.response?.data?.detail || 'Failed to update time slots.');
     } finally {
       setSavingTimeSlots(false);
     }
@@ -271,11 +262,7 @@ const Dashboard = () => {
       setBookableDays(response.bookable_days);
       setFieldFeedback('bookableDays', 'success', 'Bookable days updated successfully.');
     } catch (error) {
-      setFieldFeedback(
-        'bookableDays',
-        'error',
-        error?.response?.data?.detail || 'Failed to update bookable days.'
-      );
+      setFieldFeedback('bookableDays', 'error', error?.response?.data?.detail || 'Failed to update bookable days.');
     } finally {
       setSavingBookableDays(false);
     }
@@ -298,11 +285,7 @@ const Dashboard = () => {
       setCalendarLocation(response.calendar_location || '');
       setFieldFeedback('calendarDetails', 'success', 'Calendar details updated successfully.');
     } catch (error) {
-      setFieldFeedback(
-        'calendarDetails',
-        'error',
-        error?.response?.data?.detail || 'Failed to update calendar details.'
-      );
+      setFieldFeedback('calendarDetails', 'error', error?.response?.data?.detail || 'Failed to update calendar details.');
     } finally {
       setSavingCalendarDetails(false);
     }
@@ -358,6 +341,15 @@ const Dashboard = () => {
   };
 
 
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(
+      `https://www.bookingnest.me/calendar/${currentUser.calendar_slug}`
+    );
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+
   if (loading) return <div className="p-8 text-center">Loading owner dashboard...</div>;
 
 
@@ -374,10 +366,25 @@ const Dashboard = () => {
             Manage {currentUser?.service_name || 'your'} calendar
           </h2>
           {currentUser?.calendar_slug && currentUser?.calendar_created ? (
-            <p className="mt-3 text-sm text-slate-600">
-              Public booking link:{' '}
-              <span className="font-semibold">www.bookingnest.me/calendar/{currentUser.calendar_slug}</span>
-            </p>
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
+              <p className="text-sm text-slate-600">
+                Public booking link:{' '}
+                <span className="font-semibold">
+                  www.bookingnest.me/calendar/{currentUser.calendar_slug}
+                </span>
+              </p>
+              <button
+                onClick={handleCopyLink}
+                title="Copy link"
+                className="flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
+              >
+                {copied ? (
+                  <FontAwesomeIcon icon={faCheck} className="h-4 w-4 text-green-600" />
+                ) : (
+                  <FontAwesomeIcon icon={faCopy} className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           ) : (
             <p className="mt-3 text-sm text-amber-700">
               Your calendar is still private. Customize the settings below, then create it.
@@ -464,11 +471,9 @@ const Dashboard = () => {
         </Link>
       </div>
 
-      {/* <ReservationList reservations={reservations} onDelete={handleDelete} /> */}
       <Footer />
     </div>
   );
 };
-
 
 export default Dashboard;

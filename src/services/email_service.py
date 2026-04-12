@@ -3,7 +3,9 @@ import resend
 from pydantic import EmailStr
 from src.common.logger import logger
 
+
 resend.api_key = os.getenv("RESEND_API_KEY")
+
 
 MAIL_FROM = os.getenv("MAIL_FROM", "onboarding@resend.dev")
 MAIL_FROM_NAME = os.getenv("MAIL_FROM_NAME", "Booking Nest")
@@ -16,6 +18,37 @@ def _send(*, to: str, subject: str, html: str, context: str) -> None:
         resend.Emails.send({"from": FROM, "to": to, "subject": subject, "html": html})
     except Exception as e:
         logger.error("Failed to send %s email to %s. Error: %s", context, to, str(e))
+
+
+async def send_verification_email(email: str, fullname: str, code: str) -> None:
+    """Send the 6-digit OTP to the user's inbox."""
+    first_name = fullname.split()[0] if fullname else "there"
+
+    html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px; max-width: 480px;">
+        <h2 style="color: #1a1a1a;">Verify your email</h2>
+        <p>Hi <strong>{first_name}</strong>, thanks for signing up for <strong>Booking Nest</strong>.</p>
+        <p>Enter the code below to activate your account. It expires in <strong>15 minutes</strong>.</p>
+        <div style="display:inline-block;padding:16px 32px;background:#f4f4f4;border-radius:8px;font-size:36px;font-weight:700;letter-spacing:12px;color:#111;margin:16px 0;">
+          {code}
+        </div>
+        <p style="color:#888;font-size:13px;">
+          If you didn't create an account, you can safely ignore this email.
+        </p>
+        <p style="font-size: 12px; color: gray;">
+          Please do not reply to this message. The message was sent automatically and replies will not be read.
+        </p>
+      </body>
+    </html>
+    """
+
+    _send(
+        to=email,
+        subject="Your Booking Nest verification code",
+        html=html,
+        context="email verification",
+    )
 
 
 async def send_confirmation_email(

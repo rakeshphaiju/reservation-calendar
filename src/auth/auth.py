@@ -62,6 +62,7 @@ def get_default_day_time_slots() -> dict[str, list[str]]:
 class User(BaseModel):
     email: EmailStr
     service_name: str
+    is_verified: bool = False
     calendar_slug: str
     calendar_created: bool = True
     slot_capacity: int = 5
@@ -269,6 +270,7 @@ async def load_user(identifier: str) -> User | None:
         return User(
             email=user.email,
             service_name=user.service_name,
+            is_verified=getattr(user, "is_verified", False),
             calendar_slug=user.calendar_slug,
             calendar_created=getattr(user, "calendar_created", True),
             slot_capacity=getattr(user, "slot_capacity", 5) or 5,
@@ -309,9 +311,17 @@ async def authenticate_user(
             detail="Invalid email or password.",
         )
 
+    if not getattr(user_record, "is_verified", False):
+        logger.warning("Unverified login attempt for user '%s'", login_input)
+        raise HTTPException(
+            status_code=hs.FORBIDDEN,
+            detail="Please verify your email before signing in.",
+        )
+
     return User(
         email=user_record.email,
         service_name=user_record.service_name,
+        is_verified=getattr(user_record, "is_verified", False),
         calendar_slug=user_record.calendar_slug,
         calendar_created=getattr(user_record, "calendar_created", True),
         slot_capacity=getattr(user_record, "slot_capacity", 5) or 5,

@@ -5,6 +5,7 @@ from src.services.email_service import (
     send_admin_cancellation_notification,
     send_cancellation_email,
     send_confirmation_email,
+    send_verification_email,
 )
 from src.tasks.celery_app import celery_app
 from src.tasks.scripts.cleanup_past_reservations import cleanup_past_reservations
@@ -102,6 +103,21 @@ def send_admin_cancellation_notification_task(
             time=time,
             reservation_id=reservation_id,
             reservation_key=reservation_key,
+        )
+    )
+
+
+@celery_app.task(name="src.tasks.celery_tasks.send_verification_email_task")
+def send_verification_email_task(
+    email: str,
+    fullname: str,
+    code: str,
+):
+    asyncio.run(
+        send_verification_email(
+            email=email,
+            fullname=fullname,
+            code=code,
         )
     )
 

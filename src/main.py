@@ -36,6 +36,22 @@ async def ensure_schema_columns():
         await conn.execute(
             text(
                 """
+                CREATE TABLE IF NOT EXISTS users (
+                    id UUID PRIMARY KEY,
+                    username VARCHAR NOT NULL UNIQUE,
+                    fullname VARCHAR,
+                    email VARCHAR UNIQUE,
+                    password_hash VARCHAR NOT NULL,
+                    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
+                """
+            )
+        )
+
+        await conn.execute(
+            text(
+                """
                 CREATE TABLE IF NOT EXISTS user_calendars (
                     id UUID PRIMARY KEY,
                     user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -53,54 +69,25 @@ async def ensure_schema_columns():
                 """
             )
         )
+
         await conn.execute(
             text(
                 """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS email VARCHAR
+                CREATE TABLE IF NOT EXISTS reservations (
+                    id UUID PRIMARY KEY,
+                    owner_slug VARCHAR NOT NULL,
+                    name VARCHAR NOT NULL,
+                    email VARCHAR NOT NULL,
+                    phone VARCHAR,
+                    day VARCHAR NOT NULL,
+                    time VARCHAR NOT NULL,
+                    reservation_key VARCHAR NOT NULL UNIQUE,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
                 """
             )
         )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS fullname VARCHAR
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE reservations
-                ADD COLUMN IF NOT EXISTS reservation_key VARCHAR
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE reservations
-                ADD COLUMN IF NOT EXISTS created_at TIMESTAMP
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS ix_reservations_reservation_key
-                ON reservations (reservation_key)
-                """
-            )
-        )
+
         await conn.execute(
             text(
                 """

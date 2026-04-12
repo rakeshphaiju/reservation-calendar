@@ -12,6 +12,15 @@ class UserRegistrationRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
 
 
+class VerifyEmailRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(..., min_length=6, max_length=6, pattern=r"^\d{6}$")
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
 class UserResponse(BaseModel):
     email: EmailStr | None = None
     service_name: str
@@ -30,3 +39,4 @@ class UserResponse(BaseModel):
     calendar_description: str | None = None
     calendar_location: str | None = None
     authenticated: bool = True
+    is_verified: bool = False

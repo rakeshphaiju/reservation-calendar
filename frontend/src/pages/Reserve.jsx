@@ -92,10 +92,16 @@ const Reserve = () => {
     );
   }
 
+  const formatSlugAsName = (slug) =>
+    slug
+      .replace(/-\d+$/, '')
+      .replace(/-/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
   return (
     <div>
       <h2 className="mb-3 text-center text-xl font-bold text-slate-800 sm:text-2xl">
-        Reserve your spot on {ownerSlug}&apos;s calendar
+        Reserve your spot on {formatSlugAsName(ownerSlug)}&apos;s calendar
       </h2>
 
       {(calendarDescription || calendarLocation) && (
