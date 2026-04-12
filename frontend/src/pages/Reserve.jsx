@@ -1,6 +1,8 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import moment from 'moment';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLocationArrow } from '@fortawesome/free-solid-svg-icons';
 
 import Button from '../components/form/Button';
 import ReservationModal from '../components/ReservationModal';
@@ -112,7 +114,16 @@ const Reserve = () => {
           )}
           {calendarLocation && (
             <p className="mt-3 text-sm text-slate-700">
-              <span className="font-semibold">Location:</span> {calendarLocation}
+              <span className="font-semibold">Location:</span> {calendarLocation}{' '}
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(calendarLocation)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open in Google Maps"
+                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                <FontAwesomeIcon icon={faLocationArrow} className="h-3.5 w-3.5" />
+              </a>
             </p>
           )}
         </section>

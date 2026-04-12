@@ -15,7 +15,7 @@ export default function CalendarDetailsSettings({
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <label className="block text-sm font-semibold text-slate-800" htmlFor="calendar-description">
-        Calendar description
+        Description
       </label>
       <p className="mt-1 text-sm text-slate-500">
         Optional text that appears on your public calendar page.
@@ -31,7 +31,7 @@ export default function CalendarDetailsSettings({
       />
 
       <label className="mt-4 block text-sm font-semibold text-slate-800" htmlFor="calendar-location">
-        Calendar location
+        Location
       </label>
       <p className="mt-1 text-sm text-slate-500">
         Optional place, room, address, or meeting point shown in My Calendar.
