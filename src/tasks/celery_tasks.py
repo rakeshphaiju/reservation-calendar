@@ -110,13 +110,13 @@ def send_admin_cancellation_notification_task(
 @celery_app.task(name="src.tasks.celery_tasks.send_verification_email_task")
 def send_verification_email_task(
     email: str,
-    fullname: str,
+    service_name: str,
     code: str,
 ):
     asyncio.run(
         send_verification_email(
             email=email,
-            fullname=fullname,
+            service_name=service_name,
             code=code,
         )
     )

@@ -163,7 +163,7 @@ class TestEmailService(BaseApiTest):
     async def test_verification_email_sent(self, mock_send):
         await send_verification_email(
             email="user@example.com",
-            fullname="John Doe",
+            service_name="John Doe",
             code="123456",
         )
 
@@ -178,7 +178,7 @@ class TestEmailService(BaseApiTest):
     async def test_verification_with_long_name(self, mock_send):
         await send_verification_email(
             email="user@example.com",
-            fullname="John Paul McCartney",
+            service_name="John Paul McCartney",
             code="789012",
         )
 
@@ -192,7 +192,7 @@ class TestEmailService(BaseApiTest):
 
         await send_verification_email(
             email="user@example.com",
-            fullname="John Doe",
+            service_name="John Doe",
             code="123456",
         )
 

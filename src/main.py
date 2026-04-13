@@ -39,7 +39,7 @@ async def ensure_schema_columns():
                 CREATE TABLE IF NOT EXISTS users (
                     id UUID PRIMARY KEY,
                     username VARCHAR NOT NULL UNIQUE,
-                    fullname VARCHAR,
+                    service_name VARCHAR,
                     email VARCHAR UNIQUE,
                     password_hash VARCHAR NOT NULL,
                     is_verified BOOLEAN NOT NULL DEFAULT FALSE,
@@ -101,6 +101,33 @@ async def ensure_schema_columns():
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS ux_reservations_owner_day_time_email
                 ON reservations (owner_slug, day, time, email)
+                """
+            )
+        )
+
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS service_name VARCHAR
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                UPDATE users
+                SET service_name = fullname
+                WHERE service_name IS NULL
+                AND fullname IS NOT NULL
+                """
+            )
+        )
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE users
+                DROP COLUMN IF EXISTS fullname
                 """
             )
         )

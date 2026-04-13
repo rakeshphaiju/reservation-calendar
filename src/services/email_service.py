@@ -20,9 +20,9 @@ def _send(*, to: str, subject: str, html: str, context: str) -> None:
         logger.error("Failed to send %s email to %s. Error: %s", context, to, str(e))
 
 
-async def send_verification_email(email: str, fullname: str, code: str) -> None:
+async def send_verification_email(email: str, service_name: str, code: str) -> None:
     """Send the 6-digit OTP to the user's inbox."""
-    first_name = fullname.split()[0] if fullname else "there"
+    first_name = service_name.split()[0] if service_name else "there"
 
     html = f"""
     <html>
