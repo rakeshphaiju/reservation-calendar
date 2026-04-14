@@ -1,7 +1,7 @@
 import os
+import uuid
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -16,13 +16,25 @@ def _normalize_database_url(url: str) -> str:
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    # DATABASE_URL = "postgresql+asyncpg://myuser:mypassword@localhost:5432/reservation_db"
     raise RuntimeError("DATABASE_URL is not set")
 
 DATABASE_URL = _normalize_database_url(DATABASE_URL)
 
-engine = create_async_engine(DATABASE_URL, echo=True)
-AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    connect_args={
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+        "prepared_statement_name_func": lambda: f"__asyncpg_{uuid.uuid4()}__",
+    },
+)
+
+AsyncSessionLocal = async_sessionmaker(
+    bind=engine, autocommit=False, expire_on_commit=False
+)
 
 Base = declarative_base()
 
@@ -34,10 +46,20 @@ async def create_tables():
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as db:
-        yield db
+        try:
+            yield db
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
 
 
 @asynccontextmanager
 async def get_db_context() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise

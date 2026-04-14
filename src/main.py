@@ -104,30 +104,11 @@ async def ensure_schema_columns():
                 """
             )
         )
-
         await conn.execute(
             text(
                 """
-                ALTER TABLE users
-                ADD COLUMN IF NOT EXISTS service_name VARCHAR
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                UPDATE users
-                SET service_name = fullname
-                WHERE service_name IS NULL
-                AND fullname IS NOT NULL
-                """
-            )
-        )
-        await conn.execute(
-            text(
-                """
-                ALTER TABLE users
-                DROP COLUMN IF EXISTS fullname
+                CREATE UNIQUE INDEX IF NOT EXISTS ix_users_service_name
+                ON users (service_name)
                 """
             )
         )

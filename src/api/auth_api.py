@@ -115,6 +115,15 @@ async def register_user(
     if existing_email_result.scalars().first():
         raise HTTPException(status_code=hs.CONFLICT, detail="Email already exists")
 
+    existing_service_name_result = await db.execute(
+        select(AppUser).where(AppUser.service_name == payload.service_name)
+    )
+    if existing_service_name_result.scalars().first():
+        raise HTTPException(
+            status_code=hs.CONFLICT,
+            detail="Service name already exists",
+        )
+
     calendar_slug = await generate_unique_calendar_slug(payload.service_name, db)
     user = AppUser(
         username=payload.email,

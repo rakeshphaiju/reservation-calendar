@@ -50,19 +50,17 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         mock_set_resend_lock,
         mock_send_verification_email,
     ):
-        existing_username_result = MagicMock()
-        existing_username_result.scalars.return_value.first.return_value = None
-
         existing_email_result = MagicMock()
         existing_email_result.scalars.return_value.first.return_value = None
 
-        unique_slug_result = MagicMock()
-        unique_slug_result.scalars.return_value.first.return_value = None
+        existing_service_name_result = MagicMock()
+        existing_service_name_result.scalars.return_value.first.return_value = None
 
         mock_db = AsyncMock()
         mock_db.add = MagicMock()
         mock_db.execute.side_effect = [
             existing_email_result,
+            existing_service_name_result,
         ]
 
         async def override_get_db():
@@ -99,6 +97,43 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         mock_create_and_store_otp.assert_awaited_once_with("new-user@example.com")
         mock_set_resend_lock.assert_awaited_once_with("new-user@example.com")
         mock_send_verification_email.assert_called_once()
+
+        app.dependency_overrides.clear()
+
+    async def test_register_user_rejects_duplicate_service_name(self):
+        existing_email_result = MagicMock()
+        existing_email_result.scalars.return_value.first.return_value = None
+
+        existing_service_name_result = MagicMock()
+        existing_service_name_result.scalars.return_value.first.return_value = (
+            MagicMock()
+        )
+
+        mock_db = AsyncMock()
+        mock_db.add = MagicMock()
+        mock_db.execute.side_effect = [
+            existing_email_result,
+            existing_service_name_result,
+        ]
+
+        async def override_get_db():
+            return mock_db
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        resp = await self.client.post(
+            "/api/auth/register",
+            json={
+                "email": "new-user@example.com",
+                "service_name": "Existing Service",
+                "password": "strongpass123",
+            },
+        )
+
+        self.assertEqual(hs.CONFLICT, resp.status_code)
+        self.assertEqual("Service name already exists", resp.json()["detail"])
+        mock_db.add.assert_not_called()
+        mock_db.commit.assert_not_awaited()
 
         app.dependency_overrides.clear()
 

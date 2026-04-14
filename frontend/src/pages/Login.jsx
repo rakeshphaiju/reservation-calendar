@@ -71,7 +71,11 @@ export default function Login() {
           },
         });
       } else if (status === 409) {
-        setError(err?.response?.data?.detail || 'That email is already registered.');
+        if (detail === 'Service name already exists') {
+          setError('That service name is already taken. Please choose a different service name.');
+        } else {
+          setError(detail || 'That email is already registered.');
+        }
       } else if (status === 422) {
         setError('Please check your input and try again.');
       } else if (status >= 500) {
