@@ -1,11 +1,30 @@
 import { useState } from 'react';
 import { reservationService } from '../services/api';
 
+const getErrorMessage = (err) => {
+    const detail = err?.response?.data?.detail;
+
+    if (Array.isArray(detail) && detail.length > 0) {
+        return detail[0]?.msg || 'Please check your input fields.';
+    }
+
+    if (typeof detail === 'string' && detail.trim()) {
+        return detail;
+    }
+
+    if (!err?.response) {
+        return 'Unable to reach the server. Please try again.';
+    }
+
+    return 'Server error. Please try again later.';
+};
+
 export const useReservationModal = (ownerSlug, onSuccess, dates, getEditableTimeSlots) => {
     const [showModal, setShowModal] = useState(false);
     const [modalData, setModalData] = useState({ day: '', time: '' });
     const [user, setUser] = useState({ name: '', email: '', phone_number: '' });
     const [errors, setErrors] = useState({});
+    const [successMessage, setSuccessMessage] = useState('');
 
     const handleInput = (e) => {
         const { name, value } = e.target;
@@ -27,6 +46,7 @@ export const useReservationModal = (ownerSlug, onSuccess, dates, getEditableTime
     };
 
     const showForm = (day, time) => {
+        setSuccessMessage('');
         setUser({ name: '', email: '', phone_number: '' });
         setErrors({});
         setShowModal(true);
@@ -37,20 +57,19 @@ export const useReservationModal = (ownerSlug, onSuccess, dates, getEditableTime
         e.preventDefault();
         try {
             const newReservation = { ...user, ...modalData };
-            await reservationService.create(ownerSlug, newReservation);
+            const createdReservation = await reservationService.create(ownerSlug, newReservation);
             onSuccess();
             setShowModal(false);
             setUser({ name: '', email: '', phone_number: '' });
+            setErrors({});
+            setSuccessMessage(
+                createdReservation?.reservation_key
+                    ? `Reservation confirmed. Your reservation key is ${createdReservation.reservation_key}.`
+                    : 'Reservation confirmed successfully.'
+            );
         } catch (err) {
-            if (err.response?.status === 409) {
-                setErrors({ general: err.response.data?.detail || 'This slot is already reserved.' });
-            } else if (err.response?.status === 400) {
-                setErrors({ general: 'Please check your input fields.' });
-            } else if (err.response?.status === 404) {
-                setErrors({ general: 'This calendar does not exist anymore.' });
-            } else {
-                setErrors({ general: 'Server error. Please try again later.' });
-            }
+            setSuccessMessage('');
+            setErrors({ general: getErrorMessage(err) });
         }
     };
 
@@ -60,6 +79,8 @@ export const useReservationModal = (ownerSlug, onSuccess, dates, getEditableTime
         modalData,
         user,
         errors,
+        successMessage,
+        setSuccessMessage,
         handleInput,
         handleConfirmReservation,
         showForm,

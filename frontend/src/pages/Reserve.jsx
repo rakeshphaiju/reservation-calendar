@@ -52,6 +52,8 @@ const Reserve = () => {
     modalData,
     user,
     errors,
+    successMessage,
+    setSuccessMessage,
     handleInput,
     handleConfirmReservation,
     showForm,
@@ -105,6 +107,20 @@ const Reserve = () => {
       <h2 className="mb-3 text-center text-xl font-bold text-slate-800 sm:text-2xl">
         Reserve your spot on {formatSlugAsName(ownerSlug)}&apos;s calendar
       </h2>
+
+      {successMessage && (
+        <div className="mb-6 flex items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+          <p>{successMessage}</p>
+          <button
+            type="button"
+            onClick={() => setSuccessMessage('')}
+            className="shrink-0 font-semibold text-emerald-700 transition-colors hover:text-emerald-900"
+            aria-label="Dismiss reservation confirmation"
+          >
+            Close
+          </button>
+        </div>
+      )}
 
       {(calendarDescription || calendarLocation) && (
         <section className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
