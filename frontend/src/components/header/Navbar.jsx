@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 import BookingNestLogo from '/images/Booking-Nest-logo.png';
 import { authService } from '../../services/authService';
@@ -130,11 +132,12 @@ export default function Navbar() {
                     {initials}
                   </span>
 
-                  <span className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>
-                    ▾
-                  </span>
+                  <FontAwesomeIcon
+                    icon={faChevronDown}
+                    className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+                    aria-hidden="true"
+                  />
                 </button>
-
                 {isOpen && (
                   <div className="absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
                     <div className="border-b border-slate-100 px-4 py-3">
