@@ -14,7 +14,7 @@ const Button = ({
     const baseStyles = 'rounded-lg text-sm font-medium transition-colors focus:outline-none';
 
     const variants = {
-        primary: 'bg-emerald-600 text-white hover:bg-emerald-500 active:scale-[0.98]',
+        primary: 'bg-emerald-600 px-2 py-1 text-white hover:bg-emerald-500 active:scale-[0.98]',
         secondary: 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50',
         login: 'bg-blue-500 text-white hover:bg-blue-400 active:scale-[0.98]',
         danger: 'bg-red-600 text-white hover:bg-red-500 active:scale-[0.98]',

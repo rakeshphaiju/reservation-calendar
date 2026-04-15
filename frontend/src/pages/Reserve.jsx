@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import moment from 'moment';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faLocationArrow } from '@fortawesome/free-solid-svg-icons';
+import { faLocationArrow, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
 import Button from '../components/form/Button';
 import ReservationModal from '../components/ReservationModal';
@@ -149,27 +149,31 @@ const Reserve = () => {
         <p className="text-xs text-slate-600">
           Click on an available spot to create a new reservation.
         </p>
+
         <div className="flex items-center space-x-2">
-          <Button
-            onClick={handlePreviousWeek}
-            disabled={isPreviousWeekDisabled}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-gray-700 disabled:opacity-10 disabled:cursor-not-allowed"
-          >
-            Previous Week
-          </Button>
           <Button
             onClick={handleToday}
             disabled={isTodayDisabled}
-            className="px-4 py-2 bg-slate-600 text-white rounded hover:bg-slate-700 disabled:opacity-10 disabled:cursor-not-allowed"
+            className="px-1 py-1 bg-slate-600 text-white rounded hover:bg-slate-700 disabled:opacity-10 disabled:cursor-not-allowed"
           >
             Today
           </Button>
           <Button
-            onClick={handleNextWeek}
-            disabled={isNextWeekDisabled}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-10 disabled:cursor-not-allowed"
+            onClick={handlePreviousWeek}
+            variant='ghost'
+            disabled={isPreviousWeekDisabled}
+            className="px-1 py-1 text-blue-950 rounded hover:bg-blue-300 disabled:opacity-10 disabled:cursor-not-allowed"
           >
-            Next Week
+            <FontAwesomeIcon icon={faChevronLeft} className="mr-2" />
+          </Button>
+          <p className='text-sm font-bold'>Week {moment(dates[0]).week()}</p>
+          <Button
+            onClick={handleNextWeek}
+            variant='ghost'
+            disabled={isNextWeekDisabled}
+            className="px-1 py-1 text-blue-950 rounded hover:bg-blue-300 disabled:opacity-10 disabled:cursor-not-allowed"
+          >
+            <FontAwesomeIcon icon={faChevronRight} className="ml-2" />
           </Button>
         </div>
       </div>

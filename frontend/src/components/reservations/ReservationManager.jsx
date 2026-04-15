@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 import Button from '../form/Button';
 import Input from '../form/Input';
@@ -166,16 +168,15 @@ export const ReservationManager = ({
                     onClick={() => setIsOpen((prev) => !prev)}
                     aria-expanded={isOpen}
                     aria-controls="manage-reservations-panel"
-                    className="inline-flex items-center gap-2"
+                    variant='ghost'
+                    className="inline-flex px-1.5 py-1 items-center gap-2 hover:bg-blue-200"
                 >
                     Manage Reservations
-                    <span
-                        className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'
-                            }`}
+                    <FontAwesomeIcon
+                        icon={faChevronDown}
+                        className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
                         aria-hidden="true"
-                    >
-                        ▾
-                    </span>
+                    />
                 </Button>
             </div>
 
