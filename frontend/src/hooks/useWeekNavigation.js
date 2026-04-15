@@ -11,17 +11,17 @@ const WEEKDAY_TO_ISO = {
     Saturday: 6,
     Sunday: 7,
 };
+const ALL_WEEKDAYS = Object.keys(WEEKDAY_TO_ISO);
 
 export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
     const [startDate, setStartDate] = useState(moment().startOf('isoWeek'));
 
-    const getUpcomingDates = useMemo(() => {
-        return () => bookableDays.map((day) =>
+    const dates = useMemo(
+        () => ALL_WEEKDAYS.map((day) =>
             startDate.clone().isoWeekday(WEEKDAY_TO_ISO[day]).format('YYYY-MM-DD')
-        );
-    }, [startDate, bookableDays]);
-
-    const dates = useMemo(() => getUpcomingDates(), [getUpcomingDates]);
+        ),
+        [startDate]
+    );
 
     // Check if previous week button should be disabled
     const isPreviousWeekDisabled = useMemo(() => {
@@ -69,8 +69,11 @@ export const useWeekNavigation = (bookableDays, maxWeeks = 4) => {
         return slotStart.isSameOrBefore(moment());
     };
 
-    const getEditableTimeSlots = (day, dayTimeSlots) => {
+    const getEditableTimeSlots = (day, dayTimeSlots, allowedBookableDays = bookableDays) => {
         const weekday = moment(day).format('dddd');
+        if (!allowedBookableDays.includes(weekday)) {
+            return [];
+        }
         const timeSlots = dayTimeSlots?.[weekday] || [];
         return timeSlots.filter((time) => !isPastOrToday(day, time));
     };

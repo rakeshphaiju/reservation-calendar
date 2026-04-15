@@ -6,18 +6,19 @@ const SlotButton = ({
     day,
     time,
     mobile = false,
+    unavailable = false,
     isPastOrToday,
     isFullyBooked,
     getSpotsLeft,
     showForm,
     slotCapacity,
 }) => {
-    const past = isPastOrToday(day, time);
-    const fullyBooked = isFullyBooked(day, time);
-    const disabled = past || fullyBooked;
-    const spotsLeft = getSpotsLeft(day, time);
+    const past = unavailable ? false : isPastOrToday(day, time);
+    const fullyBooked = unavailable ? false : isFullyBooked(day, time);
+    const disabled = unavailable || past || fullyBooked;
+    const spotsLeft = unavailable ? 0 : getSpotsLeft(day, time);
 
-    const statusLabel = past
+    const statusLabel = unavailable || past
         ? '-'
         : fullyBooked
             ? 'Fully booked'
@@ -39,7 +40,7 @@ const SlotButton = ({
                 </>
             ) : (
                 <div className="flex flex-col items-center gap-1">
-                    <span>{past ? '-' : fullyBooked ? 'Full' : 'Book'}</span>
+                    <span>{unavailable || past ? '-' : fullyBooked ? 'Full' : 'Book'}</span>
                     {!disabled && (
                         <span className="text-xs opacity-80">
                             {spotsLeft}/{slotCapacity} left
@@ -55,6 +56,7 @@ SlotButton.propTypes = {
     day: PropTypes.string.isRequired,
     time: PropTypes.string.isRequired,
     mobile: PropTypes.bool,
+    unavailable: PropTypes.bool,
     isPastOrToday: PropTypes.func.isRequired,
     isFullyBooked: PropTypes.func.isRequired,
     getSpotsLeft: PropTypes.func.isRequired,

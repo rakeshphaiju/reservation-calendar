@@ -61,13 +61,15 @@ const Reserve = () => {
     getEditableTimeSlots(day, dayTimeSlots)
   );
 
-  // Derived data
   const editableDays = dates.filter((day) =>
-    getEditableTimeSlots(day, dayTimeSlots).length > 0
+    getEditableTimeSlots(day, dayTimeSlots, bookableDays).length > 0
   );
 
   const getTimeSlotsForDay = (day) => {
     const weekday = moment(day).format('dddd');
+    if (!bookableDays.includes(weekday)) {
+      return [];
+    }
     return dayTimeSlots?.[weekday] || [];
   };
 
@@ -180,6 +182,7 @@ const Reserve = () => {
 
       <MobileCalendarView
         dates={dates}
+        times={sortedVisibleTimeSlots.length ? sortedVisibleTimeSlots : timeSlots}
         getTimesForDay={getTimeSlotsForDay}
         slotProps={slotProps}
       />
@@ -195,7 +198,7 @@ const Reserve = () => {
         ownerSlug={ownerSlug}
         onReservationChange={refreshAvailability}
         editableDays={editableDays}
-        getEditableTimeSlots={(day) => getEditableTimeSlots(day, dayTimeSlots)}
+        getEditableTimeSlots={(day) => getEditableTimeSlots(day, dayTimeSlots, bookableDays)}
       />
 
       <ReservationModal

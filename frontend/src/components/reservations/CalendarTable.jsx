@@ -28,8 +28,8 @@ export const CalendarTable = ({ dates, times, getTimesForDay, slotProps }) => {
                             {times.map((time) => {
                                 if (!dayTimes.includes(time)) {
                                     return (
-                                        <td key={`${day}-${time}`} className="px-2 py-2 text-center text-sm text-slate-300">
-                                            -
+                                        <td key={`${day}-${time}`} className="px-2 py-2">
+                                            <SlotButton day={day} time={time} unavailable {...slotProps} />
                                         </td>
                                     );
                                 }
