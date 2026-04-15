@@ -43,7 +43,7 @@ const SlotButton = ({
                     <span className="font-bold ">{unavailable || past ? '-' : fullyBooked ? 'Full' : 'Book'}</span>
                     {!disabled && slotCapacity > 1 && (
                         <span className="text-xs font-bold opacity-80">
-                            {spotsLeft}/{slotCapacity} left
+                            {spotsLeft} left
                         </span>
                     )}
                 </div>

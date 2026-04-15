@@ -19,7 +19,7 @@ from src.common.logger import logger
 from src.models.user import AppUser, UserCalendar
 
 
-SECRET_KEY = os.getenv("SECRET_KEY", "this-is-a-32-byte-test-secret-key!!")
+SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY environment variable is not set")
 
