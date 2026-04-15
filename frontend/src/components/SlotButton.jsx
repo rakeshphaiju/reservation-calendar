@@ -40,9 +40,9 @@ const SlotButton = ({
                 </>
             ) : (
                 <div className="flex flex-col items-center gap-1">
-                    <span>{unavailable || past ? '-' : fullyBooked ? 'Full' : 'Book'}</span>
-                    {!disabled && (
-                        <span className="text-xs opacity-80">
+                    <span className="font-bold ">{unavailable || past ? '-' : fullyBooked ? 'Full' : 'Book'}</span>
+                    {!disabled && slotCapacity > 1 && (
+                        <span className="text-xs font-bold opacity-80">
                             {spotsLeft}/{slotCapacity} left
                         </span>
                     )}

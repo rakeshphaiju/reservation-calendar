@@ -44,7 +44,7 @@ const ReservationModal = ({
                         handlechange={handleInput}
                         required
                     />
-                    <div className="text-red-500 text-sm mt-1 min-h-[1.25rem]">{errors.name}</div>
+                    <div className="text-red-500 text-sm mt-1 min-h-5">{errors.name}</div>
                 </div>
 
                 <div>
@@ -56,7 +56,7 @@ const ReservationModal = ({
                         placeholder="Enter your email"
                         handlechange={handleInput}
                     />
-                    <div className="text-red-500 text-sm mt-1 min-h-[1.25rem]">{errors.email}</div>
+                    <div className="text-red-500 text-sm mt-1 min-h-5">{errors.email}</div>
                 </div>
 
                 <div>
@@ -67,7 +67,7 @@ const ReservationModal = ({
                         placeholder="Enter your phone number (10 digits)"
                         handlechange={handleInput}
                     />
-                    <div className="text-red-500 text-sm mt-1 min-h-[1.25rem]">{errors.phone_number}</div>
+                    <div className="text-red-500 text-sm mt-1 min-h-5">{errors.phone_number}</div>
                 </div>
 
                 {errors.general && (

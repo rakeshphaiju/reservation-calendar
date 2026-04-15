@@ -147,36 +147,43 @@ const Reserve = () => {
         </section>
       )}
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-slate-600">
           Click on an available spot to create a new reservation.
         </p>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between sm:justify-end sm:space-x-2">
           <Button
             onClick={handleToday}
             disabled={isTodayDisabled}
-            className="px-1 py-1 bg-slate-600 text-white rounded hover:bg-slate-700 disabled:opacity-10 disabled:cursor-not-allowed"
+            className="px-2 py-1 bg-slate-600 text-white rounded hover:bg-slate-700 disabled:opacity-10 disabled:cursor-not-allowed"
           >
             Today
           </Button>
-          <Button
-            onClick={handlePreviousWeek}
-            variant='ghost'
-            disabled={isPreviousWeekDisabled}
-            className="px-1 py-1 text-blue-950 rounded hover:bg-blue-300 disabled:opacity-10 disabled:cursor-not-allowed"
-          >
-            <FontAwesomeIcon icon={faChevronLeft} className="mr-2" />
-          </Button>
-          <p className='text-sm font-bold'>Week {moment(dates[0]).week()}</p>
-          <Button
-            onClick={handleNextWeek}
-            variant='ghost'
-            disabled={isNextWeekDisabled}
-            className="px-1 py-1 text-blue-950 rounded hover:bg-blue-300 disabled:opacity-10 disabled:cursor-not-allowed"
-          >
-            <FontAwesomeIcon icon={faChevronRight} className="ml-2" />
-          </Button>
+
+          <div className="flex items-center space-x-1">
+            <Button
+              onClick={handlePreviousWeek}
+              variant="ghost"
+              disabled={isPreviousWeekDisabled}
+              className="px-2 py-1 text-blue-950 rounded hover:bg-blue-300 disabled:opacity-10 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faChevronLeft} />
+            </Button>
+
+            <p className="text-sm font-bold w-20 text-center">
+              Week {moment(dates[0]).week()}
+            </p>
+
+            <Button
+              onClick={handleNextWeek}
+              variant="ghost"
+              disabled={isNextWeekDisabled}
+              className="px-2 py-1 text-blue-950 rounded hover:bg-blue-300 disabled:opacity-10 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon icon={faChevronRight} />
+            </Button>
+          </div>
         </div>
       </div>
 
