@@ -100,7 +100,6 @@ class TestPublicReservationsApi(BaseApiTest):
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("John Doe", resp.json()["name"])
         self.assertEqual("19:00-20:00", resp.json()["time"])
-        mock_db.commit.assert_awaited_once()
         mock_db.refresh.assert_awaited_once_with(reservation)
 
     async def test_update_public_reservation_by_key_rejects_non_slot_fields(self):

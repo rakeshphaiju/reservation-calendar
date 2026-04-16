@@ -1,10 +1,12 @@
 import json
+from datetime import datetime, timezone
 from http import HTTPStatus as hs
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from src.main import app
 from src.models.reservation import Reservation
 from src.models.user import AppUser
+from src.api.reservations import reservations_api
 from src.common.db import get_db
 from tests.utils.base import BaseApiTest
 from tests.utils.fixtures import RESERVATION_PAYLOAD, make_mock_user
@@ -82,6 +84,60 @@ class TestAddReservationApi(BaseApiTest):
             mock_confirm.call_args.kwargs["reservation_key"],
             mock_admin.call_args.kwargs["reservation_key"],
         )
+
+    async def test_schedule_reminder_converts_local_time_to_utc_eta(self):
+        with (
+            patch(
+                "src.api.reservations.reservations_api.datetime", wraps=datetime
+            ) as mock_datetime,
+            patch(
+                "src.api.reservations.reservations_api.send_reservation_reminder_task.apply_async"
+            ) as mock_apply_async,
+        ):
+            mock_datetime.now.return_value = datetime(
+                2026, 3, 19, 14, 30, tzinfo=timezone.utc
+            )
+            mock_apply_async.return_value.id = "reminder-task-id"
+
+            task_id = reservations_api._schedule_reminder(
+                day="2026-03-20",
+                time="17:00-18:00",
+                recipient_email="john@example.com",
+                recipient_name="John Cena",
+                reservation_key="reservation-key-1",
+                calendar_owner="Mock User",
+            )
+
+        self.assertEqual("reminder-task-id", task_id)
+        self.assertEqual(
+            datetime(2026, 3, 19, 15, 0, tzinfo=timezone.utc),
+            mock_apply_async.call_args.kwargs["eta"],
+        )
+
+    async def test_schedule_reminder_skips_when_utc_trigger_has_passed(self):
+        with (
+            patch(
+                "src.api.reservations.reservations_api.datetime", wraps=datetime
+            ) as mock_datetime,
+            patch(
+                "src.api.reservations.reservations_api.send_reservation_reminder_task.apply_async"
+            ) as mock_apply_async,
+        ):
+            mock_datetime.now.return_value = datetime(
+                2026, 3, 19, 15, 30, tzinfo=timezone.utc
+            )
+
+            task_id = reservations_api._schedule_reminder(
+                day="2026-03-20",
+                time="17:00-18:00",
+                recipient_email="john@example.com",
+                recipient_name="John Cena",
+                reservation_key="reservation-key-1",
+                calendar_owner="Mock User",
+            )
+
+        self.assertIsNone(task_id)
+        mock_apply_async.assert_not_called()
 
     async def test_add_reservation_conflict(self):
         mock_user_result = MagicMock()

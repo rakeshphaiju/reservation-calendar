@@ -19,6 +19,14 @@ celery_app.conf.update(
     timezone=FINLAND_TIMEZONE,
     enable_utc=True,
     imports=("src.tasks.celery_tasks",),
+    broker_transport_options={
+        "visibility_timeout": 86400,
+    },
+    result_backend_transport_options={
+        "visibility_timeout": 86400,
+    },
+    task_acks_late=True,
+    worker_prefetch_multiplier=1,
     beat_schedule={
         "cleanup_past_reservations": {
             "task": "src.tasks.celery_tasks.cleanup_past_reservations_task",

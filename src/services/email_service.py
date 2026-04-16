@@ -264,3 +264,47 @@ async def send_admin_cancellation_notification(
         html=html,
         context="admin cancellation",
     )
+
+
+async def send_reminder_email(
+    recipient_email: EmailStr,
+    recipient_name: str,
+    day: str,
+    time: str,
+    reservation_key: str,
+    calendar_owner: str = "",
+) -> None:
+    html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #2c3e50;">Reminder: Your Reservation is Tomorrow</h2>
+        <p>Dear <strong>{recipient_name}</strong>,</p>
+        <p>This is a friendly reminder that you have a reservation with <strong>{calendar_owner}</strong> coming up in 24 hours.</p>
+        <table style="border-collapse: collapse; width: 300px;">
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Date</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{day}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Time</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{time}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Reservation Key</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{reservation_key}</td>
+          </tr>
+        </table>
+        <p>If you need to cancel or modify your reservation, please use your reservation key.</p>
+        <p>See you soon!</p>
+        <br>
+        <p style="font-size: 12px; color: gray;">Please do not reply to this message. The message was sent automatically and replies will not be read.</p>
+      </body>
+    </html>
+    """
+
+    _send(
+        to=recipient_email,
+        subject="Reminder: Your reservation is in next 24 hour",
+        html=html,
+        context="reminder",
+    )

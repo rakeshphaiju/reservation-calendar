@@ -78,12 +78,22 @@ async def ensure_schema_columns():
                     owner_slug VARCHAR NOT NULL,
                     name VARCHAR NOT NULL,
                     email VARCHAR NOT NULL,
-                    phone VARCHAR,
+                    phone VARCHAR NOT NULL,
                     day VARCHAR NOT NULL,
                     time VARCHAR NOT NULL,
                     reservation_key VARCHAR NOT NULL UNIQUE,
+                    reminder_task_id VARCHAR,
                     created_at TIMESTAMP NOT NULL DEFAULT NOW()
                 )
+                """
+            )
+        )
+
+        await conn.execute(
+            text(
+                """
+                ALTER TABLE reservations
+                ADD COLUMN IF NOT EXISTS reminder_task_id VARCHAR;
                 """
             )
         )
