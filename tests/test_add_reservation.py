@@ -11,6 +11,18 @@ from tests.utils.fixtures import RESERVATION_PAYLOAD, make_mock_user
 
 
 class TestAddReservationApi(BaseApiTest):
+    async def asyncSetUp(self):
+        await super().asyncSetUp()
+        self.monthly_limit_patcher = patch(
+            "src.api.reservations.reservations_api.check_calendar_monthly_limit",
+            new=AsyncMock(return_value=None),
+        )
+        self.monthly_limit_patcher.start()
+
+    async def asyncTearDown(self):
+        self.monthly_limit_patcher.stop()
+        await super().asyncTearDown()
+
     async def test_add_reservation_success(self):
         mock_user_result = MagicMock()
         mock_user_result.scalars.return_value.first.return_value = make_mock_user(
@@ -314,3 +326,37 @@ class TestAddReservationApi(BaseApiTest):
 
         self.assertEqual(hs.OK, resp.status_code)
         self.assertEqual("09:00-10:00", resp.json()["time"])
+
+    async def test_add_reservation_monthly_limit_exceeded(self):
+        mock_user_result = MagicMock()
+        mock_user_result.scalars.return_value.first.return_value = make_mock_user(
+            time_slots=json.dumps(["17:00-18:00"])
+        )
+
+        mock_monthly_count = MagicMock()
+        mock_monthly_count.scalar.return_value = 50
+
+        mock_lock_result = MagicMock()
+
+        mock_db = AsyncMock()
+        mock_db.execute.side_effect = [
+            mock_user_result,
+            mock_monthly_count,
+            mock_lock_result,
+        ]
+
+        self.monthly_limit_patcher.stop()
+
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        resp = await self.client.post(
+            "/api/calendars/mock-user/reservations/add", json=RESERVATION_PAYLOAD
+        )
+
+        self.monthly_limit_patcher.start()
+
+        self.assertEqual(hs.TOO_MANY_REQUESTS, resp.status_code)
+        self.assertEqual(
+            "This calendar has reached its monthly reservation limit.",
+            resp.json()["detail"],
+        )
