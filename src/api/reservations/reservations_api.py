@@ -26,6 +26,7 @@ from src.api.reservations._utils import (
     get_calendar_owner,
     get_reservation_by_key,
 )
+from src.dependencies.rate_limits import check_calendar_monthly_limit
 
 router = APIRouter()
 DEFAULT_OWNER_NOTIFICATION_EMAIL = os.getenv("MAIL_USERNAME")
@@ -42,6 +43,7 @@ async def add_reservations(
 ):
     try:
         owner = await get_calendar_owner(owner_slug, db)
+        await check_calendar_monthly_limit(owner_slug, db)
         await acquire_slot_lock(db, owner_slug, reservation.day, reservation.time)
         await ensure_reservation_slot_available(
             db,
