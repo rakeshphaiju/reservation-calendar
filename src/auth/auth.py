@@ -19,7 +19,7 @@ from src.common.logger import logger
 from src.models.user import AppUser, UserCalendar
 
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY", "secret-key")
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY environment variable is not set")
 

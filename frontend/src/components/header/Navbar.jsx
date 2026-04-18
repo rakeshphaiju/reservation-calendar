@@ -115,10 +115,11 @@ export default function Navbar() {
 
             {user?.calendar_slug && user?.calendar_created && (
               <Link
-                to={`/calendar/${user.calendar_slug}`}
-                className={`${pillClass} hidden md:inline-flex`}
+                to="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-xl bg-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
               >
-                My Calendar
+                Dashboard
               </Link>
             )}
 
@@ -149,14 +150,6 @@ export default function Navbar() {
 
                     <div className="p-2">
                       <Link
-                        to="/dashboard"
-                        onClick={() => setIsOpen(false)}
-                        className="block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                      >
-                        Dashboard
-                      </Link>
-
-                      <Link
                         to="/reservations"
                         onClick={() => setIsOpen(false)}
                         className="mt-1 block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
@@ -168,7 +161,7 @@ export default function Navbar() {
                         <Link
                           to={`/calendar/${user.calendar_slug}`}
                           onClick={() => setIsOpen(false)}
-                          className="mt-1 block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 md:hidden"
+                          className="mt-1 block rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
                         >
                           My Calendar
                         </Link>
