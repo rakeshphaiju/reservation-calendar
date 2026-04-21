@@ -67,6 +67,7 @@ export default function App() {
           />
           <Route path="/reservations" element={<RequireAuth><ReservationListPage /></RequireAuth>} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<VerifyEmail />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/verify-email" element={<VerifyEmail />} />

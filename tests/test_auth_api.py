@@ -225,3 +225,155 @@ class TestAdminAuth(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(
             any("Max-Age=2592000" in header for header in set_cookie_headers)
         )
+
+    @patch("src.api.auth_api.send_password_reset_email")
+    @patch("src.api.auth_api.set_resend_lock", new_callable=AsyncMock)
+    @patch("src.api.auth_api.create_and_store_otp", new_callable=AsyncMock)
+    @patch("src.api.auth_api.can_resend", new_callable=AsyncMock)
+    async def test_forgot_password_sends_code_for_verified_user(
+        self,
+        mock_can_resend,
+        mock_create_and_store_otp,
+        mock_set_resend_lock,
+        mock_send_password_reset_email,
+    ):
+        user_result = MagicMock()
+        user = MagicMock()
+        user.email = "verified@example.com"
+        user.service_name = "Verified User"
+        user.is_verified = True
+        user_result.scalars.return_value.first.return_value = user
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = user_result
+
+        async def override_get_db():
+            return mock_db
+
+        app.dependency_overrides[get_db] = override_get_db
+        mock_can_resend.return_value = True
+        mock_create_and_store_otp.return_value = "123456"
+
+        resp = await self.client.post(
+            "/api/auth/forgot-password",
+            json={"email": "verified@example.com"},
+        )
+
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertIn("Password reset code has been sent", resp.json()["message"])
+        mock_can_resend.assert_awaited_once_with(
+            "verified@example.com", "password_reset"
+        )
+        mock_create_and_store_otp.assert_awaited_once_with(
+            "verified@example.com", "password_reset"
+        )
+        mock_set_resend_lock.assert_awaited_once_with(
+            "verified@example.com", "password_reset"
+        )
+        mock_send_password_reset_email.assert_called_once_with(
+            "verified@example.com", "Verified User", "123456"
+        )
+
+        app.dependency_overrides.clear()
+
+    async def test_forgot_password_is_generic_for_missing_user(self):
+        user_result = MagicMock()
+        user_result.scalars.return_value.first.return_value = None
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = user_result
+
+        async def override_get_db():
+            return mock_db
+
+        app.dependency_overrides[get_db] = override_get_db
+
+        resp = await self.client.post(
+            "/api/auth/forgot-password",
+            json={"email": "missing@example.com"},
+        )
+
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertIn("password reset code has been sent", resp.json()["message"])
+
+        app.dependency_overrides.clear()
+
+    @patch("src.api.auth_api.verify_otp", new_callable=AsyncMock)
+    @patch("src.api.auth_api.hash_password")
+    async def test_reset_password_updates_hash(
+        self,
+        mock_hash_password,
+        mock_verify_otp,
+    ):
+        user_result = MagicMock()
+        user = MagicMock()
+        user.email = "verified@example.com"
+        user.is_verified = True
+        user_result.scalars.return_value.first.return_value = user
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = user_result
+
+        async def override_get_db():
+            return mock_db
+
+        app.dependency_overrides[get_db] = override_get_db
+        mock_verify_otp.return_value = True
+        mock_hash_password.return_value = "new-hash"
+
+        resp = await self.client.post(
+            "/api/auth/reset-password",
+            json={
+                "email": "verified@example.com",
+                "code": "123456",
+                "password": "newpassword123",
+            },
+        )
+
+        self.assertEqual(hs.OK, resp.status_code)
+        self.assertEqual(
+            "Password reset successfully. You can now sign in.",
+            resp.json()["message"],
+        )
+        mock_verify_otp.assert_awaited_once_with(
+            "verified@example.com", "123456", "password_reset"
+        )
+        mock_hash_password.assert_called_once_with("newpassword123")
+        self.assertEqual("new-hash", user.password_hash)
+        mock_db.commit.assert_awaited_once()
+
+        app.dependency_overrides.clear()
+
+    @patch("src.api.auth_api.verify_otp", new_callable=AsyncMock)
+    async def test_reset_password_rejects_invalid_code(self, mock_verify_otp):
+        user_result = MagicMock()
+        user = MagicMock()
+        user.email = "verified@example.com"
+        user.is_verified = True
+        user_result.scalars.return_value.first.return_value = user
+
+        mock_db = AsyncMock()
+        mock_db.execute.return_value = user_result
+
+        async def override_get_db():
+            return mock_db
+
+        app.dependency_overrides[get_db] = override_get_db
+        mock_verify_otp.return_value = False
+
+        resp = await self.client.post(
+            "/api/auth/reset-password",
+            json={
+                "email": "verified@example.com",
+                "code": "000000",
+                "password": "newpassword123",
+            },
+        )
+
+        self.assertEqual(hs.UNPROCESSABLE_ENTITY, resp.status_code)
+        self.assertEqual(
+            "Invalid or expired verification code.",
+            resp.json()["detail"],
+        )
+
+        app.dependency_overrides.clear()

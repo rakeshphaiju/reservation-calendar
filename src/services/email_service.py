@@ -51,6 +51,37 @@ async def send_verification_email(email: str, service_name: str, code: str) -> N
     )
 
 
+async def send_password_reset_email(email: str, service_name: str, code: str) -> None:
+    """Send the 6-digit OTP used to reset a password."""
+    first_name = service_name.split()[0] if service_name else "there"
+
+    html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px; max-width: 480px;">
+        <h2 style="color: #1a1a1a;">Reset your password</h2>
+        <p>Hi <strong>{first_name}</strong>, we received a request to reset your <strong>Booking Nest</strong> password.</p>
+        <p>Enter the code below to continue. It expires in <strong>15 minutes</strong>.</p>
+        <div style="display:inline-block;padding:16px 32px;background:#f4f4f4;border-radius:8px;font-size:36px;font-weight:700;letter-spacing:12px;color:#111;margin:16px 0;">
+          {code}
+        </div>
+        <p style="color:#888;font-size:13px;">
+          If you didn't request a password reset, you can safely ignore this email.
+        </p>
+        <p style="font-size: 12px; color: gray;">
+          Please do not reply to this message. The message was sent automatically and replies will not be read.
+        </p>
+      </body>
+    </html>
+    """
+
+    _send(
+        to=email,
+        subject="Your Booking Nest password reset code",
+        html=html,
+        context="password reset",
+    )
+
+
 async def send_confirmation_email(
     recipient_email: EmailStr,
     recipient_name: str,
