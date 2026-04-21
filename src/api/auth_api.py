@@ -44,7 +44,7 @@ from src.schemas.user import (
     ResetPasswordRequest,
 )
 
-router = APIRouter()
+router = APIRouter(tags=["Authentication"])
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REMEMBER_ME_EXPIRE_DAYS = 30
@@ -314,7 +314,7 @@ async def login(
             value=access_token,
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=True,
             path="/",
             max_age=int(expires.total_seconds()) if remember_me else None,
         )
@@ -362,7 +362,7 @@ async def logout(response: Response, user=Depends(manager)):
             key="access-token",
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=True,
             path="/",
         )
         return {"message": "Logged out successfully"}
@@ -396,7 +396,7 @@ async def delete_account(
             key="access-token",
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=True,
             path="/",
         )
         return {"message": "Account deleted successfully"}

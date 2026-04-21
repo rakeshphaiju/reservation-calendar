@@ -31,7 +31,7 @@ from src.api.reservations._utils import (
 )
 from src.dependencies.rate_limits import check_calendar_monthly_limit
 
-router = APIRouter()
+router = APIRouter(tags=["Reservation"])
 DEFAULT_OWNER_NOTIFICATION_EMAIL = os.getenv("MAIL_USERNAME")
 APP_TIMEZONE = ZoneInfo(os.getenv("APP_TIMEZONE", "Europe/Helsinki"))
 

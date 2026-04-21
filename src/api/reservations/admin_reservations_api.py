@@ -11,7 +11,7 @@ from src.common.logger import logger
 from src.models.reservation import Reservation
 from src.schemas.reservation import PaginatedReservations, ReservationResponse
 
-router = APIRouter()
+router = APIRouter(tags=["Admin"])
 
 
 @router.get("/api/reservations", response_model=PaginatedReservations)

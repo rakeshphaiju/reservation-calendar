@@ -35,7 +35,7 @@ from src.api.reservations._utils import (
     get_owner_time_slots,
 )
 
-router = APIRouter()
+router = APIRouter(tags=["Dashboard"])
 
 
 async def _get_db_user(email: str, db: AsyncSession) -> AppUser:
