@@ -51,7 +51,7 @@ RequireAuth.propTypes = {
 
 export default function App() {
   return (
-    <div className="bg-linear-to-b from-blue-200 min-h-screen flex flex-col">
+    <div className="bg-linear-to-b from-white to-blue-100 min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-4 sm:px-6 lg:px-8">
         <Routes>
