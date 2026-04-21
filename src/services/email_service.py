@@ -51,6 +51,37 @@ async def send_verification_email(email: str, service_name: str, code: str) -> N
     )
 
 
+async def send_password_reset_email(email: str, service_name: str, code: str) -> None:
+    """Send the 6-digit OTP used to reset a password."""
+    first_name = service_name.split()[0] if service_name else "there"
+
+    html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px; max-width: 480px;">
+        <h2 style="color: #1a1a1a;">Reset your password</h2>
+        <p>Hi <strong>{first_name}</strong>, we received a request to reset your <strong>Booking Nest</strong> password.</p>
+        <p>Enter the code below to continue. It expires in <strong>15 minutes</strong>.</p>
+        <div style="display:inline-block;padding:16px 32px;background:#f4f4f4;border-radius:8px;font-size:36px;font-weight:700;letter-spacing:12px;color:#111;margin:16px 0;">
+          {code}
+        </div>
+        <p style="color:#888;font-size:13px;">
+          If you didn't request a password reset, you can safely ignore this email.
+        </p>
+        <p style="font-size: 12px; color: gray;">
+          Please do not reply to this message. The message was sent automatically and replies will not be read.
+        </p>
+      </body>
+    </html>
+    """
+
+    _send(
+        to=email,
+        subject="Your Booking Nest password reset code",
+        html=html,
+        context="password reset",
+    )
+
+
 async def send_confirmation_email(
     recipient_email: EmailStr,
     recipient_name: str,
@@ -263,4 +294,48 @@ async def send_admin_cancellation_notification(
         subject=f"Cancelled Booking: {customer_name} on {day}",
         html=html,
         context="admin cancellation",
+    )
+
+
+async def send_reminder_email(
+    recipient_email: EmailStr,
+    recipient_name: str,
+    day: str,
+    time: str,
+    reservation_key: str,
+    calendar_owner: str = "",
+) -> None:
+    html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2 style="color: #2c3e50;">Reminder: Your Reservation is Tomorrow</h2>
+        <p>Dear <strong>{recipient_name}</strong>,</p>
+        <p>This is a friendly reminder that you have a reservation with <strong>{calendar_owner}</strong> coming up in 24 hours.</p>
+        <table style="border-collapse: collapse; width: 300px;">
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Date</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{day}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Time</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{time}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f9f9f9;"><strong>Reservation Key</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{reservation_key}</td>
+          </tr>
+        </table>
+        <p>If you need to cancel or modify your reservation, please use your reservation key.</p>
+        <p>See you soon!</p>
+        <br>
+        <p style="font-size: 12px; color: gray;">Please do not reply to this message. The message was sent automatically and replies will not be read.</p>
+      </body>
+    </html>
+    """
+
+    _send(
+        to=recipient_email,
+        subject="Reminder: Your reservation is in next 24 hour",
+        html=html,
+        context="reminder",
     )

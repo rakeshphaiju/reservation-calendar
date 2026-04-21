@@ -26,7 +26,7 @@ from src.api.reservations._utils import (
     get_owner_time_slots,
 )
 
-router = APIRouter()
+router = APIRouter(tags=["Calendar"])
 
 
 @router.get("/api/calendars", response_model=List[CalendarOwnerSummary])

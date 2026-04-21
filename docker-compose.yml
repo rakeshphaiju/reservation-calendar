@@ -31,8 +31,8 @@ services:
     restart: unless-stopped
     command: uvicorn --host 0.0.0.0 --port 8000 src.main:app
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}
+      DATABASE_URL: ${DATABASE_URL}
       AUTO_CREATE_TABLES: true
       MAIL_FROM: ${MAIL_FROM}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME}
@@ -54,7 +54,7 @@ services:
     restart: unless-stopped
     command: celery -A src.tasks.celery_app.celery_app worker --loglevel=info
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
       MAIL_FROM: ${MAIL_FROM}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME}
       RESEND_API_KEY: ${RESEND_API_KEY}
@@ -73,7 +73,7 @@ services:
     restart: unless-stopped
     command: celery -A src.tasks.celery_app.celery_app beat --loglevel=info
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
       MAIL_FROM: ${MAIL_FROM}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME}
       RESEND_API_KEY: ${RESEND_API_KEY}
@@ -92,7 +92,7 @@ services:
     restart: unless-stopped
     command: celery -A src.tasks.celery_app.celery_app flower
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
       CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND}
       FLOWER_BASIC_AUTH: ${FLOWER_USER}:${FLOWER_PASSWORD}

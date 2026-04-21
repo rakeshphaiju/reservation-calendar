@@ -22,7 +22,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(() =>
-    location.state?.verified ? 'Email verified successfully. You can sign in now.' : ''
+    location.state?.verified
+      ? 'Email verified successfully. You can sign in now.'
+      : location.state?.reset
+        ? 'Password reset successfully. Sign in with your new password.'
+        : ''
   );
 
   const navigate = useNavigate();
@@ -185,12 +189,21 @@ export default function Login() {
 
         {
           mode === 'login' && (
-            <Checkbox
-              name="rememberMe"
-              label="Keep me logged in"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-            />
+            <div className="space-y-3">
+              <Checkbox
+                name="rememberMe"
+                label="Keep me logged in"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password', { state: { email: email.trim() } })}
+                className="text-sm font-medium text-teal-700 underline-offset-2 hover:underline"
+              >
+                Forgot your password?
+              </button>
+            </div>
           )
         }
 

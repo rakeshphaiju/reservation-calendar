@@ -31,6 +31,7 @@ from src.auth.email_verification import (
     verify_otp,
 )
 from src.services.email_service import send_verification_email
+from src.services.email_service import send_password_reset_email
 from src.common.db import get_db
 from src.common.logger import logger
 from src.models.reservation import Reservation
@@ -39,12 +40,15 @@ from src.schemas.user import (
     UserRegistrationRequest,
     VerifyEmailRequest,
     ResendVerificationRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
 )
 
-router = APIRouter()
+router = APIRouter(tags=["Authentication"])
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REMEMBER_ME_EXPIRE_DAYS = 30
+PASSWORD_RESET_PURPOSE = "password_reset"
 
 
 def get_slot_capacity(user) -> int:
@@ -225,6 +229,64 @@ async def resend_verification(
     }
 
 
+@router.post("/api/auth/forgot-password")
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(AppUser).where(AppUser.email == payload.email))
+    user = result.scalars().first()
+
+    if not user or not getattr(user, "is_verified", False):
+        return {"message": "A password reset code has been sent."}
+
+    if not await can_resend(payload.email, PASSWORD_RESET_PURPOSE):
+        raise HTTPException(
+            status_code=hs.TOO_MANY_REQUESTS,
+            detail="Please wait before requesting a new code.",
+        )
+
+    try:
+        code = await create_and_store_otp(payload.email, PASSWORD_RESET_PURPOSE)
+        await set_resend_lock(payload.email, PASSWORD_RESET_PURPOSE)
+        await send_password_reset_email(payload.email, user.service_name, code)
+    except Exception as exc:
+        logger.error("Failed to send password reset OTP to %s: %s", payload.email, exc)
+        raise HTTPException(
+            status_code=hs.INTERNAL_SERVER_ERROR,
+            detail="Failed to send email.",
+        )
+
+    return {"message": "Password reset code has been sent to your email."}
+
+
+@router.post("/api/auth/reset-password")
+async def reset_password(
+    payload: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(AppUser).where(AppUser.email == payload.email))
+    user = result.scalars().first()
+
+    if not user or not getattr(user, "is_verified", False):
+        raise HTTPException(
+            status_code=hs.UNPROCESSABLE_ENTITY,
+            detail="Invalid or expired verification code.",
+        )
+
+    if not await verify_otp(payload.email, payload.code, PASSWORD_RESET_PURPOSE):
+        raise HTTPException(
+            status_code=hs.UNPROCESSABLE_ENTITY,
+            detail="Invalid or expired verification code.",
+        )
+
+    user.password_hash = hash_password(payload.password)
+    await db.commit()
+
+    logger.info("Password reset completed for '%s'", user.email)
+    return {"message": "Password reset successfully. You can now sign in."}
+
+
 @router.post(TOKEN_URL)
 async def login(
     response: Response,
@@ -252,7 +314,7 @@ async def login(
             value=access_token,
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=True,
             path="/",
             max_age=int(expires.total_seconds()) if remember_me else None,
         )
@@ -300,7 +362,7 @@ async def logout(response: Response, user=Depends(manager)):
             key="access-token",
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=True,
             path="/",
         )
         return {"message": "Logged out successfully"}
@@ -334,7 +396,7 @@ async def delete_account(
             key="access-token",
             httponly=True,
             samesite="lax",
-            secure=False,
+            secure=True,
             path="/",
         )
         return {"message": "Account deleted successfully"}

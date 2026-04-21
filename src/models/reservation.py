@@ -15,7 +15,8 @@ class Reservation(Base):
     phone_number = Column(String, nullable=False)
     day = Column(String, nullable=False)
     time = Column(String, nullable=False)
-    reservation_key = Column(String, nullable=True, unique=True, index=True)
+    reservation_key = Column(String, nullable=False, unique=True, index=True)
+    reminder_task_id = Column(String, nullable=True, default=None)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,

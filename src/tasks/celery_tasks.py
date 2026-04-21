@@ -1,4 +1,8 @@
 import asyncio
+import os
+import time as time_module
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from src.services.email_service import (
     send_admin_notification,
@@ -6,9 +10,12 @@ from src.services.email_service import (
     send_cancellation_email,
     send_confirmation_email,
     send_verification_email,
+    send_reminder_email,
 )
 from src.tasks.celery_app import celery_app
 from src.tasks.scripts.cleanup_past_reservations import cleanup_past_reservations
+
+APP_TIMEZONE = ZoneInfo(os.getenv("APP_TIMEZONE", "Europe/Helsinki"))
 
 
 @celery_app.task(name="src.tasks.celery_tasks.send_confirmation_email_task")
@@ -118,6 +125,45 @@ def send_verification_email_task(
             email=email,
             service_name=service_name,
             code=code,
+        )
+    )
+
+
+@celery_app.task(
+    name="src.tasks.celery_tasks.send_reservation_reminder_task",
+    bind=True,
+    max_retries=0,
+)
+def send_reservation_reminder_task(
+    self,
+    recipient_email: str,
+    recipient_name: str,
+    day: str,
+    time: str,
+    reservation_key: str,
+    calendar_owner: str = "",
+) -> None:
+    start_time = time[:5]
+    target_dt = (
+        datetime.strptime(f"{day} {start_time}", "%Y-%m-%d %H:%M").replace(
+            tzinfo=APP_TIMEZONE
+        )
+        - timedelta(hours=24)
+    ).astimezone(timezone.utc)
+    now = datetime.now(timezone.utc)
+    wait_seconds = (target_dt - now).total_seconds()
+
+    if wait_seconds > 0:
+        time_module.sleep(wait_seconds)
+
+    asyncio.run(
+        send_reminder_email(
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            day=day,
+            time=start_time,
+            reservation_key=reservation_key,
+            calendar_owner=calendar_owner,
         )
     )
 

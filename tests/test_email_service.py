@@ -8,6 +8,7 @@ from src.services.email_service import (
     send_cancellation_email,
     send_admin_cancellation_notification,
     send_verification_email,
+    send_password_reset_email,
 )
 
 
@@ -194,6 +195,33 @@ class TestEmailService(BaseApiTest):
             email="user@example.com",
             service_name="John Doe",
             code="123456",
+        )
+
+        mock_send.assert_called_once()
+
+    @patch("src.services.email_service.resend.Emails.send")
+    async def test_password_reset_email_sent(self, mock_send):
+        await send_password_reset_email(
+            email="user@example.com",
+            service_name="John Doe",
+            code="654321",
+        )
+
+        mock_send.assert_called_once()
+        payload = mock_send.call_args[0][0]
+        self.assertEqual(payload["to"], "user@example.com")
+        self.assertIn("password reset code", payload["subject"].lower())
+        self.assertIn("654321", payload["html"])
+        self.assertIn("Reset your password", payload["html"])
+
+    @patch("src.services.email_service.resend.Emails.send")
+    async def test_password_reset_email_failure_is_silent(self, mock_send):
+        mock_send.side_effect = Exception("SMTP timeout")
+
+        await send_password_reset_email(
+            email="user@example.com",
+            service_name="John Doe",
+            code="654321",
         )
 
         mock_send.assert_called_once()
