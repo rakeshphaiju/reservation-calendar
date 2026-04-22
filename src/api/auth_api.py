@@ -313,7 +313,7 @@ async def login(
             key="access-token",
             value=access_token,
             httponly=True,
-            samesite="lax",
+            samesite="none",
             secure=True,
             path="/",
             max_age=int(expires.total_seconds()) if remember_me else None,
@@ -361,7 +361,7 @@ async def logout(response: Response, user=Depends(manager)):
         response.delete_cookie(
             key="access-token",
             httponly=True,
-            samesite="lax",
+            samesite="none",
             secure=True,
             path="/",
         )
@@ -395,7 +395,7 @@ async def delete_account(
         response.delete_cookie(
             key="access-token",
             httponly=True,
-            samesite="lax",
+            samesite="none",
             secure=True,
             path="/",
         )

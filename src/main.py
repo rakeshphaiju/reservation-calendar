@@ -7,11 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Depends
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.exception_handlers import http_exception_handler
-from fastapi.responses import JSONResponse, FileResponse, Response
+from fastapi.responses import JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from src.common.logger import logger
@@ -29,6 +28,7 @@ load_dotenv()
 
 
 AUTO_CREATE_TABLES = os.getenv("AUTO_CREATE_TABLES", "false").lower() == "true"
+origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 
 
 async def ensure_schema_columns():
@@ -126,10 +126,6 @@ async def ensure_schema_columns():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Avoid hard-failing app startup if DB is unavailable unless explicitly enabled.
-    FastAPI lifespan uses an asynccontextmanager + yield pattern. [web:275]
-    """
     if AUTO_CREATE_TABLES:
         try:
             async with engine.begin() as conn:
@@ -158,7 +154,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -195,21 +191,6 @@ def read_root_head():
     return Response()
 
 
-this_path = os.path.dirname(os.path.abspath(__file__))
-
-root_dir = os.path.abspath(os.path.join(this_path, ".."))
-frontend_dir = os.path.join(root_dir, "frontend", "dist")
-index_path = os.path.join(frontend_dir, "index.html")
-
-# Serve static assets (JS, CSS, images, etc.)
-if os.path.exists(frontend_dir):
-    app.mount(
-        "/",
-        StaticFiles(directory=frontend_dir, html=True, check_dir=False),
-        name="frontend",
-    )
-
-
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     error_log_info = {"errors": exc.errors(), "body": exc.body}
@@ -224,14 +205,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
-    # SPA fallback: for 404 on GET to non-API paths, serve index.html so client-side routing works
-    if (
-        exc.status_code == 404
-        and request.method == "GET"
-        and not request.url.path.startswith("/api")
-        and os.path.exists(index_path)
-    ):
-        return FileResponse(index_path, media_type="text/html")
     logger.error(
         'Error on "%s %s": %s (%s)',
         request.method,
@@ -241,18 +214,6 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     )
     return await http_exception_handler(request, exc)
 
-
-if os.path.exists(index_path):
-    # Serve React App
-    @app.get("/{catchall:path}")
-    def read_index():
-        # otherwise return index files
-        return FileResponse(index_path)
-
-else:
-    logger.info(
-        "React build not found, not serving React app. This should only happen for a backend build."
-    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,9 +1,12 @@
 import axios from 'axios';
 // import { authService } from './auth';
 
+const BASE_URL = import.meta.env.VITE_API_URL ?? '';
+
 const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: `${BASE_URL}/api`,
   withCredentials: true,
+  timeout: 10_000,
 });
 
 apiClient.interceptors.response.use(

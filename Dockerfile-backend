@@ -1,27 +1,30 @@
-FROM python:3.9-slim
+# ---- Build Stage ----
+    FROM python:3.11-slim AS backend-build
 
-# virtualenv
-ENV VIRTUAL_ENV=/opt/venv
-RUN python3 -m venv $VIRTUAL_ENV
-ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-
-RUN apt-get update
-RUN python3 --version
-RUN python3 -m pip install --no-cache-dir --upgrade pip
-RUN python3 -m pip install --no-cache-dir --upgrade poetry
-RUN python3 -m pip --version
-RUN poetry --version
-
-COPY ./pyproject.toml ./poetry.lock ./
-RUN poetry install --no-root -vvv --no-interaction --no-ansi
-
-
-# Set the working directory in the container
-WORKDIR /app
-
-# Copy the current directory contents into the container at /app
-COPY . /app
-
-EXPOSE 8000
-
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ENV VIRTUAL_ENV=/opt/venv
+    RUN python3 -m venv $VIRTUAL_ENV
+    ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+    
+    RUN apt-get update && \
+        python3 -m pip install --no-cache-dir --upgrade pip poetry
+    
+    WORKDIR /opt/app
+    COPY ./pyproject.toml ./poetry.lock ./
+    RUN poetry install --no-root --no-interaction --no-ansi
+    
+    # ---- Final Stage ----
+    FROM python:3.11-slim
+    
+    COPY --from=backend-build /opt/venv /opt/venv
+    
+    ENV PATH="/opt/venv/bin:$PATH" \
+        PYTHONPATH=/opt/app \
+        PYTHONDONTWRITEBYTECODE=1 \
+        PYTHONUNBUFFERED=1
+    
+    WORKDIR /opt/app
+    COPY ./src/ ./src
+    
+    EXPOSE 8000
+    
+    CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]

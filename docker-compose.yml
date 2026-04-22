@@ -26,11 +26,12 @@ services:
   reservation_calender_api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-backend
     hostname: reservation-api
     restart: unless-stopped
     command: uvicorn --host 0.0.0.0 --port 8000 src.main:app
     environment:
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
       SECRET_KEY: ${SECRET_KEY}
       DATABASE_URL: ${DATABASE_URL}
       AUTO_CREATE_TABLES: true
@@ -50,7 +51,7 @@ services:
   background_task_worker:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-backend
     restart: unless-stopped
     command: celery -A src.tasks.celery_app.celery_app worker --loglevel=info
     environment:
@@ -69,7 +70,7 @@ services:
   background_job:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-backend
     restart: unless-stopped
     command: celery -A src.tasks.celery_app.celery_app beat --loglevel=info
     environment:
@@ -88,7 +89,7 @@ services:
   flower:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-backend
     restart: unless-stopped
     command: celery -A src.tasks.celery_app.celery_app flower
     environment:
