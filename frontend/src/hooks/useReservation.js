@@ -49,6 +49,7 @@ const getMergedTimeSlots = (dayTimeSlots) => {
 };
 
 export const useReservation = (ownerSlug) => {
+    const [isLoading, setIsLoading] = useState(true);
     const [slotCounts, setSlotCounts] = useState({});
     const [fullyBookedSlots, setFullyBookedSlots] = useState([]);
     const [slotCapacity, setSlotCapacity] = useState(5);
@@ -60,10 +61,11 @@ export const useReservation = (ownerSlug) => {
     const [calendarDescription, setCalendarDescription] = useState(null);
     const [calendarLocation, setCalendarLocation] = useState(null);
 
-    const loadAvailability = () => {
-        reservationService
-            .getSlots(ownerSlug)
-            .then((availability) => {
+    const loadAvailability = async () => {
+        setIsLoading(true);
+
+        try {
+            const availability = await reservationService.getSlots(ownerSlug);
                 const counts = {};
                 const fullyBooked = [];
                 const nextCapacity = availability.slot_capacity ?? 5;
@@ -92,23 +94,24 @@ export const useReservation = (ownerSlug) => {
                 setSlotCounts(counts);
                 setFullyBookedSlots(fullyBooked);
                 setCalendarExists(true);
-            })
-            .catch((err) => {
-                if (err?.response?.status === 404) {
-                    setCalendarExists(false);
-                    setSlotCapacity(5);
-                    setMaxWeeks(4);
-                    setTimeSlots(DEFAULT_TIME_SLOTS);
-                    setDayTimeSlots(DEFAULT_DAY_TIME_SLOTS);
-                    setBookableDays(DEFAULT_BOOKABLE_DAYS);
-                    setCalendarDescription(null);
-                    setCalendarLocation(null);
-                    setSlotCounts({});
-                    setFullyBookedSlots([]);
-                } else {
-                    console.log('Failed to load reserved slots');
-                }
-            });
+        } catch (err) {
+            if (err?.response?.status === 404) {
+                setCalendarExists(false);
+                setSlotCapacity(5);
+                setMaxWeeks(4);
+                setTimeSlots(DEFAULT_TIME_SLOTS);
+                setDayTimeSlots(DEFAULT_DAY_TIME_SLOTS);
+                setBookableDays(DEFAULT_BOOKABLE_DAYS);
+                setCalendarDescription(null);
+                setCalendarLocation(null);
+                setSlotCounts({});
+                setFullyBookedSlots([]);
+            } else {
+                console.log('Failed to load reserved slots');
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     useEffect(() => {
@@ -130,6 +133,7 @@ export const useReservation = (ownerSlug) => {
     };
 
     return {
+        isLoading,
         slotCapacity,
         maxWeeks,
         timeSlots,

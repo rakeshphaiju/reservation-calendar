@@ -11,6 +11,7 @@ import CalendarNotFound from '../components/CalendarNotFound';
 import { CalendarTable } from '../components/reservations/CalendarTable';
 import { MobileCalendarView } from '../components/reservations/MobileCalendarView';
 import { ReservationManager } from '../components/reservations/ReservationManager';
+import ReservationCalendarSkeleton from '../components/reservations/ReservationCalendarSkeleton';
 import { useReservation } from '../hooks/useReservation';
 import { useWeekNavigation } from '../hooks/useWeekNavigation';
 import { useReservationModal } from '../hooks/useReservationModal';
@@ -21,6 +22,7 @@ const Reserve = () => {
 
   // Custom hooks
   const {
+    isLoading,
     slotCapacity,
     maxWeeks,
     timeSlots,
@@ -91,6 +93,10 @@ const Reserve = () => {
     showForm,
     slotCapacity,
   };
+
+  if (isLoading) {
+    return <ReservationCalendarSkeleton />;
+  }
 
   if (!calendarExists) {
     return (

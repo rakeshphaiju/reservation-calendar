@@ -14,6 +14,7 @@ import TimeSlotsSettings from '../components/dashboard/TimeSlotsSettings';
 import CalendarDetailsSettings from '../components/dashboard/CalendarDetailsSettings';
 import DashboardStats from '../components/dashboard/DashboardStats';
 import DeleteAccountSection from '../components/dashboard/DeleteAccountSection';
+import DashboardSkeleton from '../components/dashboard/DashboardSkeleton';
 import Footer from '../components/header/Footer';
 import { sortTimeSlots } from '../utils/timeSlots';
 
@@ -350,7 +351,7 @@ const Dashboard = () => {
   };
 
 
-  if (loading) return <div className="p-8 text-center">Loading owner dashboard...</div>;
+  if (loading) return <DashboardSkeleton />;
 
 
   return (
