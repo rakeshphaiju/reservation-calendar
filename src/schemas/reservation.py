@@ -37,7 +37,7 @@ BOOKABLE_DAY_ORDER = (
 class ReservationCreate(BaseModel):
     name: str = Field(..., min_length=2)
     email: EmailStr
-    phone_number: str = Field(..., pattern=r"^\d{10}$")
+    phone_number: str | None = Field(default=None, pattern=r"^\+?[\d\s\-().]{7,20}$")
     day: str = Field(..., pattern=r"^\d{4}-\d{2}-\d{2}$")
     time: str
 
